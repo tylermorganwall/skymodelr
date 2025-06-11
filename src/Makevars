@@ -1,0 +1,21 @@
+# OpenEXR package Makevars
+CMAKE = /usr/local/Cellar/cmake/3.24.2/bin/cmake
+
+# Directories
+IMATH_DIR = /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/libimath
+DEFLATE_DIR = /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/libdeflate
+OPENEXR_DIR = /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/libopenexr
+
+# Set include paths
+PKG_CPPFLAGS = -I$(INCLUDE_DIR) -I$(OPENEXR_DIR)/include/OpenEXR -I$(IMATH_DIR)/include/Imath -I$(DEFLATE_DIR)/include/Imath
+
+# Static libraries we need to link against
+# Note that we're using the version suffix pattern that OpenEXR actually creates
+PKG_LIBS = -L$(OPENEXR_DIR)/lib/arm64  -L$(IMATH_DIR)/lib/arm64 -lImath-3_2 -lOpenEXRUtil-3_4 -lOpenEXR-3_4 -lOpenEXRCore-3_4 -lIlmThread-3_4 -lIex-3_4 -L$(DEFLATE_DIR)/lib/arm64 -ldeflate
+
+# Required for linking with static libraries
+CFLAGS = $(CFLAGS) $(CPICFLAGS)
+CXXFLAGS = $(CXXFLAGS) $(CXXPICFLAGS)
+
+# Main target
+all: $(OBJECTS)
