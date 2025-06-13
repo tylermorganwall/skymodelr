@@ -5,6 +5,8 @@ extern "C" {
 #include "ArHosekSkyModel.h"
 }
 
+#include "PragueSkyModel.h"
+
 // OpenEXR
 #include <OpenEXR/ImfRgbaFile.h>
 #include <OpenEXR/ImfRgba.h>
@@ -12,129 +14,170 @@ extern "C" {
 
 #include <Imath/ImathVec.h>
 #include <Imath/ImathFun.h>
+#include <cmath>
+#include <vector>
+#include <string>
+
 using namespace Imf;
 using namespace Imath;
 
-// ───────────────────────────── Helper maths ──────────────────────────────
-static inline float clamp_float(float x, float a, float b) {
-  return (x < a) ? a : (x > b) ? b : x;
-}
+static inline float clamp_float(float x, float a, float b)
+{ return (x < a) ? a : (x > b) ? b : x; }
 
-static inline Vec3<float> latLongSquareToSphere(float u, float v) {
-  float theta = static_cast<float>(M_PI) * v;       // 0…π
-  float phi   = static_cast<float>(2.0 * M_PI) * u; // 0…2π
-  return { std::sin(theta) * std::cos(phi),
-           std::sin(theta) * std::sin(phi),
-           std::cos(theta) };
-}
+// Forward conversion to Prague’s tiny Vector3 wrapper
+static inline PragueSkyModel::Vector3 toPrague(const Vec3<float>& v)
+  { return { double(v.x), double(v.y), double(v.z) }; }
 
-static inline Vec3<float> equalAreaSquareToSphere(float u, float v) {
-  float a = 2.f * u - 1.f;
-  float b = 2.f * v - 1.f;
-  float r, phi;
-  if (std::fabs(a) > std::fabs(b)) {
-    r   = a;
-    phi = static_cast<float>(M_PI_4) * (b / r);
-  } else {
-    r   = b;
-    phi = static_cast<float>(M_PI_2) - static_cast<float>(M_PI_4) * (a / r);
-  }
-  float theta = std::acos(r);
-  float sinT  = std::sin(theta);
-  return { std::cos(phi) * sinT,
-           std::sin(phi) * sinT,
-           std::cos(theta) };
-}
+// Static instance so the .dat stays in RAM across calls
+static PragueSkyModel  prague_model;
+static std::string     prague_loaded_file;
 
-// ───────────────────────────── C++ entrypoint ────────────────────────────
 // [[Rcpp::export]]
 void makesky_rcpp(std::string  outfile,
-                  double       albedo    = 0.5,
-                  double       turbidity = 3.0,
-                  double       elevation = 10.0,
-                  unsigned int resolution = 2048,
-                  unsigned int numbercores = 1,
-                  bool         square_projection = false) {
-
-  /* ── user‑input guardrails ─────────────────────────────────────── */
-  if (albedo    < 0.0 || albedo    > 1.0)  Rcpp::stop("albedo in [0,1]");
-  if (turbidity < 1.7 || turbidity > 10.0) Rcpp::stop("turbidity in [1.7,10]");
-  if (elevation < 0.0 || elevation > 90.0) Rcpp::stop("elevation in [0,90]");
-  if (resolution == 0)                     Rcpp::stop("resolution ≥ 1");
-
-  float elevRad = static_cast<float>(elevation) * static_cast<float>(M_PI) / 180.0f;
-
-
-  constexpr int num_channels = 9;
-  // Three wavelengths around red, three around green, and three around blue.
-  constexpr double lambda[num_channels] = {630, 680, 710, 500, 530, 560, 460, 480, 490};
-
-  ArHosekSkyModelState *skymodel_state[num_channels];
-  for (int i = 0; i < num_channels; ++i) {
-    skymodel_state[i] =
-      arhosekskymodelstate_alloc_init(elevRad, turbidity, albedo);
-    if (!skymodel_state[i]) Rcpp::stop("Hosek–Wilkie initialisation failed");
-
+                  double       albedo            = 0.5,
+                  double       turbidity         = 3.0,
+                  double       elevation         = 10.0,
+                  unsigned int resolution        = 2048,
+                  unsigned int numbercores       = 1,
+                  bool         square_projection = false,
+                  std::string  model             = "hosek",  // hosek | prague
+                  std::string  prg_dataset       = "",
+                  double       visibility        = 50.0)     // Prague only (km)
+{
+  if (albedo < 0.0 || albedo > 1.0) {
+    Rcpp::stop("albedo must be in [0,1]");
+  }
+  if (resolution == 0) {
+    Rcpp::stop("resolution must be ≥ 1");
   }
 
-  Imath::Vec3<float> sunDir(0.f, std::sin(elevRad), std::cos(elevRad));
-  int nTheta = resolution, nPhi = 2 * nTheta;
-  std::vector<float> img(3 * nTheta * nPhi, 0.f);
+  float elev_rad = static_cast<float>(elevation * M_PI / 180.0);
 
-  RcppThread::parallelFor(0u, resolution,                                    // NEW begin/end
-                          [&](size_t t) {
-                          float theta = (float(t) + 0.5f) / static_cast<float>(nTheta) * static_cast<float>(M_PI);
-                          if (theta > static_cast<float>(M_PI) / 2.f) return;
-                            for (int p = 0; p < nPhi; ++p) {
-                              float phi = (float(p) + 0.5f) / nPhi * 2.f * static_cast<float>(M_PI);
+  // --- Prague model initialisation ----------------------------------------
+  if (model == "prague") {
+    if (prg_dataset.empty()) {
+      Rcpp::stop("prg_dataset must be supplied when model=\"prague\"");
+    }
 
-                              // Vector corresponding to the direction for this pixel.
-                              Imath::Vec3<float> v(std::cos(phi) * std::sin(theta),
-                                                   std::cos(theta),
-                                                   std::sin(phi) * std::sin(theta));
-                              // Compute the angle between the pixel's direction and the sun
-                              // direction.
-                              //
-                              float gamma = std::acos(clamp_float(v.dot(sunDir), -1.f, 1.f));
+    if (prague_loaded_file != prg_dataset) {
+      prague_model.initialize(prg_dataset);
+      prague_loaded_file = prg_dataset;
+    }
+    auto avail = prague_model.getAvailableData();
+    if (albedo    < avail.albedoMin    || albedo    > avail.albedoMax ||
+        visibility < avail.visibilityMin|| visibility > avail.visibilityMax) {
+      Rcpp::stop("albedo or visibility outside dataset range");
+    }
+  } else if (model != "hosek") {
+    Rcpp::stop("unknown model \"%s\"", model.c_str());
+  }
 
-                              for (int c = 0; c < num_channels; ++c) {
-                                float val = arhosekskymodel_solar_radiance(
-                                  skymodel_state[c], theta, gamma, lambda[c]);
-                                // For each of red, green, and blue, average the three
-                                // values for the three wavelengths for the color.
-                                // TODO: do a better spectral->RGB conversion.
-                                img[3 * (t * nPhi + p) + c / 3] += val / 3.f;
-                              }
-                            }
-                          },
-                          numbercores);
+  // --- spectral sampling & Hosek state -------------------------------------
+  constexpr int    N_LAMBDA = 9;
+  constexpr double lambda_nm[N_LAMBDA] =
+    { 630,680,710, 500,530,560, 460,480,490 };
 
-  /* ── pack + write EXR ──────────────────────────────────────────── */
-  const int width  = nPhi;          // 2×resolution
-  const int height = nTheta;        // resolution
+  ArHosekSkyModelState* hosek[N_LAMBDA] = { nullptr };
+  if (model == "hosek") {
+    if (elevation < 0.0 || elevation > 90.0) {
+      Rcpp::stop("elevation must be in [0,90]");
+    }
+    if (turbidity < 1.7 || turbidity > 10.0) {
+      Rcpp::stop("turbidity must be in [1.7,10]");
+    }
+    for (int i = 0; i < N_LAMBDA; ++i) {
+      hosek[i] = arhosekskymodelstate_alloc_init(
+        elev_rad, turbidity, albedo);
+      if (!hosek[i]) {
+        Rcpp::stop("Hosek–Wilkie initialisation failed");
+      }
+    }
+  } else {
+    if (elevation < -4.2|| elevation > 90.0) {
+      Rcpp::stop("elevation must be in [-4.2, 90]");
+    }
+  }
+
+  // --- image buffer -------------------------------------------------------
+  const int nTheta = resolution;          // rows  (latitude)
+  const int nPhi   = 2 * resolution;      // cols  (longitude)
+  std::vector<float> img(3 * nTheta * nPhi, 0.0f);
+
+  Vec3<float> sun_dir(0.0f, std::sin(elev_rad), std::cos(elev_rad));
+
+  // --- render loop (parallel over rows) ------------------------------------
+  RcppThread::parallelFor(
+    0u, size_t(nTheta),
+    [&](size_t t) {
+      float theta = (static_cast<float>(t) + 0.5f) /
+        static_cast<float>(nTheta) * static_cast<float>(M_PI);
+
+      if (theta > static_cast<float>(M_PI_2)) {
+        return;
+      }
+
+      for (int p = 0; p < nPhi; ++p) {
+        float phi = (static_cast<float>(p) + 0.5f) / nPhi *
+          2.0f * static_cast<float>(M_PI);
+
+        Vec3<float> v(std::cos(phi) * std::sin(theta),
+                      std::cos(theta),
+                      std::sin(phi) * std::sin(theta));
+
+        if (model == "hosek") {
+          float gamma = std::acos(
+            clamp_float(v.dot(sun_dir), -1.0f, 1.0f));
+          for (int c = 0; c < N_LAMBDA; ++c) {
+            float L = arhosekskymodel_solar_radiance(
+              hosek[c], theta, gamma, lambda_nm[c]);
+            img[3 * (t * nPhi + p) + c / 3] += L / 3.0f;
+          }
+        } else {
+          Vec3<float> v_zup(std::cos(phi) * std::sin(theta),
+                            std::sin(phi) * std::sin(theta),
+                            std::cos(theta));
+          auto P = prague_model.computeParameters(
+            /*viewPoint*/   { 0.0, 0.0, 0.0 },
+            /*viewDir  */   toPrague(v_zup),
+            /*sunElev  */   elev_rad,
+            /*sunAzim  */   static_cast<double>(M_PI_2),
+            /*visibility*/  visibility,
+            /*albedo   */   albedo);
+            for (int c = 0; c < N_LAMBDA; ++c) {
+              double L = prague_model.skyRadiance(P, lambda_nm[c]) +
+                prague_model.sunRadiance(P, lambda_nm[c]);
+              img[3 * (t * nPhi + p) + c / 3] += static_cast<float>(L / 3.0);
+            }
+        }
+      }
+    },
+    numbercores);
+
+  // --- pack & write EXR ----------------------------------------
+  const int width  = nPhi;
+  const int height = nTheta;
   const int nPix   = width * height;
 
-  std::vector<Imf::Rgba> px(nPix);
+  std::vector<Rgba> px(nPix);
   for (int p = 0; p < nPix; ++p) {
-      px[p] = Imf::Rgba(img[3*p], img[3*p+1], img[3*p+2]);
+    px[p] = Rgba(img[3*p], img[3*p+1], img[3*p+2]);
   }
 
   try {
-    Imf::RgbaOutputFile out(outfile.c_str(),
-                            width, height,
-                            Imf::WRITE_RGB);
-
+    RgbaOutputFile out(outfile.c_str(), width, height, WRITE_RGB);
     out.setFrameBuffer(px.data(), 1, width);
     out.writePixels(height);
-  } catch (const std::exception &e) {
-    for(int i = 0; i < num_channels; i++) {
-      arhosekskymodelstate_free(skymodel_state[i]);
-    }
+  } catch (const std::exception& e) {
+    if (model == "hosek")
+      for (int i = 0; i < N_LAMBDA; ++i)
+        arhosekskymodelstate_free(hosek[i]);
     Rcpp::stop("OpenEXR write failed: %s", e.what());
   }
 
-  for(int i = 0; i < num_channels; i++) {
-    arhosekskymodelstate_free(skymodel_state[i]);
+  if (model == "hosek") {
+    for (int i = 0; i < N_LAMBDA; ++i) {
+      arhosekskymodelstate_free(hosek[i]);
+    }
   }
 }
-
+// ----------------------------------------------------------------------------- end

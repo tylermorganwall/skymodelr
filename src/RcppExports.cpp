@@ -12,8 +12,8 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // makesky_rcpp
-void makesky_rcpp(std::string outfile, double albedo, double turbidity, double elevation, unsigned int resolution, unsigned int numbercores, bool square_projection);
-RcppExport SEXP _skymodelr_makesky_rcpp(SEXP outfileSEXP, SEXP albedoSEXP, SEXP turbiditySEXP, SEXP elevationSEXP, SEXP resolutionSEXP, SEXP numbercoresSEXP, SEXP square_projectionSEXP) {
+void makesky_rcpp(std::string outfile, double albedo, double turbidity, double elevation, unsigned int resolution, unsigned int numbercores, bool square_projection, std::string model, std::string prg_dataset, double visibility);
+RcppExport SEXP _skymodelr_makesky_rcpp(SEXP outfileSEXP, SEXP albedoSEXP, SEXP turbiditySEXP, SEXP elevationSEXP, SEXP resolutionSEXP, SEXP numbercoresSEXP, SEXP square_projectionSEXP, SEXP modelSEXP, SEXP prg_datasetSEXP, SEXP visibilitySEXP) {
 BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< std::string >::type outfile(outfileSEXP);
@@ -23,13 +23,16 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< unsigned int >::type resolution(resolutionSEXP);
     Rcpp::traits::input_parameter< unsigned int >::type numbercores(numbercoresSEXP);
     Rcpp::traits::input_parameter< bool >::type square_projection(square_projectionSEXP);
-    makesky_rcpp(outfile, albedo, turbidity, elevation, resolution, numbercores, square_projection);
+    Rcpp::traits::input_parameter< std::string >::type model(modelSEXP);
+    Rcpp::traits::input_parameter< std::string >::type prg_dataset(prg_datasetSEXP);
+    Rcpp::traits::input_parameter< double >::type visibility(visibilitySEXP);
+    makesky_rcpp(outfile, albedo, turbidity, elevation, resolution, numbercores, square_projection, model, prg_dataset, visibility);
     return R_NilValue;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_skymodelr_makesky_rcpp", (DL_FUNC) &_skymodelr_makesky_rcpp, 7},
+    {"_skymodelr_makesky_rcpp", (DL_FUNC) &_skymodelr_makesky_rcpp, 10},
     {NULL, NULL, 0}
 };
 

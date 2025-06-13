@@ -11,6 +11,9 @@ makesky(
   elevation = 10,
   resolution = 2048,
   numbercores = 1,
+  model = "hosek",
+  prg_dataset = "",
+  visibility = 50,
   square_projection = FALSE
 )
 }
@@ -26,6 +29,12 @@ makesky(
 \item{resolution}{Default `2048`. Linear resolution of the square map (≥ 1).}
 
 \item{numbercores}{Default `1`. Threads for \code{RcppThread}.}
+
+\item{model}{Default `"hosek"`. Use `"prague"` to enable the Prague 2021-22 spectral sky model.}
+
+\item{prg_dataset}{Default `""`. Full path to the Prague binary dataset (`*.dat`) when `model = "prague"`.}
+
+\item{visibility}{Default `50`. Meteorological range in kilometres for Prague model.}
 
 \item{square_projection}{Default `FALSE`. If \code{TRUE} use equal‑area square mapping,
 else latitude–longitude square mapping.}

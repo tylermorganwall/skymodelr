@@ -8,6 +8,9 @@
 #' @param numbercores        Default `1`. Threads for \code{RcppThread}.
 #' @param square_projection  Default `FALSE`. If \code{TRUE} use equal‑area square mapping,
 #'                           else latitude–longitude square mapping.
+#' @param model Default `"hosek"`. Use `"prague"` to enable the Prague 2021-22 spectral sky model.
+#' @param prg_dataset Default `""`. Full path to the Prague binary dataset (`*.dat`) when `model = "prague"`.
+#' @param visibility Default `50`. Meteorological range in kilometres for Prague model.
 #'
 #' @return Invisible `NULL`.  The EXR is written to `outfile`.
 #' @export
@@ -20,6 +23,9 @@ makesky = function(
   elevation = 10,
   resolution = 2048,
   numbercores = 1,
+  model = "hosek",
+  prg_dataset = "",
+  visibility = 50,
   square_projection = FALSE
 ) {
   makesky_rcpp(
@@ -29,7 +35,10 @@ makesky = function(
     elevation,
     resolution,
     numbercores,
-    square_projection
+    square_projection,
+    visibility = visibility,
+    prg_dataset = prg_dataset,
+    model = model
   )
   invisible(NULL)
 }
