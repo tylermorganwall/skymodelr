@@ -37,11 +37,13 @@ void makesky_rcpp(std::string  outfile,
                   double       albedo            = 0.5,
                   double       turbidity         = 3.0,
                   double       elevation         = 10.0,
+				  double       azimuth_deg       = 90,
                   unsigned int resolution        = 2048,
                   unsigned int numbercores       = 1,
                   bool         square_projection = false,
                   std::string  model             = "hosek",  // hosek | prague
                   std::string  prg_dataset       = "",
+				  double       altitude          = 0.0,
                   double       visibility        = 50.0)     // Prague only (km)
 {
   if (albedo < 0.0 || albedo > 1.0) {
@@ -52,8 +54,9 @@ void makesky_rcpp(std::string  outfile,
   }
 
   float elev_rad = static_cast<float>(elevation * M_PI / 180.0);
+  float az_rad = static_cast<float>(azimuth_deg * M_PI / 180.0);
 
-  // --- Prague model initialisation ----------------------------------------
+  // Prague model initialisation
   if (model == "prague") {
     if (prg_dataset.empty()) {
       Rcpp::stop("prg_dataset must be supplied when model=\"prague\"");
@@ -72,7 +75,7 @@ void makesky_rcpp(std::string  outfile,
     Rcpp::stop("unknown model \"%s\"", model.c_str());
   }
 
-  // --- spectral sampling & Hosek state -------------------------------------
+  // Spectral sampling and Hosek state
   constexpr int    N_LAMBDA = 9;
   constexpr double lambda_nm[N_LAMBDA] =
     { 630,680,710, 500,530,560, 460,480,490 };
@@ -98,14 +101,16 @@ void makesky_rcpp(std::string  outfile,
     }
   }
 
-  // --- image buffer -------------------------------------------------------
+  // Initialize image buffer
   const int nTheta = resolution;          // rows  (latitude)
   const int nPhi   = 2 * resolution;      // cols  (longitude)
   std::vector<float> img(3 * nTheta * nPhi, 0.0f);
 
-  Vec3<float> sun_dir(0.0f, std::sin(elev_rad), std::cos(elev_rad));
-
-  // --- render loop (parallel over rows) ------------------------------------
+//   Vec3<float> sun_dir(0.0f, std::sin(elev_rad), std::cos(elev_rad));
+Vec3<float> sun_dir( std::cos(az_rad) * std::cos(elev_rad),   // +X (South)
+                     std::sin(elev_rad),                     // +Y (Up)
+                     std::sin(az_rad) * std::cos(elev_rad)); // +Z (West)
+  // Render loop (parallel over rows) 
   RcppThread::parallelFor(
     0u, size_t(nTheta),
     [&](size_t t) {
@@ -137,10 +142,10 @@ void makesky_rcpp(std::string  outfile,
                             std::sin(phi) * std::sin(theta),
                             std::cos(theta));
           auto P = prague_model.computeParameters(
-            /*viewPoint*/   { 0.0, 0.0, 0.0 },
+            /*viewPoint*/   { 0.0, 0.0, altitude },
             /*viewDir  */   toPrague(v_zup),
             /*sunElev  */   elev_rad,
-            /*sunAzim  */   static_cast<double>(M_PI_2),
+            /*sunAzim  */   az_rad,
             /*visibility*/  visibility,
             /*albedo   */   albedo);
             for (int c = 0; c < N_LAMBDA; ++c) {
@@ -153,7 +158,7 @@ void makesky_rcpp(std::string  outfile,
     },
     numbercores);
 
-  // --- pack & write EXR ----------------------------------------
+  // Pack and write EXR
   const int width  = nPhi;
   const int height = nTheta;
   const int nPix   = width * height;
@@ -180,4 +185,3 @@ void makesky_rcpp(std::string  outfile,
     }
   }
 }
-// ----------------------------------------------------------------------------- end

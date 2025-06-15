@@ -9,6 +9,8 @@ makesky(
   albedo = 0.5,
   turbidity = 3,
   elevation = 10,
+  azimuth = 90,
+  altitude = 0,
   resolution = 2048,
   numbercores = 1,
   model = "hosek",
@@ -25,6 +27,11 @@ makesky(
 \item{turbidity}{Default `3`. 1.7–10 atmospheric turbidity.}
 
 \item{elevation}{Default `10`. Solar elevation above the horizon (°).}
+
+\item{azimuth}{Default `90`. Solar azimuth (°). Defaults South.}
+
+\item{altitude}{Default `0`. Altitude of the viewer in meters. Valid [0,15000]. Only valid for the
+Prague model.}
 
 \item{resolution}{Default `2048`. Linear resolution of the square map (≥ 1).}
 
