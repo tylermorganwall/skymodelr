@@ -1,2 +1,8 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^.+\.dat$
+^compile_commands\.json$
+^\.cache$
+^.+\.exr$
+^.+\.mp4$
+^.+\.png$
