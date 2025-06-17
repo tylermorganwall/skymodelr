@@ -52,7 +52,10 @@ void make_starfield_rcpp(std::string     outfile,
 						 double          lon_deg   = 0.0,
 						 double          lat_deg   = 0.0,
 						 double          jd        = 2451545.0,   // Julian Date of the frame (UTC noon 1 Jan 2000 = 2451545.0)
-                         bool            use_rgb   = true,
+                         double          turbidity = 3.0,
+						 double          ozone_du  = 300.0,
+						 double          altitude  = 0.0,
+						 bool            use_rgb   = true,
 						 unsigned int    ncores     = 1)
 {
     if (resolution == 0) Rcpp::stop("resolution must be ≥1");
@@ -95,9 +98,11 @@ void make_starfield_rcpp(std::string     outfile,
 		
 		double sin_alt = std::sin(dec[i]) * sin_lat +
                  std::cos(dec[i]) * cos_lat * std::cos(ha);
-		double alt     = std::asin( std::clamp(sin_alt, -1.0, 1.0) );
-		double cos_alt = std::cos(alt);
+		double alt_rad     = std::asin( std::clamp(sin_alt, -1.0, 1.0) );
+		double cos_alt = std::cos(alt_rad);
 
+		if(cos_alt < 1e-6) cos_alt = 1e-6;
+		
 		double sin_az  =  std::cos(dec[i]) * std::sin(ha) / cos_alt;
 		double cos_az  = (std::sin(dec[i]) * cos_lat -
 						std::cos(dec[i]) * std::cos(ha) * sin_lat) / cos_alt;
@@ -142,10 +147,45 @@ void make_starfield_rcpp(std::string     outfile,
 			b = b_vec[i];
 		}
 
+		double T_r = 1.0, T_g = 1.0, T_b = 1.0;
+		constexpr double tauR[9] = {0.00835,0.00673,0.00595,0.01750,0.01350,
+									0.01100,0.02690,0.02050,0.01880};
+		constexpr double tauM0[9]= {0.00220,0.00190,0.00175,0.00300,0.00265,
+									0.00245,0.00360,0.00320,0.00310};
+		constexpr double tauO[9] = {0.0030,0.0048,0.0060,0.0014,0.0010,
+									0.0009,0.0006,0.0007,0.0008};
+		if (theta < M_PI_2) {           // above horizon only
+			// ---------- airmass m(theta) -----------------------------------------
+			double secz = 1.0 / std::max(1e-6, std::cos(theta));
+			double m    = secz < 12.0
+						? secz - 0.001816*pow(secz-1,1) 
+						 	   - 0.002875*pow(secz-1,2)
+							   - 0.000808*pow(secz-1,3)
+						: secz;
+
+			// density scale with observer altitude
+			double rho = std::exp(-altitude / 8000.0);          // ρ/ρ0  (simple barometric)
+
+			// coefficient scalers
+			double kR = rho;                                    // Rayleigh ∝ air density
+			double kM = rho * (turbidity - 1.0);                // Mie 0 at T=1
+			double kO = ozone_du / 300.0;                       // 1.0 at 300 DU
+
+			double T_band[9];
+			for (int c=0; c<9; ++c) {
+				T_band[c] = std::exp( -(kR*tauR[c] + kM*tauM0[c] + kO*tauO[c]) * m );
+			}
+			T_r = (T_band[0] + T_band[1] + T_band[2]) / 3.0;
+			T_g = (T_band[3] + T_band[4] + T_band[5]) / 3.0;
+			T_b = (T_band[6] + T_band[7] + T_band[8]) / 3.0;
+		} else {
+			T_r = T_g = T_b = 0.0;      // star is below horizon
+		}
+
         float L = mag_to_luminance(mag[i], float(zero_point));
-        img[idx    ] += L * r;
-        img[idx + 1] += L * g;
-        img[idx + 2] += L * b;
+        img[idx    ] += L * r * T_r;
+        img[idx + 1] += L * g * T_g;
+        img[idx + 2] += L * b * T_b;
     }, ncores);
 
     // convert to OpenEXR RGBA array

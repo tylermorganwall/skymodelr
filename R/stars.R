@@ -26,13 +26,16 @@ makestars = function(
 	lon_deg = 0,
 	lat_deg = 0,
 	time_utc = as.POSIXct("2000-01-01 00:00:00", tz = "UTC"),
+	turbidity = 3.0,
+	ozone_du = 300.0,
+	altitude = 0.0,
 	color = TRUE,
 	ncores = parallel::detectCores()
 ) {
 	if (!inherits(time_utc, "POSIXct")) {
 		stop("time_utc must be POSIXct in UTC")
 	}
-	attr(time_utc, "tzone") <- "UTC"
+	attr(time_utc, "tzone") <- "UTC" # Here's the issue
 	jd = jd_utc(time_utc)
 
 	make_starfield_rcpp(
@@ -44,6 +47,9 @@ makestars = function(
 		lat_deg = lat_deg,
 		jd = jd,
 		use_rgb = color,
+		turbidity = turbidity,
+		ozone_du = ozone_du,
+		altitude = altitude,
 		ncores = ncores
 	)
 	invisible(NULL)

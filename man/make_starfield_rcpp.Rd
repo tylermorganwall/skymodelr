@@ -12,6 +12,9 @@ make_starfield_rcpp(
   lon_deg = 0,
   lat_deg = 0,
   jd = 2451545,
+  turbidity = 3,
+  ozone_du = 300,
+  altitude = 0,
   use_rgb = TRUE,
   ncores = 1L
 )
