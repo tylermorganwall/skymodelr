@@ -35,7 +35,7 @@ makestars = function(
 	if (!inherits(time_utc, "POSIXct")) {
 		stop("time_utc must be POSIXct in UTC")
 	}
-	attr(time_utc, "tzone") <- "UTC" # Here's the issue
+	attr(time_utc, "tzone") <- "UTC"
 	jd = jd_utc(time_utc)
 
 	make_starfield_rcpp(
