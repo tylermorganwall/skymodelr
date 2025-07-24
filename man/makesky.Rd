@@ -13,8 +13,8 @@ makesky(
   altitude = 0,
   resolution = 2048,
   numbercores = 1,
-  model = "hosek",
-  prg_dataset = "",
+  hosek = TRUE,
+  wide_spectrum = FALSE,
   visibility = 50,
   square_projection = FALSE
 )
@@ -24,7 +24,7 @@ makesky(
 
 \item{albedo}{Default `0.5`. 0–1 ground albedo.}
 
-\item{turbidity}{Default `3`. 1.7–10 atmospheric turbidity.}
+\item{turbidity}{Default `3`. 1.7–10 atmospheric turbidity. Only valid for Hosek model.}
 
 \item{elevation}{Default `10`. Solar elevation above the horizon (°).}
 
@@ -33,18 +33,18 @@ makesky(
 \item{altitude}{Default `0`. Altitude of the viewer in meters. Valid [0,15000]. Only valid for the
 Prague model.}
 
-\item{resolution}{Default `2048`. Linear resolution of the square map (≥ 1).}
+\item{resolution}{Default `2048`. Height of the image. Width is 2x this number.}
 
-\item{numbercores}{Default `1`. Threads for \code{RcppThread}.}
+\item{numbercores}{Default `1`. Number of threads to use in computation.}
 
-\item{model}{Default `"hosek"`. Use `"prague"` to enable the Prague 2021-22 spectral sky model.}
-
-\item{prg_dataset}{Default `""`. Full path to the Prague binary dataset (`*.dat`) when `model = "prague"`.}
+\item{hosek}{Default `TRUE`. Use `"prague"` to enable the Prague 2021-22 spectral sky model.}
 
 \item{visibility}{Default `50`. Meteorological range in kilometres for Prague model.}
 
 \item{square_projection}{Default `FALSE`. If \code{TRUE} use equal‑area square mapping,
 else latitude–longitude square mapping.}
+
+\item{prg_dataset}{Default `""`. Full path to the Prague binary dataset (`*.dat`) when `model = "prague"`.}
 }
 \value{
 Invisible `NULL`.  The EXR is written to `outfile`.
@@ -53,5 +53,7 @@ Invisible `NULL`.  The EXR is written to `outfile`.
 Write a Hosek–Wilkie sky dome to EXR
 }
 \examples{
-makesky("sky.exr", turbidity = 2.4, elevation = 6, numbercores = 1)
+#Generate a basic atmosphere with the Hosek model
+temp_exr = tempfile(fileext=".exr")
+makesky(temp_exr, turbidity = 3, elevation = 2, numbercores = 1)
 }

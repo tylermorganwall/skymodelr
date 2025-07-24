@@ -14,6 +14,8 @@ extern "C" {
 
 #include <Imath/ImathVec.h>
 #include <Imath/ImathFun.h>
+#include <Imath/ImathBox.h>
+
 #include <cmath>
 #include <vector>
 #include <string>
@@ -110,7 +112,7 @@ void makesky_rcpp(std::string  outfile,
 Vec3<float> sun_dir( std::cos(az_rad) * std::cos(elev_rad),   // +X (South)
                      std::sin(elev_rad),                     // +Y (Up)
                      std::sin(az_rad) * std::cos(elev_rad)); // +Z (West)
-  // Render loop (parallel over rows) 
+  // Render loop (parallel over rows)
   RcppThread::parallelFor(
     0u, size_t(nTheta),
     [&](size_t t) {

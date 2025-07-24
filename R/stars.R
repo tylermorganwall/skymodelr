@@ -9,18 +9,16 @@ jd_utc = function(time_utc) {
 #' Write a star‑field EXR aligned with `makesky()`
 #'
 #' @param outfile    `.exr` output path.
-#' @param stars      Tibble from `read_bsc5()`.  `NULL` ➜ packaged version.
 #' @param resolution Map half‑width (image is 2×`resolution` × `resolution`).
 #' @param zero_point Exposure scale (larger = brighter stars).
 #' @param lon_deg Observer longitude (east +)
 #' @param lat_deg Observer latitude (deg).
 #' @param time_utc   `POSIXct` UTC time stamp used to compute sidereal time.
-#' @param ncores     Threads for `RcppThread`.
+#' @param ncores     Number of threads to use in computation.
 #'
 #' @export
 makestars = function(
 	outfile = "stars.exr",
-	stars = NULL,
 	resolution = 2048,
 	zero_point = 1,
 	lon_deg = 0,

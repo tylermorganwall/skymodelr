@@ -1,21 +1,20 @@
 Package: skymodelr
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Generates 
 Version: 0.1.0
 Authors@R: c(
     person(
-      "Jane", "Doe",
-      email = "jane@example.com",
+      "Tyler", "Morgan-Wall",
+      email = "tylermw@gmail.com",
       role = c("aut", "cre")
     )
   )
 Description: More about what it does (maybe more than one line).
     Continuation lines should be indented.
-License: What license is it under?
+License: GPL-3
+Depends: R (>= 4.2)
 LinkingTo: Rcpp, RcppThread, libimath, libopenexr, libdeflate
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.3.2
 Config/build/compilation-database: true
-Depends: 
-    R (>= 3.5)

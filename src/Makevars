@@ -2,9 +2,9 @@
 CMAKE = /usr/local/Cellar/cmake/3.24.2/bin/cmake
 
 # Directories
-IMATH_DIR = /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/libimath
-DEFLATE_DIR = /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/libdeflate
-OPENEXR_DIR = /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/libopenexr
+IMATH_DIR = /Library/Frameworks/R.framework/Versions/4.5-arm64/Resources/library/libimath
+DEFLATE_DIR = /Library/Frameworks/R.framework/Versions/4.5-arm64/Resources/library/libdeflate
+OPENEXR_DIR = /Library/Frameworks/R.framework/Versions/4.5-arm64/Resources/library/libopenexr
 
 # Set include paths
 PKG_CPPFLAGS = -I$(INCLUDE_DIR) -I$(OPENEXR_DIR)/include/OpenEXR -I$(IMATH_DIR)/include/Imath -I$(DEFLATE_DIR)/include/Imath

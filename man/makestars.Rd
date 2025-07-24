@@ -6,20 +6,20 @@
 \usage{
 makestars(
   outfile = "stars.exr",
-  stars = NULL,
   resolution = 2048,
   zero_point = 1,
   lon_deg = 0,
   lat_deg = 0,
   time_utc = as.POSIXct("2000-01-01 00:00:00", tz = "UTC"),
+  turbidity = 3,
+  ozone_du = 300,
+  altitude = 0,
   color = TRUE,
   ncores = parallel::detectCores()
 )
 }
 \arguments{
 \item{outfile}{`.exr` output path.}
-
-\item{stars}{Tibble from `read_bsc5()`.  `NULL` ➜ packaged version.}
 
 \item{resolution}{Map half‑width (image is 2×`resolution` × `resolution`).}
 
@@ -31,7 +31,7 @@ makestars(
 
 \item{time_utc}{`POSIXct` UTC time stamp used to compute sidereal time.}
 
-\item{ncores}{Threads for `RcppThread`.}
+\item{ncores}{Number of threads to use in computation.}
 }
 \description{
 Write a star‑field EXR aligned with `makesky()`
