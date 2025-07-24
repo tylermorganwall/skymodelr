@@ -5,6 +5,10 @@ makesky_rcpp <- function(outfile, albedo = 0.5, turbidity = 3.0, elevation = 10.
     invisible(.Call(`_skymodelr_makesky_rcpp`, outfile, albedo, turbidity, elevation, azimuth_deg, resolution, numbercores, square_projection, model, prg_dataset, altitude, visibility))
 }
 
+calculate_raw_prague <- function(phi, theta, elevation, albedo, altitude, visibility, azimuth_deg = 90, numbercores = 1L, prg_dataset = "") {
+    .Call(`_skymodelr_calculate_raw_prague`, phi, theta, elevation, albedo, altitude, visibility, azimuth_deg, numbercores, prg_dataset)
+}
+
 #' Render a star-field equirectangular EXR
 #'
 #' @param outfile Output `.exr` path.

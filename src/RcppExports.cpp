@@ -32,6 +32,25 @@ BEGIN_RCPP
     return R_NilValue;
 END_RCPP
 }
+// calculate_raw_prague
+Rcpp::NumericMatrix calculate_raw_prague(Rcpp::NumericVector phi, Rcpp::NumericVector theta, Rcpp::NumericVector elevation, Rcpp::NumericVector albedo, Rcpp::NumericVector altitude, Rcpp::NumericVector visibility, double azimuth_deg, unsigned int numbercores, std::string prg_dataset);
+RcppExport SEXP _skymodelr_calculate_raw_prague(SEXP phiSEXP, SEXP thetaSEXP, SEXP elevationSEXP, SEXP albedoSEXP, SEXP altitudeSEXP, SEXP visibilitySEXP, SEXP azimuth_degSEXP, SEXP numbercoresSEXP, SEXP prg_datasetSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type phi(phiSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type theta(thetaSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type elevation(elevationSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type albedo(albedoSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type altitude(altitudeSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type visibility(visibilitySEXP);
+    Rcpp::traits::input_parameter< double >::type azimuth_deg(azimuth_degSEXP);
+    Rcpp::traits::input_parameter< unsigned int >::type numbercores(numbercoresSEXP);
+    Rcpp::traits::input_parameter< std::string >::type prg_dataset(prg_datasetSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_raw_prague(phi, theta, elevation, albedo, altitude, visibility, azimuth_deg, numbercores, prg_dataset));
+    return rcpp_result_gen;
+END_RCPP
+}
 // make_starfield_rcpp
 void make_starfield_rcpp(std::string outfile, Rcpp::DataFrame stars, unsigned int resolution, double zero_point, double lon_deg, double lat_deg, double jd, double turbidity, double ozone_du, double altitude, bool use_rgb, unsigned int ncores);
 RcppExport SEXP _skymodelr_make_starfield_rcpp(SEXP outfileSEXP, SEXP starsSEXP, SEXP resolutionSEXP, SEXP zero_pointSEXP, SEXP lon_degSEXP, SEXP lat_degSEXP, SEXP jdSEXP, SEXP turbiditySEXP, SEXP ozone_duSEXP, SEXP altitudeSEXP, SEXP use_rgbSEXP, SEXP ncoresSEXP) {
@@ -56,6 +75,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_skymodelr_makesky_rcpp", (DL_FUNC) &_skymodelr_makesky_rcpp, 12},
+    {"_skymodelr_calculate_raw_prague", (DL_FUNC) &_skymodelr_calculate_raw_prague, 9},
     {"_skymodelr_make_starfield_rcpp", (DL_FUNC) &_skymodelr_make_starfield_rcpp, 12},
     {NULL, NULL, 0}
 };

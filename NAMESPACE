@@ -3,5 +3,6 @@
 export(download_sky_data)
 export(generate_sky)
 export(generate_stars)
+export(raw_prague)
 importFrom(Rcpp,evalCpp)
 useDynLib(skymodelr, .registration = TRUE)
