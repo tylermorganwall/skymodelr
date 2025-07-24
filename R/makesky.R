@@ -20,8 +20,8 @@
 #' @examples
 #' #Generate a basic atmosphere with the Hosek model
 #' temp_exr = tempfile(fileext=".exr")
-#' makesky(temp_exr, turbidity = 3, elevation = 2, numbercores = 1)
-makesky = function(
+#' generate_sky(temp_exr, turbidity = 3, elevation = 2, numbercores = 1)
+generate_sky = function(
   outfile,
   albedo = 0.5,
   turbidity = 3,
