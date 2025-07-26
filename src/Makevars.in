@@ -1,0 +1,7 @@
+# Set include paths
+PKG_CPPFLAGS = -I@OPENEXR_INCLUDE_DIR@ -I@IMATH_INCLUDE_DIR@ -I@DEFLATE_INCLUDE_DIR@
+
+# Static libraries we need to link against
+# Note that we're using the version suffix pattern that OpenEXR actually creates
+PKG_LIBS = -L@OPENEXR_LIB_ARCH@  -L@IMATH_LIB_ARCH@  -lImath-3_2 -lOpenEXRUtil-3_4 -lOpenEXR-3_4 -lOpenEXRCore-3_4 -lIlmThread-3_4 -lIex-3_4 -L@DEFLATE_LIB_ARCH@ -ldeflate
+

@@ -140,6 +140,14 @@ calculate_sky_values = function(
 ) {
   sea_level = all(altitude == 0)
   filesize = ""
+  df_values = as.list(data.frame(
+    phi = phi,
+    theta = theta,
+    altitude = altitude,
+    elevation = elevation,
+    visibility = visibility,
+    albedo = albedo
+  ))
   if (sea_level & !wide_spectrum) {
     filesize = "107MB"
   } else if (sea_level & wide_spectrum) {
@@ -186,13 +194,13 @@ calculate_sky_values = function(
     stop("No coefficient file downloaded for this set of inputs.")
   }
   return(calculate_raw_prague(
-    phi,
-    theta,
-    elevation,
-    albedo,
-    altitude,
-    visibility,
-    azimuth,
+    df_values$phi,
+    df_values$theta,
+    df_values$elevation,
+    df_values$albedo,
+    df_values$altitude,
+    df_values$visibility,
+    azimuth[1],
     numbercores,
     coef_file
   ))
