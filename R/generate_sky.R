@@ -126,7 +126,7 @@ generate_sky = function(
 #' #Generate a basic atmosphere with the Hosek model
 #' temp_exr = tempfile(fileext=".exr")
 #' generate_sky(temp_exr, turbidity = 3, elevation = 2, numbercores = 1)
-raw_prague = function(
+calculate_sky_values = function(
   phi,
   theta,
   altitude = 0,
