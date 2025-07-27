@@ -91,7 +91,7 @@ void make_starfield_rcpp(std::string     outfile,
 		double ha = lst_rad - ra[i];
 
 		// 2. equatorial unit vector (right-handed X = south)
-		double cos_dec = std::cos(dec[i]);
+		// double cos_dec = std::cos(dec[i]);
 		// double x_eq =  cos_dec * std::cos(ha);
 		// double y_eq =  cos_dec * std::sin(ha);
 		// double z_eq =  std::sin(dec[i]);
