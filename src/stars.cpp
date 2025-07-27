@@ -84,7 +84,7 @@ void make_starfield_rcpp(std::string     outfile,
     // parallelise over stars – cheap, embarrassingly parallel
     RcppThread::parallelFor(0u, (unsigned)N, [&](unsigned i)
     {
-        // equirectangular: phi = RA in [0,2π), theta = π/2 - Dec  in [0,π]
+        // equirectangular: phi = RA in [0, 2*M_PI)
         // double phi   = std::fmod(ra[i] + 2*M_PI, 2*M_PI);
         // double theta = M_PI_2 - dec[i];
 		// 1. hour angle (east +)
@@ -123,9 +123,9 @@ void make_starfield_rcpp(std::string     outfile,
 		// double z_h =  x_eq * cos_lat + z_eq * sin_lat;   // points west
 
 		// 4. map to lat/long image
-		double theta = std::acos(std::clamp(y_h, -1.0, 1.0));      // 0..π
-		double phi   = std::atan2(-z_h, x_h);                      // -π..π
-		if (phi < 0.0) phi += 2.0 * M_PI;                          // 0..2π
+		double theta = std::acos(std::clamp(y_h, -1.0, 1.0));      // 0..M_PI
+		double phi   = std::atan2(-z_h, x_h);                      // -M_PI..M_PI
+		if (phi < 0.0) phi += 2.0 * M_PI;                          // 0..2 * M_PI
 
         // ignore stars that fall outside north-hemisphere canvas if user
         // feeds non-northern declinations and keeps theta∈[0,π]
@@ -167,7 +167,7 @@ void make_starfield_rcpp(std::string     outfile,
 			double rho = std::exp(-altitude / 8000.0);          // ρ/ρ0  (simple barometric)
 
 			// coefficient scalers
-			double kR = rho;                                    // Rayleigh ∝ air density
+			double kR = rho;                                    // Rayleigh air density
 			double kM = rho * (turbidity - 1.0);                // Mie 0 at T=1
 			double kO = ozone_du / 300.0;                       // 1.0 at 300 DU
 
