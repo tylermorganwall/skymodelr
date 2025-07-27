@@ -19,8 +19,8 @@ using Imf::RgbaOutputFile;
 using Imath::Vec3;
 
 static inline int clamp_int(int x, int lo, int hi)
-{ 
-	return x < lo ? lo : (x > hi ? hi : x); 
+{
+	return x < lo ? lo : (x > hi ? hi : x);
 }
 
 static inline double jd_to_gmst(double jd)
@@ -92,17 +92,17 @@ void make_starfield_rcpp(std::string     outfile,
 
 		// 2. equatorial unit vector (right-handed X = south)
 		double cos_dec = std::cos(dec[i]);
-		double x_eq =  cos_dec * std::cos(ha);
-		double y_eq =  cos_dec * std::sin(ha);
-		double z_eq =  std::sin(dec[i]);
-		
+		// double x_eq =  cos_dec * std::cos(ha);
+		// double y_eq =  cos_dec * std::sin(ha);
+		// double z_eq =  std::sin(dec[i]);
+
 		double sin_alt = std::sin(dec[i]) * sin_lat +
                  std::cos(dec[i]) * cos_lat * std::cos(ha);
 		double alt_rad     = std::asin( std::clamp(sin_alt, -1.0, 1.0) );
 		double cos_alt = std::cos(alt_rad);
 
 		if(cos_alt < 1e-6) cos_alt = 1e-6;
-		
+
 		double sin_az  =  std::cos(dec[i]) * std::sin(ha) / cos_alt;
 		double cos_az  = (std::sin(dec[i]) * cos_lat -
 						std::cos(dec[i]) * std::cos(ha) * sin_lat) / cos_alt;
@@ -158,7 +158,7 @@ void make_starfield_rcpp(std::string     outfile,
 			// ---------- airmass m(theta) -----------------------------------------
 			double secz = 1.0 / std::max(1e-6, std::cos(theta));
 			double m    = secz < 12.0
-						? secz - 0.001816*pow(secz-1,1) 
+						? secz - 0.001816*pow(secz-1,1)
 						 	   - 0.002875*pow(secz-1,2)
 							   - 0.000808*pow(secz-1,3)
 						: secz;
