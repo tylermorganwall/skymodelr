@@ -6,3 +6,4 @@
 ^.+\.exr$
 ^.+\.mp4$
 ^.+\.png$
+^README\.Rmd$

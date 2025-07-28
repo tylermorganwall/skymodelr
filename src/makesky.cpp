@@ -170,6 +170,18 @@ void makesky_rcpp(std::string  outfile,
     px[p] = Rgba(img[3*p], img[3*p+1], img[3*p+2]);
   }
 
+  try {
+    RgbaOutputFile out(outfile.c_str(), width, height, WRITE_RGB);
+    out.setFrameBuffer(px.data(), 1, width);
+    out.writePixels(height);
+  } catch (const std::exception& e) {
+    if (model == "hosek")
+      for (int i = 0; i < N_LAMBDA; ++i)
+        arhosekskymodelstate_free(hosek[i]);
+    Rcpp::stop("OpenEXR write failed: %s", e.what());
+  }
+
+
   if (model == "hosek") {
     for (int i = 0; i < N_LAMBDA; ++i) {
       arhosekskymodelstate_free(hosek[i]);
