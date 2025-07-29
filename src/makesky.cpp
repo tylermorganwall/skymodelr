@@ -39,13 +39,13 @@ void makesky_rcpp(std::string  outfile,
                   double       albedo            = 0.5,
                   double       turbidity         = 3.0,
                   double       elevation         = 10.0,
-				          double       azimuth_deg       = 90,
+				  double       azimuth_deg       = 90,
                   unsigned int resolution        = 2048,
                   unsigned int numbercores       = 1,
                   bool         square_projection = false,
                   std::string  model             = "hosek",  // hosek | prague
                   std::string  prg_dataset       = "",
-				          double       altitude          = 0.0,
+				  double       altitude          = 0.0,
                   double       visibility        = 50.0)     // Prague only (km)
 {
   if (albedo < 0.0 || albedo > 1.0) {
@@ -176,8 +176,9 @@ void makesky_rcpp(std::string  outfile,
     out.writePixels(height);
   } catch (const std::exception& e) {
     if (model == "hosek")
-      for (int i = 0; i < N_LAMBDA; ++i)
+      for (int i = 0; i < N_LAMBDA; ++i) {
         arhosekskymodelstate_free(hosek[i]);
+	  }
     Rcpp::stop("OpenEXR write failed: %s", e.what());
   }
 

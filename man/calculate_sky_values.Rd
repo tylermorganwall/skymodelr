@@ -2,7 +2,7 @@
 % Please edit documentation in R/generate_sky.R
 \name{calculate_sky_values}
 \alias{calculate_sky_values}
-\title{Write a Hosek–Wilkie sky dome to EXR}
+\title{Sample a direction from the Prague model.}
 \usage{
 calculate_sky_values(
   phi,
@@ -12,43 +12,34 @@ calculate_sky_values(
   visibility = 50,
   albedo = 0.5,
   azimuth = 90,
-  resolution = 2048,
   numbercores = 1,
   wide_spectrum = FALSE
 )
 }
 \arguments{
-\item{altitude}{Default `0`. Altitude of the viewer in meters. Valid [0,15000]. Only valid for the
-Prague model.}
+\item{phi}{Horizontal angle of the sample, degrees. Vectorized. Range [0, 360].}
 
-\item{elevation}{Default `10`. Solar elevation above the horizon (°).}
+\item{theta}{Vertical angle of the sample, degrees. Vectorized. Range [-90, 90].}
 
-\item{visibility}{Default `50`. Meteorological range in kilometres for Prague model.}
+\item{altitude}{Default `0`, vectorized. Altitude of the viewer in meters. Range [0, 15000].}
 
-\item{albedo}{Default `0.5`. 0–1 ground albedo.}
+\item{elevation}{Default `10`, vectorized. Solar elevation angle above/below the horizon (°). Range [-4.2, 90].}
 
-\item{azimuth}{Default `90`. Solar azimuth (°). Defaults South.}
+\item{visibility}{Default `50`, vectorized. Range [20, 131.8]. Meteorological range in kilometers for Prague model.}
 
-\item{resolution}{Default `2048`. Height of the image. Width is 2x this number.}
+\item{albedo}{Default `0.5`, vectorized. Range [0, 1]. Ground albedo.}
+
+\item{azimuth}{Default `90`, single value. Solar azimuth (°). Defaults South.}
 
 \item{numbercores}{Default `1`. Number of threads to use in computation.}
 
-\item{outfile}{Default `""`. Path to `.exr` file.}
-
-\item{turbidity}{Default `3`. 1.7–10 atmospheric turbidity. Only valid for Hosek model.}
-
-\item{square_projection}{Default `FALSE`. If \code{TRUE} use equal‑area square mapping,
-else latitude–longitude square mapping.}
-
-\item{hosek}{Default `TRUE`. Use `"prague"` to enable the Prague 2021-22 spectral sky model.}
-
-\item{prg_dataset}{Default `""`. Full path to the Prague binary dataset (`*.dat`) when `model = "prague"`.}
+\item{wide_spectrum}{Default `FALSE`. Whether to use the wide‑spectrum (55‑channel, polarised) coefficients.}
 }
 \value{
-Invisible `NULL`.  The EXR is written to `outfile`.
+3 column RGB matrix.
 }
 \description{
-Write a Hosek–Wilkie sky dome to EXR
+Sample a direction from the Prague model.
 }
 \examples{
 #Generate a basic atmosphere with the Hosek model
