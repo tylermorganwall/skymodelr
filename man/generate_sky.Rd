@@ -43,8 +43,6 @@ Prague model.}
 
 \item{square_projection}{Default `FALSE`. If \code{TRUE} use equal‑area square mapping,
 else latitude–longitude square mapping.}
-
-\item{prg_dataset}{Default `""`. Full path to the Prague binary dataset (`*.dat`) when `model = "prague"`.}
 }
 \value{
 Invisible `NULL`.  The EXR is written to `outfile`.
