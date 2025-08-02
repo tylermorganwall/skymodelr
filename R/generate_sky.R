@@ -168,13 +168,16 @@ generate_sky_latlong = function(
   hosek = TRUE,
   wide_spectrum = FALSE,
   visibility = 50,
-  square_projection = FALSE
+  square_projection = FALSE,
+  stars = FALSE,
+  ...
 ) {
+  tmp_sky = tempfile(fileext = ".exr")
   sun_altitude_azimuth = suncalc::getSunlightPosition(datetime, lat, lon)
   elevation = sun_altitude_azimuth$altitude * 180 / pi
   azimuth = 90 + sun_altitude_azimuth$azimuth * 180 / pi
   generate_sky(
-    outfile = outfile,
+    outfile = tmp_sky,
     albedo = albedo,
     turbidity = turbidity,
     altitude = altitude,
@@ -187,6 +190,25 @@ generate_sky_latlong = function(
     visibility = visibility,
     square_projection = square_projection
   )
+  if (stars) {
+    tmp_stars = tempfile(fileext = ".exr")
+    generate_stars(
+      outfile = tmp_stars,
+      resolution = resolution,
+      lon_deg = lat,
+      lat_deg = lon,
+      time_utc = as.POSIXct(datetime),
+      turbidity = turbidity,
+      altitude = altitude,
+      numbercores = numbercores,
+      ...
+    )
+    sky_exr = rayimage::ray_read_image(tmp_sky)
+    stars_exr = rayimage::ray_read_image(tmp_stars)
+    rayimage::ray_write_image(sky_exr + stars_exr, filename = outfile)
+  } else {
+    file.copy(tmp_sky, outfile)
+  }
 }
 
 #' Sample a direction from the Prague model.

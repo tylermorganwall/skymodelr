@@ -15,7 +15,7 @@ generate_stars(
   ozone_du = 300,
   altitude = 0,
   color = TRUE,
-  ncores = parallel::detectCores()
+  numbercores = 1
 )
 }
 \arguments{
@@ -31,7 +31,7 @@ generate_stars(
 
 \item{time_utc}{`POSIXct` UTC time stamp used to compute sidereal time.}
 
-\item{ncores}{Number of threads to use in computation.}
+\item{numbercores}{Number of threads to use in computation.}
 }
 \description{
 Write a star‑field EXR aligned with `generate_sky()`

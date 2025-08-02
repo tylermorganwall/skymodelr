@@ -52,8 +52,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // make_starfield_rcpp
-void make_starfield_rcpp(std::string outfile, Rcpp::DataFrame stars, unsigned int resolution, double zero_point, double lon_deg, double lat_deg, double jd, double turbidity, double ozone_du, double altitude, bool use_rgb, unsigned int ncores);
-RcppExport SEXP _skymodelr_make_starfield_rcpp(SEXP outfileSEXP, SEXP starsSEXP, SEXP resolutionSEXP, SEXP zero_pointSEXP, SEXP lon_degSEXP, SEXP lat_degSEXP, SEXP jdSEXP, SEXP turbiditySEXP, SEXP ozone_duSEXP, SEXP altitudeSEXP, SEXP use_rgbSEXP, SEXP ncoresSEXP) {
+void make_starfield_rcpp(std::string outfile, Rcpp::DataFrame stars, unsigned int resolution, double zero_point, double lon_deg, double lat_deg, double jd, double turbidity, double ozone_du, double altitude, bool use_rgb, unsigned int numbercores);
+RcppExport SEXP _skymodelr_make_starfield_rcpp(SEXP outfileSEXP, SEXP starsSEXP, SEXP resolutionSEXP, SEXP zero_pointSEXP, SEXP lon_degSEXP, SEXP lat_degSEXP, SEXP jdSEXP, SEXP turbiditySEXP, SEXP ozone_duSEXP, SEXP altitudeSEXP, SEXP use_rgbSEXP, SEXP numbercoresSEXP) {
 BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< std::string >::type outfile(outfileSEXP);
@@ -67,8 +67,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type ozone_du(ozone_duSEXP);
     Rcpp::traits::input_parameter< double >::type altitude(altitudeSEXP);
     Rcpp::traits::input_parameter< bool >::type use_rgb(use_rgbSEXP);
-    Rcpp::traits::input_parameter< unsigned int >::type ncores(ncoresSEXP);
-    make_starfield_rcpp(outfile, stars, resolution, zero_point, lon_deg, lat_deg, jd, turbidity, ozone_du, altitude, use_rgb, ncores);
+    Rcpp::traits::input_parameter< unsigned int >::type numbercores(numbercoresSEXP);
+    make_starfield_rcpp(outfile, stars, resolution, zero_point, lon_deg, lat_deg, jd, turbidity, ozone_du, altitude, use_rgb, numbercores);
     return R_NilValue;
 END_RCPP
 }

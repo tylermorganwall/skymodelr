@@ -14,7 +14,7 @@ jd_utc = function(time_utc) {
 #' @param lon_deg Observer longitude (east +)
 #' @param lat_deg Observer latitude (deg).
 #' @param time_utc   `POSIXct` UTC time stamp used to compute sidereal time.
-#' @param ncores     Number of threads to use in computation.
+#' @param numbercores     Number of threads to use in computation.
 #'
 #' @export
 generate_stars = function(
@@ -28,7 +28,7 @@ generate_stars = function(
   ozone_du = 300.0,
   altitude = 0.0,
   color = TRUE,
-  ncores = parallel::detectCores()
+  numbercores = 1
 ) {
   if (!inherits(time_utc, "POSIXct")) {
     stop("time_utc must be POSIXct in UTC")
@@ -48,7 +48,7 @@ generate_stars = function(
     turbidity = turbidity,
     ozone_du = ozone_du,
     altitude = altitude,
-    ncores = ncores
+    numbercores = numbercores
   )
   invisible(NULL)
 }

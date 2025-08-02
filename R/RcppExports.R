@@ -17,8 +17,8 @@ calculate_raw_prague <- function(phi, theta, elevation, albedo, altitude, visibi
 #' @param resolution Horizontal *half-resolution*; final size is
 #'        2 × resolution × resolution.
 #' @param zero_point Default `1`. Exposure scaling (see docs).
-#' @param ncores Number of CPU threads.
-make_starfield_rcpp <- function(outfile, stars, resolution = 2048L, zero_point = 1.0, lon_deg = 0.0, lat_deg = 0.0, jd = 2451545.0, turbidity = 3.0, ozone_du = 300.0, altitude = 0.0, use_rgb = TRUE, ncores = 1L) {
-    invisible(.Call(`_skymodelr_make_starfield_rcpp`, outfile, stars, resolution, zero_point, lon_deg, lat_deg, jd, turbidity, ozone_du, altitude, use_rgb, ncores))
+#' @param numbercores Number of CPU threads.
+make_starfield_rcpp <- function(outfile, stars, resolution = 2048L, zero_point = 1.0, lon_deg = 0.0, lat_deg = 0.0, jd = 2451545.0, turbidity = 3.0, ozone_du = 300.0, altitude = 0.0, use_rgb = TRUE, numbercores = 1L) {
+    invisible(.Call(`_skymodelr_make_starfield_rcpp`, outfile, stars, resolution, zero_point, lon_deg, lat_deg, jd, turbidity, ozone_du, altitude, use_rgb, numbercores))
 }
 

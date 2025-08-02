@@ -17,7 +17,9 @@ generate_sky_latlong(
   hosek = TRUE,
   wide_spectrum = FALSE,
   visibility = 50,
-  square_projection = FALSE
+  square_projection = FALSE,
+  stars = FALSE,
+  ...
 )
 }
 \arguments{

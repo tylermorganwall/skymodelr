@@ -16,7 +16,7 @@ make_starfield_rcpp(
   ozone_du = 300,
   altitude = 0,
   use_rgb = TRUE,
-  ncores = 1L
+  numbercores = 1L
 )
 }
 \arguments{
@@ -30,7 +30,7 @@ make_starfield_rcpp(
 
 \item{zero_point}{Default `1`. Exposure scaling (see docs).}
 
-\item{ncores}{Number of CPU threads.}
+\item{numbercores}{Number of CPU threads.}
 }
 \description{
 Render a star-field equirectangular EXR
