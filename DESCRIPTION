@@ -1,6 +1,6 @@
 Package: skymodelr
 Type: Package
-Title: Generates 
+Title: Generates and Samples Realistic Terrestrial Atmospheres
 Version: 0.1.0
 Authors@R: c(
     person(
@@ -9,8 +9,14 @@ Authors@R: c(
       role = c("aut", "cre")
     )
   )
-Description: More about what it does (maybe more than one line).
-    Continuation lines should be indented.
+Description: Generates physically based sky environment maps and radiance samples using the
+    spectral Hosek–Wilkie and Prague atmosphere models. Functions write
+    high-dynamic-range OpenEXR domes in latitude–longitude or equal-area square
+    projections, compute per-direction RGB or 55-channel values, and optionally
+    composite location-accurate star fields. Features include automatic Sun positioning from date,
+    time and location, support for sea-level and high-altitude observers, wide-
+    spectrum coefficients, and multithreaded C++/Rcpp acceleration for fast,
+    high-resolution output.
 License: GPL-3
 Depends: R (>= 4.2)
 LinkingTo: Rcpp, RcppThread, libimath, libopenexr, libdeflate

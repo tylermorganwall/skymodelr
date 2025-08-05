@@ -39,14 +39,15 @@ void makesky_rcpp(std::string  outfile,
                   double       albedo            = 0.5,
                   double       turbidity         = 3.0,
                   double       elevation         = 10.0,
-				  double       azimuth_deg       = 90,
+				          double       azimuth_deg       = 90,
                   unsigned int resolution        = 2048,
                   unsigned int numbercores       = 1,
                   bool         square_projection = false,
                   std::string  model             = "hosek",  // hosek | prague
                   std::string  prg_dataset       = "",
-				  double       altitude          = 0.0,
-                  double       visibility        = 50.0)     // Prague only (km)
+				          double       altitude          = 0.0,
+                  double       visibility        = 50.0, // Prague only (km)
+                  bool         render_solar_disk = true)
 {
   if (albedo < 0.0 || albedo > 1.0) {
     Rcpp::stop("albedo must be in [0,1]");
@@ -151,9 +152,14 @@ void makesky_rcpp(std::string  outfile,
             /*visibility*/  visibility,
             /*albedo   */   albedo);
             for (int c = 0; c < N_LAMBDA; ++c) {
-              double L = prague_model.skyRadiance(P, lambda_nm[c]) +
-                prague_model.sunRadiance(P, lambda_nm[c]);
-              img[3 * (t * nPhi + p) + c / 3] += static_cast<float>(L / 3.0);
+              if(render_solar_disk) {
+                double L = prague_model.skyRadiance(P, lambda_nm[c]) +
+                  prague_model.sunRadiance(P, lambda_nm[c]);
+                img[3 * (t * nPhi + p) + c / 3] += static_cast<float>(L / 3.0);
+              } else {
+                double L = prague_model.skyRadiance(P, lambda_nm[c]);
+                img[3 * (t * nPhi + p) + c / 3] += static_cast<float>(L / 3.0);
+              }
             }
         }
       }
@@ -199,7 +205,8 @@ Rcpp::NumericMatrix calculate_raw_prague(Rcpp::NumericVector phi,
                            Rcpp::NumericVector visibility,
                            double       azimuth_deg       = 90,
                             unsigned int numbercores       = 1,
-                            std::string  prg_dataset       = "")     // Prague only (km)
+                            std::string  prg_dataset       = "",
+                            bool render_solar_disk = true)
 {
   float az_rad = static_cast<float>(azimuth_deg * M_PI / 180.0);
 
@@ -257,9 +264,14 @@ Rcpp::NumericMatrix calculate_raw_prague(Rcpp::NumericVector phi,
         /*visibility*/  visibility[t],
         /*albedo   */   albedo[t]);
         for (int c = 0; c < N_LAMBDA; ++c) {
-          double L = prague_model.skyRadiance(P, lambda_nm[c]) +
-            prague_model.sunRadiance(P, lambda_nm[c]);
-          img[3 * t + c / 3] += static_cast<float>(L / 3.0);
+          if(render_solar_disk) {
+            double L = prague_model.skyRadiance(P, lambda_nm[c]) +
+              prague_model.sunRadiance(P, lambda_nm[c]);
+            img[3 * t + c / 3] += static_cast<float>(L / 3.0);
+          } else {
+            double L = prague_model.skyRadiance(P, lambda_nm[c]);
+            img[3 * t + c / 3] += static_cast<float>(L / 3.0);
+          }
         }
     },
     numbercores);

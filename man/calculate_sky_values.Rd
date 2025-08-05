@@ -23,13 +23,13 @@ calculate_sky_values(
 
 \item{altitude}{Default `0`, vectorized. Altitude of the viewer in meters. Range [0, 15000].}
 
-\item{elevation}{Default `10`, vectorized. Solar elevation angle above/below the horizon (°). Range [-4.2, 90].}
+\item{elevation}{Default `10`, vectorized. Solar elevation angle above/below the horizon (degrees). Range [-4.2, 90].}
 
 \item{visibility}{Default `50`, vectorized. Range [20, 131.8]. Meteorological range in kilometers for Prague model.}
 
 \item{albedo}{Default `0.5`, vectorized. Range [0, 1]. Ground albedo.}
 
-\item{azimuth}{Default `90`, single value. Solar azimuth (°). Defaults South.}
+\item{azimuth}{Default `90`, single value. Solar azimuth (degrees). Defaults South.}
 
 \item{numbercores}{Default `1`. Number of threads to use in computation.}
 

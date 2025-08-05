@@ -26,9 +26,9 @@ generate_sky(
 
 \item{turbidity}{Default `3`. 1.7–10 atmospheric turbidity. Only valid for Hosek model.}
 
-\item{elevation}{Default `10`. Solar elevation above the horizon (°).}
+\item{elevation}{Default `10`. Solar elevation above the horizon (degrees).}
 
-\item{azimuth}{Default `90`. Solar azimuth (°). Defaults South.}
+\item{azimuth}{Default `90`. Solar azimuth (degrees). Defaults South.}
 
 \item{altitude}{Default `0`. Altitude of the viewer in meters. Valid [0,15000]. Only valid for the
 Prague model.}

@@ -33,7 +33,7 @@ generate_stars = function(
   if (!inherits(time_utc, "POSIXct")) {
     stop("time_utc must be POSIXct in UTC")
   }
-  attr(time_utc, "tzone") <- "UTC"
+  attr(time_utc, "tzone") = "UTC"
   jd = jd_utc(time_utc)
 
   make_starfield_rcpp(

@@ -3,8 +3,8 @@
 #' @param outfile            Default `""`. Path to `.exr` file.
 #' @param albedo             Default `0.5`. 0–1 ground albedo.
 #' @param turbidity          Default `3`. 1.7–10 atmospheric turbidity. Only valid for Hosek model.
-#' @param elevation          Default `10`. Solar elevation above the horizon (°).
-#' @param azimuth            Default `90`. Solar azimuth (°). Defaults South.
+#' @param elevation          Default `10`. Solar elevation above the horizon (degrees).
+#' @param azimuth            Default `90`. Solar azimuth (degrees). Defaults South.
 #' @param altitude 	         Default `0`. Altitude of the viewer in meters. Valid [0,15000]. Only valid for the
 #' Prague model.
 #' @param resolution         Default `2048`. Height of the image. Width is 2x this number.
@@ -85,6 +85,30 @@ generate_sky = function(
   } else {
     model = "hosek"
   }
+  #If sun below valid region, write black image
+  if (model == "hosek") {
+    if (elevation < 0.0) {
+      message(
+        "Drawing black image as Hosek model does not produce valid output for elevation < 0."
+      )
+      black_sky = array(0, dim = c(resolution, resolution * 2, 4))
+      black_sky[,, 4] = 1
+      rayimage::ray_write_image(black_sky, outfile)
+      return(invisible(NULL))
+    }
+  } else {
+    if (elevation < -4.2) {
+      message(
+        "Drawing black image as Prague model does not produce valid output for elevation < -4.2."
+      )
+
+      black_sky = array(0, dim = c(resolution, resolution * 2, 4))
+      black_sky[,, 4] = 1
+      rayimage::ray_write_image(black_sky, outfile)
+      return(invisible(NULL))
+    }
+  }
+
   makesky_rcpp(
     outfile,
     albedo,
@@ -99,61 +123,68 @@ generate_sky = function(
     altitude,
     model = model
   )
-  invisible(NULL)
+  return(invisible(NULL))
 }
 
-#' Generate a location‑ and time‑specific sky dome
+#' Generate a location- and time-specific sky dome (optionally with stars)
 #'
-#' Convenience wrapper around [generate_sky()] that first determines the Sun’s
-#' apparent position for the supplied date‑time and geographic coordinates
-#' (using **suncalc**), then renders the corresponding Hosek–Wilkie or Prague
-#' spectral sky model to an OpenEXR file.  Call this when you would rather
-#' think in *where* and *when* than in raw solar angles.
+#' Convenience wrapper around [generate_sky()] that:
+#' 1. Computes the Sun’s apparent position for `datetime`, `lat`, and `lon`
+#'    (via **suncalc**).
+#' 2. Renders the corresponding sky model.
+#' 3. Optionally overlays a star field using [generate_stars()].
+#'
+#' A “black-sky” optimisation is applied when *all* of the following hold:
+#' * Sun elevation < 0 degrees (−4.2 degrees for Prague model), and
+#' * `stars = TRUE`.
+#'
+#' In that case the sky contribution is effectively zero, so only the star
+#' field is written.
 #'
 #' @param outfile            Default `""`. Path to the `.exr` file to write.
-#' @param datetime           Default `"2025-07-29 18:00:00"`. POSIX‑compatible
-#'   date‑time string (e.g. YYYY-MM-DD HH:mm::ss) or [POSIXct] object.  If the string lacks a time‑zone
-#'   suffix it is interpreted in the system time‑zone.
-#' @param lat                Observer latitude in decimal
-#'   degrees; positive north of the equator.
-#' @param lon                Observer longitude in decimal
-#'   degrees; positive east of Greenwich, negative west.
-#' @param albedo             Default `0.5`. Ground albedo fraction, range [0, 1].
+#' @param datetime           Default `"2025-07-29 18:00:00"`. POSIX-compatible
+#'   date-time; if missing a time-zone it is assumed to be local.
+#' @param lat                Default `38.9072`. Observer latitude (degrees N).
+#' @param lon                Default `-77.0369`. Observer longitude (degrees E; west < 0).
+#' @param albedo             Default `0.5`. Ground albedo, range [0, 1].
 #' @param turbidity          Default `3`. Atmospheric turbidity, range
-#'   [1.7, 10].  Hosek model only.
-#' @param altitude           Default `0`. Observer altitude in metres, range
-#'   [0, 15000].  Prague model only.
-#' @param resolution         Default `2048`. Height of the output image in
-#'   pixels; width is always twice this value.
-#' @param numbercores        Default `1`. Number of CPU threads to use.
-#' @param hosek              Default `TRUE`. Set to `FALSE` to use the Prague
-#'   2021‑22 spectral sky model.
-#' @param wide_spectrum      Default `FALSE`. Use the 55‑channel, polarised
-#'   Prague coefficients.  Ignored for Hosek.
-#' @param visibility         Default `50`. Meteorological range in kilometres;
-#'   relevant only for the Prague model.
-#' @param square_projection  Default `FALSE`. If `TRUE`, write an equal‑area
-#'   square projection; otherwise write a latitude–longitude (equirectangular)
-#'   projection.
+#'   [1.7, 10] (*Hosek only*).
+#' @param altitude           Default `0`. Observer altitude (m), range
+#'   [0, 15000] (*Prague only*).
+#' @param resolution         Default `2048`. Image height in pixels (width = 2 × height).
+#' @param numbercores        Default `1`. CPU threads to use.
+#' @param hosek              Default `TRUE`. `FALSE` selects the Prague model.
+#' @param wide_spectrum      Default `FALSE`. 55-channel Prague coefficients (altitude = 0 m only).
+#' @param visibility         Default `50`. Meteorological range (km); *Prague only*.
+#' @param square_projection  Default `FALSE`. `TRUE` results in an equal-area square mapping.
+#' @param stars              Default `FALSE`. If `TRUE`, composite a star field
+#'   using [generate_stars()].  Automatically falls back to a pure star render
+#'   when the black-sky condition is met (see *Details*).
+#' @param ...                Additional arguments passed to [generate_stars()]
 #'
-#' @details The Sun’s altitude (degrees above the horizon) and azimuth (degrees clockwise
-#'   from east, such that 90° = south) are calculated internally from
-#'   `datetime`, `lat`, and `lon`.  This keeps the high‑level interface clean
-#'   while delegating heavy lifting to [generate_sky()].
+#' @details
+#' *Solar angles* — altitude (degrees above the horizon) and azimuth (degrees clockwise from
+#' east, so 90 degrees = south) — are derived internally; you never have to supply
+#' them directly.
+#'
+#' *Black-sky rule* — With the Prague model the sky radiance is defined only
+#' down to −4.2 degrees, and with the Hosek model it is defined only about 0 degrees.
+#' Below that the function skips the sky render and writes **only stars** when `stars = TRUE`.
 #'
 #' @return Invisible `NULL`; the EXR file is created at `outfile`.
 #' @export
 #'
 #' @examples
-#' # Render the evening sky over Washington, DC on 30 July 2025
+#' # Evening twilight with stars over Washington, DC
 #' temp_exr = tempfile(fileext = ".exr")
 #' generate_sky_latlong(
-#'   outfile      = temp_exr,
-#'   datetime     = "2025-07-30 20:20:00",
-#'   lat          = 38.9072,
-#'   lon          = -77.0369,
-#'   turbidity    = 3,
-#'   numbercores  = 2
+#'   outfile     = temp_exr,
+#'   datetime    = "2025-07-30 20:20:00",
+#'   lat         = 38.9072,
+#'   lon         = -77.0369,
+#'   turbidity   = 3,
+#'   stars       = TRUE,
+#'   numbercores = 2
 #' )
 generate_sky_latlong = function(
   outfile,
@@ -170,12 +201,49 @@ generate_sky_latlong = function(
   visibility = 50,
   square_projection = FALSE,
   stars = FALSE,
+  moon = FALSE,
   ...
 ) {
   tmp_sky = tempfile(fileext = ".exr")
   sun_altitude_azimuth = suncalc::getSunlightPosition(datetime, lat, lon)
   elevation = sun_altitude_azimuth$altitude * 180 / pi
   azimuth = 90 + sun_altitude_azimuth$azimuth * 180 / pi
+
+  if (moon) {
+    moon_altitude_azimuth = suncalc::getMoonPosition(datetime, lat, lon)
+    moon_elevation = moon_altitude_azimuth$altitude * 180 / pi
+    moon_azimuth = 90 + moon_altitude_azimuth$azimuth * 180 / pi
+    moon_phase_info = suncalc::getMoonIllumination(datetime) # 0.5 = full
+    moon_phase = ((moon_phase_info$phase - 0.5) * 2 * pi) * 180 / pi
+    #sun is 10,000 footcandles/100,760 lux at noon
+    sun_brightness_ftcndl = 10760
+    m = -12.73 + 0.026 * abs(moon_phase) + 4 * 10^(-9) * moon_phase^4 # m = -12.7 at angle == 0, which is correct
+    opposition_surge_multiplier = max(1.35 - 0.05 * moon_phase, 1) #1.35 at max, 1.0 for continuity, just lerping
+    moon_brightness_ftcndl = opposition_surge_multiplier *
+      10^(-0.4 * (m + 16.57))
+
+    scale_sun_to_moon = moon_brightness_ftcndl / sun_brightness_ftcndl
+
+    tmp_moon = tempfile(fileext = ".exr")
+    generate_sky(
+      outfile = tmp_moon,
+      albedo = albedo,
+      turbidity = turbidity,
+      altitude = altitude,
+      elevation = moon_elevation,
+      azimuth = moon_azimuth,
+      resolution = resolution,
+      numbercores = numbercores,
+      hosek = hosek,
+      wide_spectrum = wide_spectrum,
+      visibility = visibility,
+      square_projection = square_projection
+    )
+    moon_exr = rayimage::ray_read_image(tmp_moon)
+    moon_exr[,, 1:3] = moon_exr[,, 1:3] * scale_sun_to_moon
+    rayimage::ray_write_image(moon_exr, tmp_moon)
+  }
+  # Just add up all three
   generate_sky(
     outfile = tmp_sky,
     albedo = albedo,
@@ -190,6 +258,14 @@ generate_sky_latlong = function(
     visibility = visibility,
     square_projection = square_projection
   )
+  if (moon) {
+    tmp_sky_exr = rayimage::ray_read_image(tmp_sky)
+    tmp_moon_exr = rayimage::ray_read_image(tmp_moon)
+    tmp_combined_sky_moon = tmp_sky_exr + tmp_moon_exr
+    tmp_combined_sky_moon[,, 4] = 1
+    rayimage::ray_write_image(tmp_combined_sky_moon, tmp_sky)
+  }
+  # }
   if (stars) {
     tmp_stars = tempfile(fileext = ".exr")
     generate_stars(
@@ -205,10 +281,12 @@ generate_sky_latlong = function(
     )
     sky_exr = rayimage::ray_read_image(tmp_sky)
     stars_exr = rayimage::ray_read_image(tmp_stars)
-    rayimage::ray_write_image(sky_exr + stars_exr, filename = outfile)
-  } else {
-    file.copy(tmp_sky, outfile)
+    tmp_stars_sky = sky_exr + stars_exr
+    tmp_stars_sky[,, 4] = 1
+    rayimage::ray_write_image(tmp_stars_sky, filename = tmp_sky)
   }
+  file.copy(tmp_sky, outfile, overwrite = TRUE)
+  return(invisible())
 }
 
 #' Sample a direction from the Prague model.
@@ -216,10 +294,10 @@ generate_sky_latlong = function(
 #' @param phi                Horizontal angle of the sample, degrees. Vectorized. Range [0, 360].
 #' @param theta              Vertical angle of the sample, degrees. Vectorized. Range [-90, 90].
 #' @param altitude 	         Default `0`, vectorized. Altitude of the viewer in meters. Range [0, 15000].
-#' @param elevation          Default `10`, vectorized. Solar elevation angle above/below the horizon (°). Range [-4.2, 90].
+#' @param elevation          Default `10`, vectorized. Solar elevation angle above/below the horizon (degrees). Range [-4.2, 90].
 #' @param visibility         Default `50`, vectorized. Range [20, 131.8]. Meteorological range in kilometers for Prague model.
 #' @param albedo             Default `0.5`, vectorized. Range [0, 1]. Ground albedo.
-#' @param azimuth            Default `90`, single value. Solar azimuth (°). Defaults South.
+#' @param azimuth            Default `90`, single value. Solar azimuth (degrees). Defaults South.
 #' @param numbercores        Default `1`. Number of threads to use in computation.
 #' @param wide_spectrum      Default `FALSE`. Whether to use the wide‑spectrum (55‑channel, polarised) coefficients.
 #'

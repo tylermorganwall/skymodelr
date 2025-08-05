@@ -2,7 +2,7 @@
 % Please edit documentation in R/generate_sky.R
 \name{generate_sky_latlong}
 \alias{generate_sky_latlong}
-\title{Generate a location‑ and time‑specific sky dome}
+\title{Generate a location- and time-specific sky dome (optionally with stars)}
 \usage{
 generate_sky_latlong(
   outfile,
@@ -19,73 +19,83 @@ generate_sky_latlong(
   visibility = 50,
   square_projection = FALSE,
   stars = FALSE,
+  moon = FALSE,
   ...
 )
 }
 \arguments{
 \item{outfile}{Default `""`. Path to the `.exr` file to write.}
 
-\item{datetime}{Default `"2025-07-29 18:00:00"`. POSIX‑compatible
-date‑time string (e.g. YYYY-MM-DD HH:mm::ss) or [POSIXct] object.  If the string lacks a time‑zone
-suffix it is interpreted in the system time‑zone.}
+\item{datetime}{Default `"2025-07-29 18:00:00"`. POSIX-compatible
+date-time; if missing a time-zone it is assumed to be local.}
 
-\item{lat}{Observer latitude in decimal
-degrees; positive north of the equator.}
+\item{lat}{Default `38.9072`. Observer latitude (degrees N).}
 
-\item{lon}{Observer longitude in decimal
-degrees; positive east of Greenwich, negative west.}
+\item{lon}{Default `-77.0369`. Observer longitude (degrees E; west < 0).}
 
-\item{albedo}{Default `0.5`. Ground albedo fraction, range [0, 1].}
+\item{albedo}{Default `0.5`. Ground albedo, range [0, 1].}
 
 \item{turbidity}{Default `3`. Atmospheric turbidity, range
-[1.7, 10].  Hosek model only.}
+[1.7, 10] (*Hosek only*).}
 
-\item{altitude}{Default `0`. Observer altitude in metres, range
-[0, 15000].  Prague model only.}
+\item{altitude}{Default `0`. Observer altitude (m), range
+[0, 15000] (*Prague only*).}
 
-\item{resolution}{Default `2048`. Height of the output image in
-pixels; width is always twice this value.}
+\item{resolution}{Default `2048`. Image height in pixels (width = 2 × height).}
 
-\item{numbercores}{Default `1`. Number of CPU threads to use.}
+\item{numbercores}{Default `1`. CPU threads to use.}
 
-\item{hosek}{Default `TRUE`. Set to `FALSE` to use the Prague
-2021‑22 spectral sky model.}
+\item{hosek}{Default `TRUE`. `FALSE` selects the Prague model.}
 
-\item{wide_spectrum}{Default `FALSE`. Use the 55‑channel, polarised
-Prague coefficients.  Ignored for Hosek.}
+\item{wide_spectrum}{Default `FALSE`. 55-channel Prague coefficients (altitude = 0 m only).}
 
-\item{visibility}{Default `50`. Meteorological range in kilometres;
-relevant only for the Prague model.}
+\item{visibility}{Default `50`. Meteorological range (km); *Prague only*.}
 
-\item{square_projection}{Default `FALSE`. If `TRUE`, write an equal‑area
-square projection; otherwise write a latitude–longitude (equirectangular)
-projection.}
+\item{square_projection}{Default `FALSE`. `TRUE` results in an equal-area square mapping.}
+
+\item{stars}{Default `FALSE`. If `TRUE`, composite a star field
+using [generate_stars()].  Automatically falls back to a pure star render
+when the black-sky condition is met (see *Details*).}
+
+\item{...}{Additional arguments passed to [generate_stars()]}
 }
 \value{
 Invisible `NULL`; the EXR file is created at `outfile`.
 }
 \description{
-Convenience wrapper around [generate_sky()] that first determines the Sun’s
-apparent position for the supplied date‑time and geographic coordinates
-(using **suncalc**), then renders the corresponding Hosek–Wilkie or Prague
-spectral sky model to an OpenEXR file.  Call this when you would rather
-think in *where* and *when* than in raw solar angles.
+Convenience wrapper around [generate_sky()] that:
+1. Computes the Sun’s apparent position for `datetime`, `lat`, and `lon`
+   (via **suncalc**).
+2. Renders the corresponding sky model.
+3. Optionally overlays a star field using [generate_stars()].
 }
 \details{
-The Sun’s altitude (degrees above the horizon) and azimuth (degrees clockwise
-  from east, such that 90° = south) are calculated internally from
-  `datetime`, `lat`, and `lon`.  This keeps the high‑level interface clean
-  while delegating heavy lifting to [generate_sky()].
+A “black-sky” optimisation is applied when *all* of the following hold:
+* Sun elevation < 0 degrees (−4.2 degrees for Prague model), and
+* `stars = TRUE`.
+
+In that case the sky contribution is effectively zero, so only the star
+field is written.
+
+
+*Solar angles* — altitude (degrees above the horizon) and azimuth (degrees clockwise from
+east, so 90 degrees = south) — are derived internally; you never have to supply
+them directly.
+
+*Black-sky rule* — With the Prague model the sky radiance is defined only
+down to −4.2 degrees, and with the Hosek model it is defined only about 0 degrees.
+Below that the function skips the sky render and writes **only stars** when `stars = TRUE`.
 }
 \examples{
-# Render the evening sky over Washington, DC on 30 July 2025
+# Evening twilight with stars over Washington, DC
 temp_exr = tempfile(fileext = ".exr")
 generate_sky_latlong(
-  outfile      = temp_exr,
-  datetime     = "2025-07-30 20:20:00",
-  lat          = 38.9072,
-  lon          = -77.0369,
-  turbidity    = 3,
-  numbercores  = 2
+  outfile     = temp_exr,
+  datetime    = "2025-07-30 20:20:00",
+  lat         = 38.9072,
+  lon         = -77.0369,
+  turbidity   = 3,
+  stars       = TRUE,
+  numbercores = 2
 )
 }
