@@ -271,8 +271,8 @@ generate_sky_latlong = function(
     generate_stars(
       outfile = tmp_stars,
       resolution = resolution,
-      lon_deg = lat,
-      lat_deg = lon,
+      lon_deg = lon,
+      lat_deg = lat,
       time_utc = as.POSIXct(datetime),
       turbidity = turbidity,
       altitude = altitude,
