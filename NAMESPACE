@@ -2,6 +2,7 @@
 
 export(calculate_sky_values)
 export(download_sky_data)
+export(generate_moon_latlong)
 export(generate_sky)
 export(generate_sky_latlong)
 export(generate_stars)

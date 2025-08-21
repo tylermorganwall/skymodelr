@@ -1,10 +1,11 @@
 #' Write a Hosek–Wilkie sky dome to EXR
 #'
-#' @param outfile            Default `""`. Path to `.exr` file.
+#' @param outfile            Default `NA`. Path to `.exr` file. If not given, the data will be returned instead.
 #' @param albedo             Default `0.5`. 0–1 ground albedo.
 #' @param turbidity          Default `3`. 1.7–10 atmospheric turbidity. Only valid for Hosek model.
 #' @param elevation          Default `10`. Solar elevation above the horizon (degrees).
-#' @param azimuth            Default `90`. Solar azimuth (degrees). Defaults South.
+#' @param azimuth            Default `90`, directly east. Solar azimuth (degrees). Left side of the image represents North.
+#' Halfway across the image represents South.
 #' @param altitude 	         Default `0`. Altitude of the viewer in meters. Valid [0,15000]. Only valid for the
 #' Prague model.
 #' @param resolution         Default `2048`. Height of the image. Width is 2x this number.
@@ -13,15 +14,17 @@
 #' else latitude–longitude square mapping.
 #' @param hosek              Default `TRUE`. Use `"prague"` to enable the Prague 2021-22 spectral sky model.
 #' @param visibility         Default `50`. Meteorological range in kilometres for Prague model.
+#' @param verbose            Default `FALSE`. Whether to print progress bars/diagnostic info.
+#' @param render_solar_disk  Default `TRUE`. Whether to render the solar disk in addition to the atmosphere.
 #'
-#' @return Invisible `NULL`.  The EXR is written to `outfile`.
+#' @return Either the raw data, or the data is invisibly returned if outfile is given. The EXR is written to `outfile`.
 #' @export
 #' @examples
 #' #Generate a basic atmosphere with the Hosek model
 #' temp_exr = tempfile(fileext=".exr")
 #' generate_sky(temp_exr, turbidity = 3, elevation = 2, numbercores = 1)
 generate_sky = function(
-  outfile,
+  outfile = NA,
   albedo = 0.5,
   turbidity = 3,
   elevation = 10,
@@ -32,7 +35,9 @@ generate_sky = function(
   hosek = TRUE,
   wide_spectrum = FALSE,
   visibility = 50,
-  square_projection = FALSE
+  square_projection = FALSE,
+  verbose = FALSE,
+  render_solar_disk = TRUE
 ) {
   sea_level = altitude == 0
   filesize = ""
@@ -43,6 +48,7 @@ generate_sky = function(
   } else if (!sea_level & !wide_spectrum) {
     filesize = "2.4GB"
   }
+  tmp_outfile = tempfile(fileext = ".exr")
   check_coef_file = function(filename) {
     coef_file = file.path(tools::R_user_dir("skymodelr", "data"), filename)
     if (!file.exists(coef_file)) {
@@ -88,45 +94,64 @@ generate_sky = function(
   #If sun below valid region, write black image
   if (model == "hosek") {
     if (elevation < 0.0) {
-      message(
-        "Drawing black image as Hosek model does not produce valid output for elevation < 0."
-      )
+      if (verbose) {
+        message(
+          "Drawing black image as Hosek model does not produce valid output for elevation < 0."
+        )
+      }
       black_sky = array(0, dim = c(resolution, resolution * 2, 4))
       black_sky[,, 4] = 1
-      rayimage::ray_write_image(black_sky, outfile)
-      return(invisible(NULL))
+      if (!is.na(outfile)) {
+        rayimage::ray_write_image(black_sky, outfile)
+        return(invisible(black_sky))
+      } else {
+        return(black_sky)
+      }
     }
   } else {
     if (elevation < -4.2) {
-      message(
-        "Drawing black image as Prague model does not produce valid output for elevation < -4.2."
-      )
-
+      if (verbose) {
+        message(
+          "Drawing black image as Prague model does not produce valid output for elevation < -4.2."
+        )
+      }
       black_sky = array(0, dim = c(resolution, resolution * 2, 4))
       black_sky[,, 4] = 1
-      rayimage::ray_write_image(black_sky, outfile)
-      return(invisible(NULL))
+      if (!is.na(outfile)) {
+        rayimage::ray_write_image(black_sky, outfile)
+        return(invisible(black_sky))
+      } else {
+        return(black_sky)
+      }
     }
   }
 
   makesky_rcpp(
-    outfile,
-    albedo,
-    turbidity,
-    elevation,
-    azimuth,
-    resolution,
-    numbercores,
-    square_projection,
-    visibility = visibility,
+    outfile = tmp_outfile,
+    albedo = albedo,
+    turbidity = turbidity,
+    elevation = elevation,
+    azimuth_deg = azimuth,
+    resolution = resolution,
+    numbercores = numbercores,
+    square_projection = square_projection,
+    model = model,
     prg_dataset = coef_file,
-    altitude,
-    model = model
+    altitude = altitude,
+    visibility = visibility,
+    render_solar_disk = render_solar_disk
   )
-  return(invisible(NULL))
+  generated_sky = rayimage::ray_read_image(tmp_outfile)
+
+  if (!is.na(outfile)) {
+    file.copy(tmp_outfile, outfile, overwrite = TRUE)
+    return(invisible(generated_sky))
+  } else {
+    return(generated_sky)
+  }
 }
 
-#' Generate a location- and time-specific sky dome (optionally with stars)
+#' Generate a location and time-specific sky dome (optionally with stars)
 #'
 #' Convenience wrapper around [generate_sky()] that:
 #' 1. Computes the Sun’s apparent position for `datetime`, `lat`, and `lon`
@@ -141,7 +166,7 @@ generate_sky = function(
 #' In that case the sky contribution is effectively zero, so only the star
 #' field is written.
 #'
-#' @param outfile            Default `""`. Path to the `.exr` file to write.
+#' @param outfile            Default `NA`. Path to the `.exr` file to write.
 #' @param datetime           Default `"2025-07-29 18:00:00"`. POSIX-compatible
 #'   date-time; if missing a time-zone it is assumed to be local.
 #' @param lat                Default `38.9072`. Observer latitude (degrees N).
@@ -160,6 +185,7 @@ generate_sky = function(
 #' @param stars              Default `FALSE`. If `TRUE`, composite a star field
 #'   using [generate_stars()].  Automatically falls back to a pure star render
 #'   when the black-sky condition is met (see *Details*).
+#' @param verbose            Default `FALSE`. Whether to print progress bars/diagnostic info.
 #' @param ...                Additional arguments passed to [generate_stars()]
 #'
 #' @details
@@ -171,7 +197,7 @@ generate_sky = function(
 #' down to −4.2 degrees, and with the Hosek model it is defined only about 0 degrees.
 #' Below that the function skips the sky render and writes **only stars** when `stars = TRUE`.
 #'
-#' @return Invisible `NULL`; the EXR file is created at `outfile`.
+#' @return Either the raw data, or the data is invisibly returned if outfile is given. The EXR is written to `outfile`.
 #' @export
 #'
 #' @examples
@@ -187,7 +213,7 @@ generate_sky = function(
 #'   numbercores = 2
 #' )
 generate_sky_latlong = function(
-  outfile,
+  outfile = NA,
   datetime = "2025-07-29 18:00:00",
   lat = 38.9072,
   lon = -77.0369,
@@ -202,50 +228,21 @@ generate_sky_latlong = function(
   square_projection = FALSE,
   stars = FALSE,
   moon = FALSE,
+  verbose = FALSE,
   ...
 ) {
-  tmp_sky = tempfile(fileext = ".exr")
   sun_altitude_azimuth = suncalc::getSunlightPosition(datetime, lat, lon)
   elevation = sun_altitude_azimuth$altitude * 180 / pi
   azimuth = 90 + sun_altitude_azimuth$azimuth * 180 / pi
-
-  if (moon) {
-    moon_altitude_azimuth = suncalc::getMoonPosition(datetime, lat, lon)
-    moon_elevation = moon_altitude_azimuth$altitude * 180 / pi
-    moon_azimuth = 90 + moon_altitude_azimuth$azimuth * 180 / pi
-    moon_phase_info = suncalc::getMoonIllumination(datetime) # 0.5 = full
-    moon_phase = ((moon_phase_info$phase - 0.5) * 2 * pi) * 180 / pi
-    #sun is 10,000 footcandles/100,760 lux at noon
-    sun_brightness_ftcndl = 10760
-    m = -12.73 + 0.026 * abs(moon_phase) + 4 * 10^(-9) * moon_phase^4 # m = -12.7 at angle == 0, which is correct
-    opposition_surge_multiplier = max(1.35 - 0.05 * moon_phase, 1) #1.35 at max, 1.0 for continuity, just lerping
-    moon_brightness_ftcndl = opposition_surge_multiplier *
-      10^(-0.4 * (m + 16.57))
-
-    scale_sun_to_moon = moon_brightness_ftcndl / sun_brightness_ftcndl
-
-    tmp_moon = tempfile(fileext = ".exr")
-    generate_sky(
-      outfile = tmp_moon,
-      albedo = albedo,
-      turbidity = turbidity,
-      altitude = altitude,
-      elevation = moon_elevation,
-      azimuth = moon_azimuth,
-      resolution = resolution,
-      numbercores = numbercores,
-      hosek = hosek,
-      wide_spectrum = wide_spectrum,
-      visibility = visibility,
-      square_projection = square_projection
-    )
-    moon_exr = rayimage::ray_read_image(tmp_moon)
-    moon_exr[,, 1:3] = moon_exr[,, 1:3] * scale_sun_to_moon
-    rayimage::ray_write_image(moon_exr, tmp_moon)
+  if (verbose) {
+    message(sprintf(
+      "Sun: %0.1f° elevation, %0.1f° azimuth",
+      elevation,
+      azimuth
+    ))
   }
   # Just add up all three
-  generate_sky(
-    outfile = tmp_sky,
+  sky_exr = generate_sky(
     albedo = albedo,
     turbidity = turbidity,
     altitude = altitude,
@@ -256,20 +253,31 @@ generate_sky_latlong = function(
     hosek = hosek,
     wide_spectrum = wide_spectrum,
     visibility = visibility,
-    square_projection = square_projection
+    square_projection = square_projection,
+    verbose = verbose
   )
   if (moon) {
-    tmp_sky_exr = rayimage::ray_read_image(tmp_sky)
-    tmp_moon_exr = rayimage::ray_read_image(tmp_moon)
-    tmp_combined_sky_moon = tmp_sky_exr + tmp_moon_exr
-    tmp_combined_sky_moon[,, 4] = 1
-    rayimage::ray_write_image(tmp_combined_sky_moon, tmp_sky)
+    moon_exr = generate_moon_latlong(
+      outfile = outfile,
+      datetime = datetime,
+      lat = lat,
+      lon = lon,
+      albedo = albedo,
+      turbidity = turbidity,
+      altitude = altitude,
+      resolution = resolution,
+      numbercores = numbercores,
+      hosek = hosek,
+      wide_spectrum = wide_spectrum,
+      visibility = visibility,
+      square_projection = square_projection,
+      verbose = FALSE,
+      ...
+    )
+    sky_exr = sky_exr + moon_exr
   }
-  # }
   if (stars) {
-    tmp_stars = tempfile(fileext = ".exr")
-    generate_stars(
-      outfile = tmp_stars,
+    stars_exr = generate_stars(
       resolution = resolution,
       lon_deg = lon,
       lat_deg = lat,
@@ -279,14 +287,15 @@ generate_sky_latlong = function(
       numbercores = numbercores,
       ...
     )
-    sky_exr = rayimage::ray_read_image(tmp_sky)
-    stars_exr = rayimage::ray_read_image(tmp_stars)
-    tmp_stars_sky = sky_exr + stars_exr
-    tmp_stars_sky[,, 4] = 1
-    rayimage::ray_write_image(tmp_stars_sky, filename = tmp_sky)
+    sky_exr = sky_exr + stars_exr
   }
-  file.copy(tmp_sky, outfile, overwrite = TRUE)
-  return(invisible())
+  sky_exr[,, 4] = 1
+  if (!is.na(outfile)) {
+    rayimage::ray_write_image(sky_exr, outfile, clamp = FALSE)
+    return(invisible(sky_exr))
+  } else {
+    return(sky_exr)
+  }
 }
 
 #' Sample a direction from the Prague model.

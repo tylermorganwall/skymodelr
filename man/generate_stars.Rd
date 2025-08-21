@@ -5,7 +5,7 @@
 \title{Write a star‑field EXR aligned with `generate_sky()`}
 \usage{
 generate_stars(
-  outfile = "stars.exr",
+  outfile = NA,
   resolution = 2048,
   zero_point = 1,
   lon_deg = 0,
@@ -19,7 +19,7 @@ generate_stars(
 )
 }
 \arguments{
-\item{outfile}{`.exr` output path.}
+\item{outfile}{Default `NA`. Path to `.exr` file. If not given, the data will be returned instead.}
 
 \item{resolution}{Map half‑width (image is 2×`resolution` × `resolution`).}
 

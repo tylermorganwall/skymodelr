@@ -5,7 +5,7 @@
 \title{Write a Hosek–Wilkie sky dome to EXR}
 \usage{
 generate_sky(
-  outfile,
+  outfile = NA,
   albedo = 0.5,
   turbidity = 3,
   elevation = 10,
@@ -16,11 +16,12 @@ generate_sky(
   hosek = TRUE,
   wide_spectrum = FALSE,
   visibility = 50,
-  square_projection = FALSE
+  square_projection = FALSE,
+  verbose = FALSE
 )
 }
 \arguments{
-\item{outfile}{Default `""`. Path to `.exr` file.}
+\item{outfile}{Default `NA`. Path to `.exr` file. If not given, the data will be returned instead.}
 
 \item{albedo}{Default `0.5`. 0–1 ground albedo.}
 
@@ -43,9 +44,11 @@ Prague model.}
 
 \item{square_projection}{Default `FALSE`. If \code{TRUE} use equal‑area square mapping,
 else latitude–longitude square mapping.}
+
+\item{verbose}{Default `FALSE`. Whether to print progress bars/diagnostic info.}
 }
 \value{
-Invisible `NULL`.  The EXR is written to `outfile`.
+Either the raw data, or the data is invisibly returned if outfile is given. The EXR is written to `outfile`.
 }
 \description{
 Write a Hosek–Wilkie sky dome to EXR

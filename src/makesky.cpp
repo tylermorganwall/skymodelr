@@ -136,9 +136,15 @@ void makesky_rcpp(std::string  outfile,
           float gamma = std::acos(
             clamp_float(v.dot(sun_dir), -1.0f, 1.0f));
           for (int c = 0; c < N_LAMBDA; ++c) {
-            float L = arhosekskymodel_solar_radiance(
-              hosek[c], theta, gamma, lambda_nm[c]);
-            img[3 * (t * nPhi + p) + c / 3] += L / 3.0f;
+            if(render_solar_disk) {
+              float L = arhosekskymodel_solar_radiance(
+                hosek[c], theta, gamma, lambda_nm[c]);
+              img[3 * (t * nPhi + p) + c / 3] += L / 3.0f;
+            } else {
+              float L = arhosekskymodel_radiance(
+                hosek[c], theta, gamma, lambda_nm[c]);
+              img[3 * (t * nPhi + p) + c / 3] += L / 3.0f;
+            }
           }
         } else {
           Vec3<float> v_zup(std::cos(phi) * std::sin(theta),

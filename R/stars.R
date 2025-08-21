@@ -8,7 +8,7 @@ jd_utc = function(time_utc) {
 # ---------------------------------------------------------------------------
 #' Write a star‑field EXR aligned with `generate_sky()`
 #'
-#' @param outfile    `.exr` output path.
+#' @param outfile    Default `NA`. Path to `.exr` file. If not given, the data will be returned instead.
 #' @param resolution Map half‑width (image is 2×`resolution` × `resolution`).
 #' @param zero_point Exposure scale (larger = brighter stars).
 #' @param lon_deg Observer longitude (east +)
@@ -18,7 +18,7 @@ jd_utc = function(time_utc) {
 #'
 #' @export
 generate_stars = function(
-  outfile = "stars.exr",
+  outfile = NA,
   resolution = 2048,
   zero_point = 1,
   lon_deg = 0,
@@ -30,6 +30,7 @@ generate_stars = function(
   color = TRUE,
   numbercores = 1
 ) {
+  starfield_tmp = tempfile(fileext = ".exr")
   if (!inherits(time_utc, "POSIXct")) {
     stop("time_utc must be POSIXct in UTC")
   }
@@ -37,7 +38,7 @@ generate_stars = function(
   jd = jd_utc(time_utc)
 
   make_starfield_rcpp(
-    outfile = outfile,
+    outfile = starfield_tmp,
     stars = skymodelr::stars,
     resolution = resolution,
     zero_point = zero_point,
@@ -50,5 +51,11 @@ generate_stars = function(
     altitude = altitude,
     numbercores = numbercores
   )
-  invisible(NULL)
+  star_exr = rayimage::ray_read_image(starfield_tmp)
+  if (!is.na(outfile)) {
+    file.copy(outfile, starfield_tmp, overwrite = TRUE)
+    return(invisible(star_exr))
+  } else {
+    return(star_exr)
+  }
 }
