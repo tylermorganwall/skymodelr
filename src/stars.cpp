@@ -5,18 +5,22 @@
 #include <OpenEXR/ImfRgbaFile.h>
 #include <OpenEXR/ImfRgba.h>
 #include <Imath/ImathVec.h>
+#include <mutex>
+#include <cmath>
 
 inline float mag_to_luminance(float Vmagnitude,
                               float zeroPoint = 1.0f)
 {
-    // Physical scaling constant not needed for relative EXR; zeroPoint
-    // lets you tune exposure in post.
     return zeroPoint * std::pow(10.0f, -0.4f * Vmagnitude);
 }
 
 using Imf::Rgba;
 using Imf::RgbaOutputFile;
 using Imath::Vec3;
+
+static inline int wrap_col(int x, int W) {
+  int r = x % W; return r < 0 ? r + W : r;
+}
 
 static inline int clamp_int(int x, int lo, int hi)
 {
@@ -35,15 +39,6 @@ static inline double jd_to_gmst(double jd)
     return gmst * M_PI / 180.0;                  // rad
 }
 
-//' Render a star-field equirectangular EXR
-//'
-//' @param outfile Output `.exr` path.
-//' @param stars   Data frame produced by `read_bsc5()` (must contain
-//'                `ra_rad`, `dec_rad`, `v_mag`).
-//' @param resolution Horizontal *half-resolution*; final size is
-//'        2 × resolution × resolution.
-//' @param zero_point Default `1`. Exposure scaling (see docs).
-//' @param numbercores Number of CPU threads.
 // [[Rcpp::export]]
 void make_starfield_rcpp(std::string     outfile,
                          Rcpp::DataFrame stars,
@@ -55,46 +50,46 @@ void make_starfield_rcpp(std::string     outfile,
                          double          turbidity = 3.0,
             						 double          ozone_du  = 300.0,
             						 double          altitude  = 0.0,
+            						 double          star_width = 1.0,
             						 bool            use_rgb   = true,
+            						 bool            atmosphere_effects = true,
+            						 bool            upper_hemisphere_only = true,
             						 unsigned int    numbercores  = 1)
 {
-    if (resolution == 0) Rcpp::stop("resolution must be ≥1");
+  if (resolution == 0) Rcpp::stop("resolution must be greater than or equal to 1");
+  if(!upper_hemisphere_only & atmosphere_effects) {
+    atmosphere_effects = false;
+    Rcpp::message(Rcpp::CharacterVector("When rendering full sphere (`upper_hemisphere_only = false`), atmosphere effects are not rendered (setting `atmosphere_effects = false`)"));
+  }
+  const int nTheta = resolution;        // rows (latitude)
+  const int nPhi   = 2 * resolution;    // cols (longitude)
+  const int nPix   = nTheta * nPhi;
 
-    const int nTheta = resolution;        // rows (latitude)
-    const int nPhi   = 2 * resolution;    // cols (longitude)
-    const int nPix   = nTheta * nPhi;
+  std::vector<float> img(3 * nPix, 0.0f);
 
-    std::vector<float> img(3 * nPix, 0.0f);
+  // pull columns out of the data frame
+  Rcpp::NumericVector ra   = stars["ra_rad"];
+  Rcpp::NumericVector dec  = stars["dec_rad"];
+  Rcpp::NumericVector mag  = stars["v_mag"];
+  Rcpp::NumericVector r_vec  = stars["r"];
+  Rcpp::NumericVector g_vec  = stars["g"];
+  Rcpp::NumericVector b_vec  = stars["b"];
 
-    // pull columns out of the data frame
-    Rcpp::NumericVector ra   = stars["ra_rad"];
-    Rcpp::NumericVector dec  = stars["dec_rad"];
-    Rcpp::NumericVector mag  = stars["v_mag"];
-	Rcpp::NumericVector r_vec  = stars["r"];
-    Rcpp::NumericVector g_vec  = stars["g"];
-    Rcpp::NumericVector b_vec  = stars["b"];
+  const std::size_t   N    = ra.size();
 
-    const std::size_t   N    = ra.size();
+  double psf_fwhm_pix = star_width;
+  double psf_trunc_sigma = 3.0;  // truncate at 3 sigma
 
 	double gmst_rad = jd_to_gmst(jd);
 	double lst_rad  = gmst_rad + lon_deg * M_PI / 180.0;
 	double sin_lat  = std::sin(lat_deg * M_PI / 180.0);
 	double cos_lat  = std::cos(lat_deg * M_PI / 180.0);
+	std::vector<std::mutex> row_locks(nTheta);
 
-    // parallelise over stars – cheap, embarrassingly parallel
-    RcppThread::parallelFor(0u, (unsigned)N, [&](unsigned i)
+  // parallelise over stars
+  RcppThread::parallelFor(0u, (unsigned)N, [&](unsigned i)
     {
-      // equirectangular: phi = RA in [0, 2*M_PI)
-      // double phi   = std::fmod(ra[i] + 2*M_PI, 2*M_PI);
-      // double theta = M_PI_2 - dec[i];
-  		// 1. hour angle (east +)
   		double ha = lst_rad - ra[i];
-
-  		// 2. equatorial unit vector (right-handed X = south)
-  		// double cos_dec = std::cos(dec[i]);
-  		// double x_eq =  cos_dec * std::cos(ha);
-  		// double y_eq =  cos_dec * std::sin(ha);
-  		// double z_eq =  std::sin(dec[i]);
 
   		double sin_alt = std::sin(dec[i]) * sin_lat +
                    std::cos(dec[i]) * cos_lat * std::cos(ha);
@@ -107,38 +102,17 @@ void make_starfield_rcpp(std::string     outfile,
   		double cos_az  = (std::sin(dec[i]) * cos_lat -
   						std::cos(dec[i]) * std::cos(ha) * sin_lat) / cos_alt;
 
-  		/*  coordinate frame used by makesky:
-  			+X  = South
-  			+Y  = Up (zenith)
-  			+Z  = West
-  			azimuth counted positive to the East from South            */
+  		double x_h =  -cos_alt *  cos_az;
+  		double y_h =  sin_alt;
+  		double z_h =  -cos_alt *  sin_az;
 
-  		double x_h =  cos_alt *  cos_az;   // South (+)  /  North (−)
-  		double y_h =  sin_alt;             // Up
-  		double z_h =  cos_alt *  sin_az;   // West (+)   /  East (−)
+  		//map to lat/long image
+  		double theta = std::acos(std::clamp(y_h, -1.0, 1.0));
+  		double phi   = std::atan2(-z_h, x_h);
+  		if (phi < 0.0) phi += 2.0 * M_PI;
 
-  		// 3. rotate to horizontal frame
-  		// double x_h =  x_eq * sin_lat - z_eq * cos_lat;   // points south
-  		// double y_h =  y_eq;                              // points up
-  		// double z_h =  x_eq * cos_lat + z_eq * sin_lat;   // points west
-
-  		// 4. map to lat/long image
-  		double theta = std::acos(std::clamp(y_h, -1.0, 1.0));      // 0..M_PI
-  		double phi   = std::atan2(-z_h, x_h);                      // -M_PI..M_PI
-  		if (phi < 0.0) phi += 2.0 * M_PI;                          // 0..2 * M_PI
-
-      // ignore stars that fall outside north-hemisphere canvas if user
-      // feeds non-northern declinations and keeps theta in [0, M_PI]
-      // if (theta < 0.0 || theta > M_PI) return;
-
-      int p = int(phi / (2*M_PI) * nPhi);        // column
-      int t = int(theta / M_PI * nTheta);        // row
-
-      p = clamp_int(p, 0, nPhi-1);
-      t = clamp_int(t, 0, nTheta-1);
-
-      // pixel index
-      std::size_t idx = 3 * (t*nPhi + p);
+  		double phi_img = phi + M_PI;
+  		if (phi_img >= 2.0 * M_PI) phi_img -= 2.0 * M_PI;
 
   		double r = 1.0, g = 1.0, b = 1.0;
   		if(use_rgb) {
@@ -179,13 +153,81 @@ void make_starfield_rcpp(std::string     outfile,
   			T_g = (T_band[3] + T_band[4] + T_band[5]) / 3.0;
   			T_b = (T_band[6] + T_band[7] + T_band[8]) / 3.0;
   		} else {
-  			T_r = T_g = T_b = 0.0;      // star is below horizon
+			  T_r = T_g = T_b = 0.0;      // star is below horizon
   		}
 
-      float L = mag_to_luminance(mag[i], float(zero_point));
-      img[idx    ] += L * r * T_r;
-      img[idx + 1] += L * g * T_g;
-      img[idx + 2] += L * b * T_b;
+  		if(!upper_hemisphere_only) {
+  		  T_r = T_g = T_b = 1.0;
+  		}
+
+  		if (T_r==0.0 && T_g==0.0 && T_b==0.0) return;
+
+  		// ----- continuous image coords -----
+  		double u = (phi_img / (2.0 * M_PI)) * nPhi;    // column in [0, nPhi)
+  		double v = (theta   / M_PI)         * nTheta;  // row    in [0, nTheta)
+
+  		// avoid rare u == nPhi or v == nTheta due to floating point
+  		if (u >= nPhi)   u = std::nextafter((double)nPhi, 0.0);
+  		if (v >= nTheta) v = std::nextafter((double)nTheta, 0.0);
+
+  		// subpixel center and integer anchors
+  		int    p0 = (int)std::floor(u);
+  		int    t0 = (int)std::floor(v);
+
+  		// PSF parameters
+  		double sigma = psf_fwhm_pix / 2.355;                   // FWHM→σ
+  		int    rad   = (int)std::ceil(psf_trunc_sigma * sigma);
+  		double inv_2s2 = 1.0 / (2.0 * sigma * sigma);
+
+  		// Pre-compute 1D weights using distance from the pixel center (p + 0.5, t + 0.5)
+  		std::vector<double> wx(2*rad + 1), wy(2*rad + 1);
+  		double sumx = 0.0, sumy = 0.0;
+
+  		for (int dx = -rad; dx <= rad; ++dx) {
+  		  double px_center = (p0 + dx) + 0.5;
+  		  double ddx = px_center - u;                   // subpixel offset in x
+  		  double w   = std::exp(-ddx*ddx * inv_2s2);
+  		  wx[dx + rad] = w; sumx += w;
+  		}
+  		for (int dy = -rad; dy <= rad; ++dy) {
+  		  int ty = std::clamp(t0 + dy, 0, nTheta - 1);
+  		  double py_center = ty + 0.5;
+  		  double ddy = py_center - v;                   // subpixel offset in y
+  		  double w   = std::exp(-ddy*ddy * inv_2s2);
+  		  wy[dy + rad] = w; sumy += w;
+  		}
+
+  		// Normalize so total deposited energy equals L (energy conservation)
+  		double norm = sumx * sumy;
+  		if (norm <= 0.0) return;
+
+  		// Star radiance in channels
+  		float  L  = mag_to_luminance(mag[i], float(zero_point));
+  		double R0 = L * r * T_r / norm;
+  		double G0 = L * g * T_g / norm;
+  		double B0 = L * b * T_b / norm;
+
+  		// ----- accumulate with row locks (one lock per affected row) -----
+  		for (int dy = -rad; dy <= rad; ++dy) {
+  		  int t = std::clamp(t0 + dy, 0, nTheta - 1);
+  		  double wyj = wy[dy + rad];
+
+  		  // lock the row once; update all columns for this row
+  		  {
+  		    std::scoped_lock lock(row_locks[t]);
+  		    std::size_t base = 3ULL * ( (std::size_t)t * (std::size_t)nPhi );
+
+  		    for (int dx = -rad; dx <= rad; ++dx) {
+  		      int p = wrap_col(p0 + dx, nPhi);
+  		      double w = wyj * wx[dx + rad];   // separable Gaussian
+
+  		      std::size_t idx = base + 3ULL * (std::size_t)p;
+  		      img[idx    ] += float(w * R0);
+  		      img[idx + 1] += float(w * G0);
+  		      img[idx + 2] += float(w * B0);
+  		    }
+  		  }
+  		}
     }, numbercores);
 
     // convert to OpenEXR RGBA array

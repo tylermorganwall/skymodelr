@@ -19,7 +19,6 @@
 #' @param hosek              Default `TRUE`. `FALSE` selects the Prague model.
 #' @param wide_spectrum      Default `FALSE`. 55-channel Prague coefficients (altitude = 0 m only).
 #' @param visibility         Default `50`. Meteorological range (km); *Prague only*.
-#' @param square_projection  Default `FALSE`. `TRUE` results in an equal-area square mapping.
 #' @param verbose            Default `FALSE`. Whether to print progress bars/diagnostic info.
 #' @param ...                Additional arguments passed to [generate_stars()]
 #'
@@ -27,17 +26,19 @@
 #' @export
 #'
 #' @examples
-#' # Evening twilight with stars over Washington, DC
-#' temp_exr = tempfile(fileext = ".exr")
-#' generate_sky_latlong(
-#'   outfile     = temp_exr,
-#'   datetime    = "2025-07-30 20:20:00",
-#'   lat         = 38.9072,
-#'   lon         = -77.0369,
-#'   turbidity   = 3,
-#'   stars       = TRUE,
-#'   numbercores = 2
-#' )
+#' # Moonlit sky (Hosek), mid-evening in DC
+#' if(run_documentation()) {
+#' generate_moon_latlong(
+#'   datetime   = as.POSIXct("2025-07-30 20:20:00",tz="EST"),
+#'   lat        = 38.9072,
+#'   lon        = -77.0369,
+#'   resolution = 400,
+#'   turbidity  = 3,
+#'   verbose    = TRUE
+#' ) |>
+#'   rayimage::render_exposure(15) |>
+#'   rayimage::plot_image()
+#' }
 generate_moon_latlong = function(
   outfile = NA,
   datetime = "2025-07-29 18:00:00",
@@ -51,7 +52,6 @@ generate_moon_latlong = function(
   hosek = TRUE,
   wide_spectrum = FALSE,
   visibility = 50,
-  square_projection = FALSE,
   verbose = FALSE,
   ...
 ) {
@@ -75,7 +75,7 @@ generate_moon_latlong = function(
       moon_elevation,
       moon_azimuth,
       moon_phase,
-      moon_brightness_ftcndl * 10
+      moon_ftcndl * 10
     ))
   }
   moon_exr = generate_sky(
@@ -89,7 +89,6 @@ generate_moon_latlong = function(
     hosek = hosek,
     wide_spectrum = wide_spectrum,
     visibility = visibility,
-    square_projection = square_projection,
     verbose = verbose,
     render_solar_disk = TRUE
   )

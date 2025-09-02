@@ -7,3 +7,6 @@
 ^.+\.mp4$
 ^.+\.png$
 ^README\.Rmd$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$

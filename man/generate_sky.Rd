@@ -16,8 +16,8 @@ generate_sky(
   hosek = TRUE,
   wide_spectrum = FALSE,
   visibility = 50,
-  square_projection = FALSE,
-  verbose = FALSE
+  verbose = FALSE,
+  render_solar_disk = TRUE
 )
 }
 \arguments{
@@ -29,7 +29,8 @@ generate_sky(
 
 \item{elevation}{Default `10`. Solar elevation above the horizon (degrees).}
 
-\item{azimuth}{Default `90`. Solar azimuth (degrees). Defaults South.}
+\item{azimuth}{Default `90`, sun directly east. Solar azimuth (degrees). Left side of the image represents North.
+Halfway across the image represents South.}
 
 \item{altitude}{Default `0`. Altitude of the viewer in meters. Valid [0,15000]. Only valid for the
 Prague model.}
@@ -42,10 +43,9 @@ Prague model.}
 
 \item{visibility}{Default `50`. Meteorological range in kilometres for Prague model.}
 
-\item{square_projection}{Default `FALSE`. If \code{TRUE} use equal‑area square mapping,
-else latitude–longitude square mapping.}
-
 \item{verbose}{Default `FALSE`. Whether to print progress bars/diagnostic info.}
+
+\item{render_solar_disk}{Default `TRUE`. Whether to render the solar disk in addition to the atmosphere.}
 }
 \value{
 Either the raw data, or the data is invisibly returned if outfile is given. The EXR is written to `outfile`.
@@ -54,7 +54,53 @@ Either the raw data, or the data is invisibly returned if outfile is given. The 
 Write a Hosek–Wilkie sky dome to EXR
 }
 \examples{
-#Generate a basic atmosphere with the Hosek model
-temp_exr = tempfile(fileext=".exr")
-generate_sky(temp_exr, turbidity = 3, elevation = 2, numbercores = 1)
+if(run_documentation()) {
+# Hosek model (default): clear morning, Sun SE, with solar disk
+generate_sky(
+  resolution = 400,
+  elevation  = 15,
+  azimuth    = 135,
+  turbidity  = 3,
+  render_solar_disk = TRUE
+) |>
+  rayimage::plot_image()
+}
+if(run_documentation()) {
+# Same view but hazier and without the solar disk
+generate_sky(
+  resolution = 400,
+  elevation  = 15,
+  azimuth    = 135,
+  turbidity  = 6,
+  render_solar_disk = FALSE
+) |>
+  rayimage::plot_image()
+}
+if(run_documentation()) {
+# Equal-area square mapping
+generate_sky(
+  resolution        = 400,
+  elevation         = 30,
+  azimuth           = 180,
+  square_projection = TRUE,
+  turbidity         = 3
+) |>
+  rayimage::plot_image()
+}
+# Prague model (may prompt to download coefficients on first use)
+\donttest{
+if(run_documentation()) {
+generate_sky(
+  resolution = 400,
+  hosek      = FALSE,
+  altitude   = 0,
+  visibility = 80,
+  albedo     = 0.2,
+  elevation  = 5,
+  azimuth    = 220,
+  numbercores = 2
+) |>
+  rayimage::plot_image()
+}
+}
 }

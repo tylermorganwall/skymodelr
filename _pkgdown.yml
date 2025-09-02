@@ -1,0 +1,44 @@
+pandoc: 2.3.1
+pkgdown: 1.3.0.9000
+pkgdown_sha: 2f40b4769ea9ad2312aa4cc93f27ab116461543b
+articles: []
+figures:
+  fig.asp: 0.5
+template:
+  bootstrap: 5
+
+reference:
+  - title: "Generate Sky EXRs"
+    desc: "Functions for generating different sky models"
+    contents:
+      - starts_with("generate")
+  - title: "Downloading"
+    desc: "Download model data"
+    contents:
+      - starts_with("download")
+  - title: "Sample Values"
+    desc: "Functions to sample specific values from the atmospheric model"
+    contents:
+      - starts_with("calculate")
+  - title: "pkgdown utils"
+    desc: "Internal but must be exported to meet CRAN guidelines"
+    contents:
+      - starts_with("run")
+
+navbar:
+  title: "skymodelr"
+  type: inverse
+  left:
+    - icon: fa-home
+      href: index.html
+  right:
+    - icon: fa-file-code-o
+      text: "functions"
+      href: reference/index.html
+    - icon: fa-github fa-lg
+      text: "GitHub"
+      href: https://github.com/tylermorganwall/skymodelr
+
+authors:
+  Tyler Morgan-Wall:
+    href: https://www.tylermw.com

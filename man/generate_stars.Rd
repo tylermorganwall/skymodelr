@@ -8,31 +8,100 @@ generate_stars(
   outfile = NA,
   resolution = 2048,
   zero_point = 1,
-  lon_deg = 0,
-  lat_deg = 0,
-  time_utc = as.POSIXct("2000-01-01 00:00:00", tz = "UTC"),
+  lon = 0,
+  lat = 0,
+  datetime = as.POSIXct("2000-01-01 00:00:00", tz = "UTC"),
   turbidity = 3,
   ozone_du = 300,
   altitude = 0,
   color = TRUE,
+  star_width = 1,
+  upper_hemisphere_only = TRUE,
+  atmosphere_effects = TRUE,
   numbercores = 1
 )
 }
 \arguments{
-\item{outfile}{Default `NA`. Path to `.exr` file. If not given, the data will be returned instead.}
+\item{outfile}{Default `NA`. Path to a `.exr` file to write. If `NA`, no file is written and the image data are returned.}
 
-\item{resolution}{Map half‑width (image is 2×`resolution` × `resolution`).}
+\item{resolution}{Default `2048`. Map half-width; the output image is `2 * resolution` × `resolution`.}
 
-\item{zero_point}{Exposure scale (larger = brighter stars).}
+\item{zero_point}{Default `1`. Exposure scale applied to stellar intensities (larger = brighter stars).}
 
-\item{lon_deg}{Observer longitude (east +)}
+\item{lon}{Default `0`. Observer longitude in degrees (east positive).}
 
-\item{lat_deg}{Observer latitude (deg).}
+\item{lat}{Default `0`. Observer latitude in degrees.}
 
-\item{time_utc}{`POSIXct` UTC time stamp used to compute sidereal time.}
+\item{turbidity}{Default `3.0`. Atmospheric turbidity controlling aerosol optical depth for extinction/reddening.}
 
-\item{numbercores}{Number of threads to use in computation.}
+\item{ozone_du}{Default `300.0`. Column ozone in Dobson Units used in atmospheric absorption.}
+
+\item{altitude}{Default `0.0`. Observer altitude above mean sea level in meters.}
+
+\item{color}{Default `TRUE`. If `TRUE`, render RGB star colors; if `FALSE`, render monochrome luminance.}
+
+\item{star_width}{Default `1`. Approximate stellar point-spread size in pixels (controls apparent star sharpness).}
+
+\item{upper_hemisphere_only}{Default `TRUE`. If `TRUE`, pixels below the local horizon are suppressed to match `generate_sky()`’s visible hemisphere.}
+
+\item{atmosphere_effects}{Default `TRUE`. If `TRUE`, apply atmospheric extinction and color shift using `turbidity`, `ozone_du`, and `altitude`.}
+
+\item{numbercores}{Default `1`. Number of CPU threads to use.}
+
+\item{time_utc}{Default `as.POSIXct("2000-01-01 00:00:00", tz = "UTC")`. `POSIXct` UTC timestamp used to compute local sidereal time; coerced to UTC internally.}
 }
 \description{
 Write a star‑field EXR aligned with `generate_sky()`
+}
+\examples{
+# Note: exposure has been increased for all examples (via white_point) for
+# ease of visibility in documentation
+
+# Basic star field over Washington, DC at a fixed time
+if(run_documentation()) {
+generate_stars(
+  resolution = 400,
+  lon        = -77.0369,
+  lat        = 38.9072,
+  time_utc   = as.POSIXct("2025-03-21 02:20:00", tz = "EST"),
+  color      = TRUE,
+  star_width = 1,
+  zero_point = 10,
+  atmosphere_effects   = TRUE,
+  upper_hemisphere_only = TRUE,
+  numbercores = 2
+) |>
+  rayimage::plot_image()
+}
+if(run_documentation()) {
+# Monochrome stars, no atmospheric extinction/reddening, full sphere
+generate_stars(
+  resolution = 400,
+  lon        = -122.4194,
+  lat        = 37.7749,
+  time_utc   = as.POSIXct("2025-06-01 08:00:00", tz = "UTC"),
+  color      = FALSE,
+  star_width = 1,
+  zero_point = 10,
+  upper_hemisphere_only = FALSE,
+  atmosphere_effects    = FALSE
+) |>
+  rayimage::plot_image()
+}
+if(run_documentation()) {
+# Sharper stars (smaller PSF) with ozone/turbidity and altitude
+generate_stars(
+  resolution = 400,
+  lon        = 10,
+  lat        = 45,
+  time_utc   = as.POSIXct("2025-12-01 22:00:00", tz = "UTC"),
+  zero_point = 10,
+  star_width = 0.5,
+  turbidity  = 3.5,
+  ozone_du   = 320,
+  altitude   = 1000,
+  color      = TRUE
+) |>
+  rayimage::plot_image()
+}
 }

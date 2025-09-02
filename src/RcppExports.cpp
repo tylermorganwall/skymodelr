@@ -54,8 +54,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // make_starfield_rcpp
-void make_starfield_rcpp(std::string outfile, Rcpp::DataFrame stars, unsigned int resolution, double zero_point, double lon_deg, double lat_deg, double jd, double turbidity, double ozone_du, double altitude, bool use_rgb, unsigned int numbercores);
-RcppExport SEXP _skymodelr_make_starfield_rcpp(SEXP outfileSEXP, SEXP starsSEXP, SEXP resolutionSEXP, SEXP zero_pointSEXP, SEXP lon_degSEXP, SEXP lat_degSEXP, SEXP jdSEXP, SEXP turbiditySEXP, SEXP ozone_duSEXP, SEXP altitudeSEXP, SEXP use_rgbSEXP, SEXP numbercoresSEXP) {
+void make_starfield_rcpp(std::string outfile, Rcpp::DataFrame stars, unsigned int resolution, double zero_point, double lon_deg, double lat_deg, double jd, double turbidity, double ozone_du, double altitude, double star_width, bool use_rgb, bool atmosphere_effects, bool upper_hemisphere_only, unsigned int numbercores);
+RcppExport SEXP _skymodelr_make_starfield_rcpp(SEXP outfileSEXP, SEXP starsSEXP, SEXP resolutionSEXP, SEXP zero_pointSEXP, SEXP lon_degSEXP, SEXP lat_degSEXP, SEXP jdSEXP, SEXP turbiditySEXP, SEXP ozone_duSEXP, SEXP altitudeSEXP, SEXP star_widthSEXP, SEXP use_rgbSEXP, SEXP atmosphere_effectsSEXP, SEXP upper_hemisphere_onlySEXP, SEXP numbercoresSEXP) {
 BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< std::string >::type outfile(outfileSEXP);
@@ -68,9 +68,12 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type turbidity(turbiditySEXP);
     Rcpp::traits::input_parameter< double >::type ozone_du(ozone_duSEXP);
     Rcpp::traits::input_parameter< double >::type altitude(altitudeSEXP);
+    Rcpp::traits::input_parameter< double >::type star_width(star_widthSEXP);
     Rcpp::traits::input_parameter< bool >::type use_rgb(use_rgbSEXP);
+    Rcpp::traits::input_parameter< bool >::type atmosphere_effects(atmosphere_effectsSEXP);
+    Rcpp::traits::input_parameter< bool >::type upper_hemisphere_only(upper_hemisphere_onlySEXP);
     Rcpp::traits::input_parameter< unsigned int >::type numbercores(numbercoresSEXP);
-    make_starfield_rcpp(outfile, stars, resolution, zero_point, lon_deg, lat_deg, jd, turbidity, ozone_du, altitude, use_rgb, numbercores);
+    make_starfield_rcpp(outfile, stars, resolution, zero_point, lon_deg, lat_deg, jd, turbidity, ozone_du, altitude, star_width, use_rgb, atmosphere_effects, upper_hemisphere_only, numbercores);
     return R_NilValue;
 END_RCPP
 }
@@ -78,7 +81,7 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_skymodelr_makesky_rcpp", (DL_FUNC) &_skymodelr_makesky_rcpp, 13},
     {"_skymodelr_calculate_raw_prague", (DL_FUNC) &_skymodelr_calculate_raw_prague, 10},
-    {"_skymodelr_make_starfield_rcpp", (DL_FUNC) &_skymodelr_make_starfield_rcpp, 12},
+    {"_skymodelr_make_starfield_rcpp", (DL_FUNC) &_skymodelr_make_starfield_rcpp, 15},
     {NULL, NULL, 0}
 };
 

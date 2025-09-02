@@ -43,6 +43,20 @@ Sample a direction from the Prague model.
 }
 \examples{
 #Generate a basic atmosphere with the Hosek model
-temp_exr = tempfile(fileext=".exr")
-generate_sky(temp_exr, turbidity = 3, elevation = 2, numbercores = 1)
+if(run_documentation()) {
+value_grid = expand.grid(
+  phi = seq(0,360,by=30),
+  theta = seq(0,90,by=10),
+  altitude = c(0,10000)
+ )
+vals = calculate_sky_values(
+  phi = value_grid$phi,
+  theta = value_grid$theta,
+  altitude = value_grid$altitude,
+  elevation = 45,
+  visibility = 120,
+  albedo = 0
+ )
+ cbind(value_grid, vals)
+}
 }

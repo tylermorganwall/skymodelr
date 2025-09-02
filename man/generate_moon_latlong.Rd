@@ -17,8 +17,6 @@ generate_moon_latlong(
   hosek = TRUE,
   wide_spectrum = FALSE,
   visibility = 50,
-  square_projection = FALSE,
-  moon = FALSE,
   verbose = FALSE,
   ...
 )
@@ -51,15 +49,9 @@ date-time; if missing a time-zone it is assumed to be local.}
 
 \item{visibility}{Default `50`. Meteorological range (km); *Prague only*.}
 
-\item{square_projection}{Default `FALSE`. `TRUE` results in an equal-area square mapping.}
-
 \item{verbose}{Default `FALSE`. Whether to print progress bars/diagnostic info.}
 
 \item{...}{Additional arguments passed to [generate_stars()]}
-
-\item{stars}{Default `FALSE`. If `TRUE`, composite a star field
-using [generate_stars()].  Automatically falls back to a pure star render
-when the black-sky condition is met (see *Details*).}
 }
 \value{
 Either the raw data, or the data is invisibly returned if outfile is given. The EXR is written to `outfile`.
@@ -70,15 +62,17 @@ of the moon as compared to the sun. This function takes the phase of the moon in
 along with the increase in luminosity around a full moon (known as opposition surge).
 }
 \examples{
-# Evening twilight with stars over Washington, DC
-temp_exr = tempfile(fileext = ".exr")
-generate_sky_latlong(
-  outfile     = temp_exr,
-  datetime    = "2025-07-30 20:20:00",
-  lat         = 38.9072,
-  lon         = -77.0369,
-  turbidity   = 3,
-  stars       = TRUE,
-  numbercores = 2
-)
+# Moonlit sky (Hosek), mid-evening in DC
+if(run_documentation()) {
+generate_moon_latlong(
+  datetime   = as.POSIXct("2025-07-30 20:20:00",tz="EST"),
+  lat        = 38.9072,
+  lon        = -77.0369,
+  resolution = 400,
+  turbidity  = 3,
+  verbose    = TRUE
+) |>
+  rayimage::render_exposure(15) |>
+  rayimage::plot_image()
+}
 }

@@ -6,7 +6,7 @@
 \usage{
 generate_sky_latlong(
   outfile = NA,
-  datetime = "2025-07-29 18:00:00",
+  datetime = "2025-01-01 12:00:00",
   lat = 38.9072,
   lon = -77.0369,
   albedo = 0.5,
@@ -17,8 +17,8 @@ generate_sky_latlong(
   hosek = TRUE,
   wide_spectrum = FALSE,
   visibility = 50,
-  square_projection = FALSE,
   stars = FALSE,
+  star_width = 1,
   moon = FALSE,
   verbose = FALSE,
   ...
@@ -52,8 +52,6 @@ date-time; if missing a time-zone it is assumed to be local.}
 
 \item{visibility}{Default `50`. Meteorological range (km); *Prague only*.}
 
-\item{square_projection}{Default `FALSE`. `TRUE` results in an equal-area square mapping.}
-
 \item{stars}{Default `FALSE`. If `TRUE`, composite a star field
 using [generate_stars()].  Automatically falls back to a pure star render
 when the black-sky condition is met (see *Details*).}
@@ -61,6 +59,8 @@ when the black-sky condition is met (see *Details*).}
 \item{verbose}{Default `FALSE`. Whether to print progress bars/diagnostic info.}
 
 \item{...}{Additional arguments passed to [generate_stars()]}
+
+\item{square_projection}{Default `FALSE`. `TRUE` results in an equal-area square mapping.}
 }
 \value{
 Either the raw data, or the data is invisibly returned if outfile is given. The EXR is written to `outfile`.
@@ -70,17 +70,9 @@ Convenience wrapper around [generate_sky()] that:
 1. Computes the Sun’s apparent position for `datetime`, `lat`, and `lon`
    (via **suncalc**).
 2. Renders the corresponding sky model.
-3. Optionally overlays a star field using [generate_stars()].
+3. Optionally overlays a star field using [generate_stars()] or moon with [generate_moon()].
 }
 \details{
-A “black-sky” optimisation is applied when *all* of the following hold:
-* Sun elevation < 0 degrees (−4.2 degrees for Prague model), and
-* `stars = TRUE`.
-
-In that case the sky contribution is effectively zero, so only the star
-field is written.
-
-
 *Solar angles* — altitude (degrees above the horizon) and azimuth (degrees clockwise from
 east, so 90 degrees = south) — are derived internally; you never have to supply
 them directly.
@@ -90,15 +82,45 @@ down to −4.2 degrees, and with the Hosek model it is defined only about 0 degr
 Below that the function skips the sky render and writes **only stars** when `stars = TRUE`.
 }
 \examples{
-# Evening twilight with stars over Washington, DC
-temp_exr = tempfile(fileext = ".exr")
+# Morning sunrise on spring solstice over Washington, DC with Prague model
+if(run_documentation()) {
 generate_sky_latlong(
-  outfile     = temp_exr,
-  datetime    = "2025-07-30 20:20:00",
+  datetime    = as.POSIXct("2025-03-21 06:15:00",tz="EST"),
   lat         = 38.9072,
   lon         = -77.0369,
-  turbidity   = 3,
-  stars       = TRUE,
-  numbercores = 2
-)
+  numbercores = 2,
+  hosek = FALSE
+) |>
+  rayimage::plot_image()
+}
+if(run_documentation()) {
+generate_sky_latlong(
+  datetime    = as.POSIXct("2025-03-21 12:00:00",tz="EST"),
+  lat         = 38.9072,
+  lon         = -77.0369,
+  numbercores = 2,
+) |>
+  rayimage::plot_image()
+}
+if(run_documentation()) {
+generate_sky_latlong(
+  datetime    = as.POSIXct("2025-03-21 18:00:00",tz="EST"),
+  lat         = 38.9072,
+  lon         = -77.0369,
+  numbercores = 2,
+) |>
+  rayimage::plot_image()
+}
+if(run_documentation()) {
+generate_sky_latlong(
+  datetime    = as.POSIXct("2025-03-21 18:30:00",tz="EST"),
+  lat         = 38.9072,
+  lon         = -77.0369,
+  numbercores = 2,
+  hosek = FALSE,
+  verbose=TRUE,
+) |>
+  rayimage::render_exposure(exposure=2) |>
+  rayimage::plot_image()
+}
 }
