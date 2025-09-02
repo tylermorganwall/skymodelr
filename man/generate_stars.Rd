@@ -26,11 +26,11 @@ generate_stars(
 
 \item{resolution}{Default `2048`. Map half-width; the output image is `2 * resolution` × `resolution`.}
 
-\item{zero_point}{Default `1`. Exposure scale applied to stellar intensities (larger = brighter stars).}
-
 \item{lon}{Default `0`. Observer longitude in degrees (east positive).}
 
 \item{lat}{Default `0`. Observer latitude in degrees.}
+
+\item{datetime}{Default `as.POSIXct("2000-01-01 00:00:00", tz = "UTC")`. `POSIXct` timestamp used to compute local sidereal time.}
 
 \item{turbidity}{Default `3.0`. Atmospheric turbidity controlling aerosol optical depth for extinction/reddening.}
 
@@ -47,8 +47,6 @@ generate_stars(
 \item{atmosphere_effects}{Default `TRUE`. If `TRUE`, apply atmospheric extinction and color shift using `turbidity`, `ozone_du`, and `altitude`.}
 
 \item{numbercores}{Default `1`. Number of CPU threads to use.}
-
-\item{time_utc}{Default `as.POSIXct("2000-01-01 00:00:00", tz = "UTC")`. `POSIXct` UTC timestamp used to compute local sidereal time; coerced to UTC internally.}
 }
 \description{
 Write a star‑field EXR aligned with `generate_sky()`
@@ -63,7 +61,7 @@ generate_stars(
   resolution = 400,
   lon        = -77.0369,
   lat        = 38.9072,
-  time_utc   = as.POSIXct("2025-03-21 02:20:00", tz = "EST"),
+  datetime   = as.POSIXct("2025-03-21 02:20:00", tz = "EST"),
   color      = TRUE,
   star_width = 1,
   zero_point = 10,
@@ -79,7 +77,7 @@ generate_stars(
   resolution = 400,
   lon        = -122.4194,
   lat        = 37.7749,
-  time_utc   = as.POSIXct("2025-06-01 08:00:00", tz = "UTC"),
+  datetime   = as.POSIXct("2025-06-01 08:00:00", tz = "UTC"),
   color      = FALSE,
   star_width = 1,
   zero_point = 10,
@@ -94,8 +92,7 @@ generate_stars(
   resolution = 400,
   lon        = 10,
   lat        = 45,
-  time_utc   = as.POSIXct("2025-12-01 22:00:00", tz = "UTC"),
-  zero_point = 10,
+  datetime   = as.POSIXct("2025-12-01 22:00:00", tz = "UTC"),
   star_width = 0.5,
   turbidity  = 3.5,
   ozone_du   = 320,

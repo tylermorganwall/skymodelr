@@ -345,9 +345,9 @@ generate_sky_latlong = function(
   if (stars) {
     stars_exr = generate_stars(
       resolution = resolution,
-      lon_deg = lon,
-      lat_deg = lat,
-      time_utc = as.POSIXct(datetime),
+      lon = lon,
+      lat = lat,
+      datetime = as.POSIXct(datetime),
       turbidity = turbidity,
       altitude = altitude,
       numbercores = numbercores,

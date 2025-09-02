@@ -6,15 +6,13 @@
 ## Overview
 
 **skymodelr** generates physically‑plausible sky domes and night skies
-as high‑dynamic‑range EXR images directly from R. It implements the
-Hosek–Wilkie analytic sky model and (optionally) the 2021–22 Prague
+as high‑dynamic‑range EXR images/arrays directly from R. It implements
+the Hosek–Wilkie analytic sky model and (optionally) the 2021–22 Prague
 spectral sky model (below‑horizon sun, altitude, and wide‑spectrum
 support). It also includes tools to add the moon as well as accurate
 visible **star fields** aligned to observer location/time. Outputs are
 lat‑long environment maps (2:1 equirectangular) that you can feed into
 renderers (such as *rayrender*).
-
-## Use
 
 `generate_sky_latlong()` composes a full sky environment using the
 functions `generate_sky()`, `generate_moon_latlong()`, and
@@ -56,46 +54,40 @@ dataset(s) once (see `download_sky_data()` below).
   adds stars and a moon‑lit atmosphere.
 
   - Core args: `outfile = NA`, `datetime`, `lat`, `lon`, `albedo`,
-    `turbidity`, `altitude`, `resolution`, `numbercores`.
+    `turbidity`, `resolution`, `numbercores`.
   - Model selection: `hosek = TRUE` (Hosek–Wilkie) or set
     `hosek = FALSE` to use the Prague spectral model; Prague extras:
-    `wide_spectrum`, `visibility`.
-  - Composition: `stars = FALSE`, `star_width`, `moon = FALSE`.
+    `wide_spectrum`, `visibility`, `altitude`.
+  - Composition: `stars = FALSE`, `star_width = 1`, `moon = FALSE`.
 
 - `generate_moon_latlong()` — Produce a moon‑lit atmosphere by scaling a
   sky dome to the moon’s luminance (phase + opposition surge). Computes
   the moon’s position from time/location. Arguments mirror
   `generate_sky_latlong()`.
 
-- `generate_stars()` — Synthesize a star‑field EXR aligned with the sky
+- `generate_stars()` — Generate a star‑field EXR aligned with the sky
   dome:
 
   - `outfile = NA`, `resolution = 2048`.
-  - `zero_point = 1` exposure scale (larger → brighter stars).
-  - `lon_deg`, `lat_deg` observer longitude/latitude (deg) and
-    `time_utc` (UTC; used for local sidereal time).
+  - `lon`, `lat` observer longitude/latitude (deg) and `datetime` (used
+    for local sidereal time).
   - Optional extinction/appearance controls: `turbidity`, `ozone_du`,
     `altitude`, `star_width`, `atmosphere_effects`,
     `upper_hemisphere_only`, `numbercores`.
 
-### Data & helpers
-
 - `calculate_sky_values()` — Sample radiance from the Prague model for
   given sky directions (`phi`, `theta`) and conditions (`elevation`,
-  `altitude`, `visibility`, `albedo`, `azimuth`). Useful for analysis
-  and custom shaders.
+  `altitude`, `visibility`, `albedo`, `azimuth`).
+
 - `download_sky_data(sea_level = TRUE, wide_spectrum = FALSE)` —
   Download Prague model coefficient data:
-  - Sea‑level, standard spectrum: `SkyModelDatasetGround.dat` (~107 MB)
+
+  - Sea‑level, standard spectrum: `SkyModelDatasetGround.dat` (~107 MB)
   - Sea‑level, wide spectrum: `PragueSkyModelDatasetGroundInfra.dat`
-    (~574 MB)
-  - Full‑altitude dataset: `SkyModelDataset.dat` (~2.4 GB)
-- `run_documentation()` — Internal helper to gate heavier examples in
-  docs.
+    (~574 MB)
+  - Full‑altitude dataset: `SkyModelDataset.dat` (~2.4 GB)
 
 ## Usage
-
-## Basic usage
 
 Morning in DC:
 
@@ -118,9 +110,6 @@ rayimage::plot_image(env)
 Afternoon in DC:
 
 ``` r
-library(skymodelr)
-library(rayimage)
-
 env = generate_sky_latlong(
   outfile    = NA,
   datetime   = as.POSIXct("2025-03-21 12:15:00",tz="EST"),
@@ -136,9 +125,6 @@ rayimage::plot_image(env)
 Evening in DC:
 
 ``` r
-library(skymodelr)
-library(rayimage)
-
 env = generate_sky_latlong(
   outfile    = NA,
   datetime   = as.POSIXct("2025-03-21 18:00:00",tz="EST"),
@@ -150,6 +136,23 @@ rayimage::plot_image(env)
 ```
 
 ![](man/figures/full_sky_evening-1.png)<!-- -->
+
+Full sun + moon + stars:
+
+``` r
+env = generate_sky_latlong(
+  outfile    = NA,
+  datetime   = as.POSIXct("2025-03-21 18:00:00",tz="EST"),
+  lat        = 38.9072,
+  lon        = -77.0369,
+  resolution = 800,
+  stars = TRUE,
+  moon = TRUE
+)
+rayimage::plot_image(env)
+```
+
+![](man/figures/full_sky_night-1.png)<!-- -->
 
 ## Custom sun position, multicore, no solar disk
 
@@ -247,6 +250,7 @@ sky_prague = generate_sky(
   resolution = 2048,
   numbercores = 4
 )
+plot_image(sky_prague)
 ```
 
 ## Acknowledgements
