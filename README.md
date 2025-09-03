@@ -127,7 +127,7 @@ Evening in DC:
 ``` r
 env = generate_sky_latlong(
   outfile    = NA,
-  datetime   = as.POSIXct("2025-03-21 18:00:00",tz="EST"),
+  datetime   = as.POSIXct("2025-03-21 18:15:00",tz="EST"),
   lat        = 38.9072,
   lon        = -77.0369,
   resolution = 800
@@ -136,6 +136,22 @@ rayimage::plot_image(env)
 ```
 
 ![](man/figures/full_sky_evening-1.png)<!-- -->
+
+Evening in DC (Prague model):
+
+``` r
+env = generate_sky_latlong(
+  outfile    = NA,
+  datetime   = as.POSIXct("2025-03-21 18:15:00",tz="EST"),
+  lat        = 38.9072,
+  lon        = -77.0369,
+  resolution = 800,
+  hosek = FALSE
+)
+rayimage::plot_image(env)
+```
+
+![](man/figures/full_sky_evening_prague-1.png)<!-- -->
 
 Full sun + moon + stars:
 

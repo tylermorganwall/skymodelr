@@ -69,7 +69,7 @@ Usage
 library(knitr)
 knitr::opts_chunk$set(
   fig.path = "man/figures/",
-  cache = TRUE
+  cache = FALSE
 )
 set.seed(1001)
 ```
@@ -110,13 +110,29 @@ Evening in DC:
 
 env = generate_sky_latlong(
   outfile    = NA,
-  datetime   = as.POSIXct("2025-03-21 18:00:00",tz="EST"),
+  datetime   = as.POSIXct("2025-03-21 18:15:00",tz="EST"),
   lat        = 38.9072,
   lon        = -77.0369,
   resolution = 800
 )
 rayimage::plot_image(env)
 ```
+
+Evening in DC (Prague model):
+
+```{r full_sky_evening_prague, message=FALSE, warning=FALSE}
+
+env = generate_sky_latlong(
+  outfile    = NA,
+  datetime   = as.POSIXct("2025-03-21 18:15:00",tz="EST"),
+  lat        = 38.9072,
+  lon        = -77.0369,
+  resolution = 800,
+  hosek = FALSE
+)
+rayimage::plot_image(env)
+```
+
 
 Full sun + moon + stars:
 
@@ -133,7 +149,6 @@ env = generate_sky_latlong(
 )
 rayimage::plot_image(env)
 ```
-
 
 ## Custom sun position, multicore, no solar disk
 

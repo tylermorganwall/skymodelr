@@ -6,6 +6,7 @@ figures:
   fig.asp: 0.5
 template:
   bootstrap: 5
+url: https://www.skymodelr.com
 
 reference:
   - title: "Generate Sky EXRs"
