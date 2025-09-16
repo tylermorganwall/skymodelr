@@ -1,11 +1,4 @@
 # ---------------------------------------------------------------------------
-# Helpers to convert POSIXct → Julian Date (UTC noon 1 Jan 2000 = 2451545).
-#' @noRd
-jd_utc = function(time_utc) {
-  unclass(time_utc) / 86400 + 2440587.5 # Unix epoch to JD
-}
-
-# ---------------------------------------------------------------------------
 #' Write a star‑field EXR aligned with `generate_sky()`
 #'
 #' @param outfile Default `NA`. Path to a `.exr` file to write. If `NA`, no file is written and the image data are returned.
@@ -73,32 +66,37 @@ jd_utc = function(time_utc) {
 #' ) |>
 #'   rayimage::plot_image()
 #'}
-generate_stars = function(
-  outfile = NA,
+generate_planets = function(
+  filename = NA,
   resolution = 2048,
   zero_point = 1,
+  datetime = as.POSIXct("2000-01-01 00:00:00", tz = "UTC"),
   lon = 0,
   lat = 0,
-  datetime = as.POSIXct("2000-01-01 00:00:00", tz = "UTC"),
   turbidity = 3.0,
   ozone_du = 300.0,
   altitude = 0.0,
-  color = TRUE,
-  star_width = 1,
+  color = FALSE,
+  planet_width = 1,
   upper_hemisphere_only = TRUE,
   atmosphere_effects = TRUE,
-  numbercores = 1
+  numbercores = 1,
+  verbose = FALSE
 ) {
-  starfield_tmp = tempfile(fileext = ".exr")
+  planet_tmp = tempfile(fileext = ".exr")
   if (!inherits(datetime, "POSIXct")) {
     stop("datetime must be POSIXct in UTC")
   }
   attr(datetime, "tzone") = "UTC"
   jd = jd_utc(datetime)
 
+  planet_temp = swe_dirs_topo_planets_df(datetime, lon, lat)
+  if (verbose) {
+    print(planet_temp)
+  }
   make_starfield_rcpp(
-    outfile = starfield_tmp,
-    stars = skymodelr::stars,
+    outfile = planet_tmp,
+    stars = planet_temp,
     resolution = resolution,
     lon_deg = lon,
     lat_deg = lat,
@@ -107,17 +105,17 @@ generate_stars = function(
     turbidity = turbidity,
     ozone_du = ozone_du,
     altitude = altitude,
-    star_width = star_width,
+    star_width = planet_width,
     atmosphere_effects = atmosphere_effects,
     upper_hemisphere_only = upper_hemisphere_only,
     numbercores = numbercores,
     precision_multiplier = 1000000
   )
-  star_exr = rayimage::ray_read_image(starfield_tmp) / 1000000
-  if (!is.na(outfile)) {
-    file.copy(outfile, starfield_tmp, overwrite = TRUE)
-    return(invisible(star_exr))
+  planet_exr = rayimage::ray_read_image(planet_tmp) / 1000000
+  if (!is.na(filename)) {
+    file.copy(filename, planet_tmp, overwrite = TRUE)
+    return(invisible(planet_exr))
   } else {
-    return(star_exr)
+    return(planet_exr)
   }
 }

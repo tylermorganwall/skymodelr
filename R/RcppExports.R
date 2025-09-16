@@ -9,7 +9,7 @@ calculate_raw_prague <- function(phi, theta, elevation, albedo, altitude, visibi
     .Call(`_skymodelr_calculate_raw_prague`, phi, theta, elevation, albedo, altitude, visibility, azimuth_deg, numbercores, prg_dataset, render_solar_disk)
 }
 
-make_starfield_rcpp <- function(outfile, stars, resolution = 2048L, zero_point = 1.0, lon_deg = 0.0, lat_deg = 0.0, jd = 2451545.0, turbidity = 3.0, ozone_du = 300.0, altitude = 0.0, star_width = 1.0, use_rgb = TRUE, atmosphere_effects = TRUE, upper_hemisphere_only = TRUE, numbercores = 1L) {
-    invisible(.Call(`_skymodelr_make_starfield_rcpp`, outfile, stars, resolution, zero_point, lon_deg, lat_deg, jd, turbidity, ozone_du, altitude, star_width, use_rgb, atmosphere_effects, upper_hemisphere_only, numbercores))
+make_starfield_rcpp <- function(outfile, stars, resolution = 2048L, zero_point = 1.0, lon_deg = 0.0, lat_deg = 0.0, jd = 2451545.0, turbidity = 3.0, ozone_du = 300.0, altitude = 0.0, star_width = 1.0, use_rgb = TRUE, atmosphere_effects = TRUE, upper_hemisphere_only = TRUE, numbercores = 1L, precision_multiplier = 10000) {
+    invisible(.Call(`_skymodelr_make_starfield_rcpp`, outfile, stars, resolution, zero_point, lon_deg, lat_deg, jd, turbidity, ozone_du, altitude, star_width, use_rgb, atmosphere_effects, upper_hemisphere_only, numbercores, precision_multiplier))
 }
 

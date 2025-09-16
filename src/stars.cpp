@@ -8,10 +8,9 @@
 #include <mutex>
 #include <cmath>
 
-inline float mag_to_luminance(float Vmagnitude,
-                              float zeroPoint = 1.0f)
-{
-    return zeroPoint * std::pow(10.0f, -0.4f * Vmagnitude);
+inline double mag_to_luminance(double Vmagnitude,
+                               double zeroPoint = 1.0) {
+  return zeroPoint * std::pow(10.0, (-14.18 - Vmagnitude)/2.5);
 }
 
 using Imf::Rgba;
@@ -54,7 +53,8 @@ void make_starfield_rcpp(std::string     outfile,
             						 bool            use_rgb   = true,
             						 bool            atmosphere_effects = true,
             						 bool            upper_hemisphere_only = true,
-            						 unsigned int    numbercores  = 1)
+            						 unsigned int    numbercores  = 1,
+            						 double          precision_multiplier = 10000)
 {
   if (resolution == 0) Rcpp::stop("resolution must be greater than or equal to 1");
   if(!upper_hemisphere_only & atmosphere_effects) {
@@ -65,7 +65,7 @@ void make_starfield_rcpp(std::string     outfile,
   const int nPhi   = 2 * resolution;    // cols (longitude)
   const int nPix   = nTheta * nPhi;
 
-  std::vector<float> img(3 * nPix, 0.0f);
+  std::vector<double> img(3 * nPix, 0.0f);
 
   // pull columns out of the data frame
   Rcpp::NumericVector ra   = stars["ra_rad"];
@@ -202,7 +202,7 @@ void make_starfield_rcpp(std::string     outfile,
   		if (norm <= 0.0) return;
 
   		// Star radiance in channels
-  		float  L  = mag_to_luminance(mag[i], float(zero_point));
+  		double  L  = mag_to_luminance(mag[i], double(zero_point));
   		double R0 = L * r * T_r / norm;
   		double G0 = L * g * T_g / norm;
   		double B0 = L * b * T_b / norm;
@@ -222,9 +222,9 @@ void make_starfield_rcpp(std::string     outfile,
   		      double w = wyj * wx[dx + rad];   // separable Gaussian
 
   		      std::size_t idx = base + 3ULL * (std::size_t)p;
-  		      img[idx    ] += float(w * R0);
-  		      img[idx + 1] += float(w * G0);
-  		      img[idx + 2] += float(w * B0);
+  		      img[idx    ] += double(w * R0 * precision_multiplier);
+  		      img[idx + 1] += double(w * G0 * precision_multiplier);
+  		      img[idx + 2] += double(w * B0 * precision_multiplier);
   		    }
   		  }
   		}
