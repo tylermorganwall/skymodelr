@@ -9,3 +9,6 @@ src/*.o
 src/**/*.o
 docs
 README_cache
+src/*.so
+src/Makevars
+src/Makevars.win
