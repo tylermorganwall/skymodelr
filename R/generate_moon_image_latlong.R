@@ -1,3 +1,7 @@
+#' Normalize a vector to unit length
+#'
+#' @description Scale a numeric vector so it has unit Euclidean length.
+#' @param v Numeric vector to normalise.
 #' @keywords internal
 normalize = function(v) {
   s = sqrt(sum(v * v))
@@ -5,6 +9,11 @@ normalize = function(v) {
   return(v / s)
 }
 
+#' 3D cross product helper
+#'
+#' @description Compute the 3D cross product of two numeric vectors.
+#' @param x Numeric vector of length 3.
+#' @param y Numeric vector of length 3.
 #' @keywords internal
 cross_prod = function(x, y) {
   return(c(
@@ -14,7 +23,13 @@ cross_prod = function(x, y) {
   ))
 }
 
-#Manual implementation:
+#' Convert altitude/azimuth to ENU
+#'
+#' @description Map altitude/azimuth angles (north-referenced) to a unit
+#' East-North-Up direction vector.
+#' @param alt_rad Altitude in radians.
+#' @param azN_rad Azimuth in radians measured from north.
+#' @keywords internal
 altaz_to_enu = function(alt_rad, azN_rad) {
   east = sin(azN_rad) * cos(alt_rad)
   north = cos(azN_rad) * cos(alt_rad)
@@ -22,6 +37,15 @@ altaz_to_enu = function(alt_rad, azN_rad) {
   normalize(c(east, north, up)) # (E, N, U) matches engine XYZ
 }
 
+#' Compute topocentric moon/sun directions
+#'
+#' @description Query Swiss Ephemeris for topocentric sun and moon direction
+#' vectors and magnitudes for a given observer location.
+#' @param datetime POSIXct observation time (UTC).
+#' @param lat Latitude in degrees.
+#' @param lon Longitude in degrees.
+#' @param elev_m Observer elevation above sea level in metres.
+#' @keywords internal
 swe_dirs_topo_moon_sun = function(datetime, lat, lon, elev_m = 0) {
   swephR::swe_set_topo(lon, lat, elev_m)
   attr(datetime, "tzone") = "UTC"
@@ -107,6 +131,12 @@ swe_dirs_topo_moon_sun = function(datetime, lat, lon, elev_m = 0) {
 }
 
 
+#' Convert Swiss ephemeris data to a starfield frame
+#'
+#' @description Build a data frame compatible with `make_starfield_rcpp()` from
+#' Swiss Ephemeris results.
+#' @param sweph_info List of planetary info objects.
+#' @keywords internal
 sweph_info_to_stars_df = function(sweph_info) {
   sweph_info_df = do.call(rbind, lapply(sweph_info, as.data.frame))
   planets = rownames(sweph_info_df)
@@ -121,6 +151,15 @@ sweph_info_to_stars_df = function(sweph_info) {
   )
 }
 
+#' Compute bright-planet positions via Swiss Ephemeris
+#'
+#' @description Produce a data frame of planetary apparent positions and
+#' magnitudes for the observer.
+#' @param datetime POSIXct observation time (UTC).
+#' @param lat Latitude in degrees.
+#' @param lon Longitude in degrees.
+#' @param elev_m Observer elevation above sea level in metres.
+#' @keywords internal
 swe_dirs_topo_planets_df = function(datetime, lat, lon, elev_m = 0) {
   swephR::swe_set_topo(lon, lat, elev_m)
   attr(datetime, "tzone") = "UTC"
@@ -194,6 +233,12 @@ swe_dirs_topo_planets_df = function(datetime, lat, lon, elev_m = 0) {
 }
 
 
+#' Build an orthonormal frame from a Z axis
+#'
+#' @description Construct a 3×3 orientation matrix with the third column aligned
+#' to a supplied direction.
+#' @param x Numeric vector giving the desired Z axis.
+#' @keywords internal
 build_from_z = function(x) {
   zz = normalize(x)
   a = if (abs(zz[1]) > 0.9999999) c(0, 1, 0) else c(1, 0, 0)
@@ -202,6 +247,17 @@ build_from_z = function(x) {
   return(matrix(c(xx, yy, zz), ncol = 3, byrow = FALSE))
 }
 
+#' Render the moon into a lat-long EXR patch
+#'
+#' @description Produce a rasterised moon texture aligned for composition into
+#' the sky dome.
+#' @param datetime POSIXct observation time (UTC).
+#' @param lat Latitude in degrees.
+#' @param lon Longitude in degrees.
+#' @param elev_m Observer elevation above sea level in metres.
+#' @param width Output width in pixels.
+#' @param height Output height in pixels.
+#' @keywords internal
 generate_moon_image_latlong = function(
   datetime,
   lat,

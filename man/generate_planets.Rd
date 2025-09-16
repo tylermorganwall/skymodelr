@@ -2,15 +2,14 @@
 % Please edit documentation in R/planets.R
 \name{generate_planets}
 \alias{generate_planets}
-\title{Write a star‑field EXR aligned with `generate_sky()`}
+\title{Render bright planets into an EXR map}
 \usage{
 generate_planets(
-  filename = NA,
-  resolution = 2048,
-  zero_point = 1,
   datetime = as.POSIXct("2000-01-01 00:00:00", tz = "UTC"),
   lon = 0,
   lat = 0,
+  filename = NA,
+  resolution = 2048,
   turbidity = 3,
   ozone_du = 300,
   altitude = 0,
@@ -23,83 +22,53 @@ generate_planets(
 )
 }
 \arguments{
-\item{resolution}{Default `2048`. Map half-width; the output image is `2 * resolution` × `resolution`.}
+\item{datetime}{POSIXct timestamp in UTC used for ephemerides.}
 
-\item{datetime}{Default `as.POSIXct("2000-01-01 00:00:00", tz = "UTC")`. `POSIXct` timestamp used to compute local sidereal time.}
+\item{lon}{Observer longitude in degrees (east positive).}
 
-\item{lon}{Default `0`. Observer longitude in degrees (east positive).}
+\item{lat}{Observer latitude in degrees.}
 
-\item{lat}{Default `0`. Observer latitude in degrees.}
+\item{filename}{Default `NA`. Destination `.exr` path to write.}
 
-\item{turbidity}{Default `3.0`. Atmospheric turbidity controlling aerosol optical depth for extinction/reddening.}
+\item{resolution}{Default `2048`. Map half-width (image is `2 * resolution` × `resolution`).}
 
-\item{ozone_du}{Default `300.0`. Column ozone in Dobson Units used in atmospheric absorption.}
+\item{turbidity}{Atmospheric turbidity for extinction modelling.}
 
-\item{altitude}{Default `0.0`. Observer altitude above mean sea level in meters.}
+\item{ozone_du}{Column ozone (Dobson Units) for colour shifts.}
 
-\item{color}{Default `TRUE`. If `TRUE`, render RGB star colors; if `FALSE`, render monochrome luminance.}
+\item{altitude}{Observer altitude in metres.}
 
-\item{upper_hemisphere_only}{Default `TRUE`. If `TRUE`, pixels below the local horizon are suppressed to match `generate_sky()`’s visible hemisphere.}
+\item{color}{Render RGB (`TRUE`) stars or monochrome (`FALSE`).}
 
-\item{atmosphere_effects}{Default `TRUE`. If `TRUE`, apply atmospheric extinction and color shift using `turbidity`, `ozone_du`, and `altitude`.}
+\item{planet_width}{Approximate point-spread size for planets in pixels.}
 
-\item{numbercores}{Default `1`. Number of CPU threads to use.}
+\item{upper_hemisphere_only}{If `TRUE`, mask pixels below the horizon.}
 
-\item{outfile}{Default `NA`. Path to a `.exr` file to write. If `NA`, no file is written and the image data are returned.}
+\item{atmosphere_effects}{If `TRUE`, apply atmospheric extinction.}
 
-\item{star_width}{Default `1`. Approximate stellar point-spread size in pixels (controls apparent star sharpness).}
+\item{numbercores}{CPU threads used for rendering.}
+
+\item{verbose}{Emit diagnostic output when `TRUE`.}
 }
 \description{
-Write a star‑field EXR aligned with `generate_sky()`
+Build a planetary luminance map aligned with the sky dome for
+compositing within [generate_sky_latlong()].
 }
 \examples{
 # Basic star field over Washington, DC at a fixed time
 if(run_documentation()) {
-generate_stars(
-  resolution = 400,
+generate_planets(
+  datetime   = as.POSIXct("2025-03-21 02:20:00", tz = "EST"),
   lon        = -77.0369,
   lat        = 38.9072,
-  datetime   = as.POSIXct("2025-03-21 02:20:00", tz = "EST"),
+  resolution = 400,
   color      = TRUE,
-  star_width = 1,
+  planet_width = 1,
   zero_point = 10,
   atmosphere_effects   = TRUE,
   upper_hemisphere_only = TRUE,
   numbercores = 2
 ) |>
-  rayimage::render_exposure(16) |>
-  rayimage::plot_image()
-}
-if(run_documentation()) {
-# Monochrome stars, no atmospheric extinction/reddening, full sphere
-generate_stars(
-  resolution = 400,
-  lon        = -122.4194,
-  lat        = 37.7749,
-  datetime   = as.POSIXct("2025-06-01 08:00:00", tz = "UTC"),
-  color      = FALSE,
-  star_width = 1,
-  zero_point = 10,
-  upper_hemisphere_only = FALSE,
-  atmosphere_effects    = FALSE
-) |>
-  rayimage::render_exposure(16) |>
-  rayimage::plot_image()
-}
-if(run_documentation()) {
-# Sharper stars (smaller PSF) with ozone/turbidity and altitude
-generate_stars(
-  resolution = 400,
-  lon        = 10,
-  lat        = 45,
-  datetime   = as.POSIXct("2025-12-01 22:00:00", tz = "UTC"),
-  star_width = 0.5,
-  turbidity  = 3.5,
-  ozone_du   = 320,
-  altitude   = 1000,
-  color      = TRUE
-) |>
-  rayimage::render_exposure(16) |>
   rayimage::plot_image()
 }
 }

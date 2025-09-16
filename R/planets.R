@@ -1,34 +1,34 @@
-# ---------------------------------------------------------------------------
-#' Write a star‑field EXR aligned with `generate_sky()`
+#' Render bright planets into an EXR map
 #'
-#' @param outfile Default `NA`. Path to a `.exr` file to write. If `NA`, no file is written and the image data are returned.
-#' @param resolution Default `2048`. Map half-width; the output image is `2 * resolution` × `resolution`.
-#' @param lon Default `0`. Observer longitude in degrees (east positive).
-#' @param lat Default `0`. Observer latitude in degrees.
-#' @param datetime Default `as.POSIXct("2000-01-01 00:00:00", tz = "UTC")`. `POSIXct` timestamp used to compute local sidereal time.
-#' @param turbidity Default `3.0`. Atmospheric turbidity controlling aerosol optical depth for extinction/reddening.
-#' @param ozone_du Default `300.0`. Column ozone in Dobson Units used in atmospheric absorption.
-#' @param altitude Default `0.0`. Observer altitude above mean sea level in meters.
-#' @param color Default `TRUE`. If `TRUE`, render RGB star colors; if `FALSE`, render monochrome luminance.
-#' @param star_width Default `1`. Approximate stellar point-spread size in pixels (controls apparent star sharpness).
-#' @param upper_hemisphere_only Default `TRUE`. If `TRUE`, pixels below the local horizon are suppressed to match `generate_sky()`’s visible hemisphere.
-#' @param atmosphere_effects Default `TRUE`. If `TRUE`, apply atmospheric extinction and color shift using `turbidity`, `ozone_du`, and `altitude`.
-#' @param numbercores Default `1`. Number of CPU threads to use.
+#' @description Build a planetary luminance map aligned with the sky dome for
+#' compositing within [generate_sky_latlong()].
+#'
+#' @param datetime POSIXct timestamp in UTC used for ephemerides.
+#' @param lon Observer longitude in degrees (east positive).
+#' @param lat Observer latitude in degrees.
+#' @param filename Default `NA`. Destination `.exr` path to write.
+#' @param resolution Default `2048`. Map half-width (image is `2 * resolution` × `resolution`).
+#' @param turbidity Atmospheric turbidity for extinction modelling.
+#' @param ozone_du Column ozone (Dobson Units) for colour shifts.
+#' @param altitude Observer altitude in metres.
+#' @param color Render RGB (`TRUE`) stars or monochrome (`FALSE`).
+#' @param planet_width Approximate point-spread size for planets in pixels.
+#' @param upper_hemisphere_only If `TRUE`, mask pixels below the horizon.
+#' @param atmosphere_effects If `TRUE`, apply atmospheric extinction.
+#' @param numbercores CPU threads used for rendering.
+#' @param verbose Emit diagnostic output when `TRUE`.
 #'
 #' @export
 #' @examples
-#' # Note: exposure has been increased for all examples (via white_point) for
-#' # ease of visibility in documentation
-#'
 #' # Basic star field over Washington, DC at a fixed time
 #' if(run_documentation()) {
-#' generate_stars(
-#'   resolution = 400,
+#' generate_planets(
+#'   datetime   = as.POSIXct("2025-03-21 02:20:00", tz = "EST"),
 #'   lon        = -77.0369,
 #'   lat        = 38.9072,
-#'   datetime   = as.POSIXct("2025-03-21 02:20:00", tz = "EST"),
+#'   resolution = 400,
 #'   color      = TRUE,
-#'   star_width = 1,
+#'   planet_width = 1,
 #'   zero_point = 10,
 #'   atmosphere_effects   = TRUE,
 #'   upper_hemisphere_only = TRUE,
@@ -36,86 +36,55 @@
 #' ) |>
 #'   rayimage::plot_image()
 #'}
-#'if(run_documentation()) {
-#' # Monochrome stars, no atmospheric extinction/reddening, full sphere
-#' generate_stars(
-#'   resolution = 400,
-#'   lon        = -122.4194,
-#'   lat        = 37.7749,
-#'   datetime   = as.POSIXct("2025-06-01 08:00:00", tz = "UTC"),
-#'   color      = FALSE,
-#'   star_width = 1,
-#'   zero_point = 10,
-#'   upper_hemisphere_only = FALSE,
-#'   atmosphere_effects    = FALSE
-#' ) |>
-#'   rayimage::plot_image()
-#'}
-#'if(run_documentation()) {
-#' # Sharper stars (smaller PSF) with ozone/turbidity and altitude
-#' generate_stars(
-#'   resolution = 400,
-#'   lon        = 10,
-#'   lat        = 45,
-#'   datetime   = as.POSIXct("2025-12-01 22:00:00", tz = "UTC"),
-#'   star_width = 0.5,
-#'   turbidity  = 3.5,
-#'   ozone_du   = 320,
-#'   altitude   = 1000,
-#'   color      = TRUE
-#' ) |>
-#'   rayimage::plot_image()
-#'}
 generate_planets = function(
-  filename = NA,
-  resolution = 2048,
-  zero_point = 1,
-  datetime = as.POSIXct("2000-01-01 00:00:00", tz = "UTC"),
-  lon = 0,
-  lat = 0,
-  turbidity = 3.0,
-  ozone_du = 300.0,
-  altitude = 0.0,
-  color = FALSE,
-  planet_width = 1,
-  upper_hemisphere_only = TRUE,
-  atmosphere_effects = TRUE,
-  numbercores = 1,
-  verbose = FALSE
+	datetime = as.POSIXct("2000-01-01 00:00:00", tz = "UTC"),
+	lon = 0,
+	lat = 0,
+	filename = NA,
+	resolution = 2048,
+	turbidity = 3.0,
+	ozone_du = 300.0,
+	altitude = 0.0,
+	color = FALSE,
+	planet_width = 1,
+	upper_hemisphere_only = TRUE,
+	atmosphere_effects = TRUE,
+	numbercores = 1,
+	verbose = FALSE
 ) {
-  planet_tmp = tempfile(fileext = ".exr")
-  if (!inherits(datetime, "POSIXct")) {
-    stop("datetime must be POSIXct in UTC")
-  }
-  attr(datetime, "tzone") = "UTC"
-  jd = jd_utc(datetime)
+	planet_tmp = tempfile(fileext = ".exr")
+	if (!inherits(datetime, "POSIXct")) {
+		stop("datetime must be POSIXct in UTC")
+	}
+	attr(datetime, "tzone") = "UTC"
+	jd = jd_utc(datetime)
 
-  planet_temp = swe_dirs_topo_planets_df(datetime, lon, lat)
-  if (verbose) {
-    print(planet_temp)
-  }
-  make_starfield_rcpp(
-    outfile = planet_tmp,
-    stars = planet_temp,
-    resolution = resolution,
-    lon_deg = lon,
-    lat_deg = lat,
-    jd = jd,
-    use_rgb = color,
-    turbidity = turbidity,
-    ozone_du = ozone_du,
-    altitude = altitude,
-    star_width = planet_width,
-    atmosphere_effects = atmosphere_effects,
-    upper_hemisphere_only = upper_hemisphere_only,
-    numbercores = numbercores,
-    precision_multiplier = 1000000
-  )
-  planet_exr = rayimage::ray_read_image(planet_tmp) / 1000000
-  if (!is.na(filename)) {
-    file.copy(filename, planet_tmp, overwrite = TRUE)
-    return(invisible(planet_exr))
-  } else {
-    return(planet_exr)
-  }
+	planet_temp = swe_dirs_topo_planets_df(datetime, lon, lat)
+	if (verbose) {
+		print(planet_temp)
+	}
+	make_starfield_rcpp(
+		outfile = planet_tmp,
+		stars = planet_temp,
+		resolution = resolution,
+		lon_deg = lon,
+		lat_deg = lat,
+		jd = jd,
+		use_rgb = color,
+		turbidity = turbidity,
+		ozone_du = ozone_du,
+		altitude = altitude,
+		star_width = planet_width,
+		atmosphere_effects = atmosphere_effects,
+		upper_hemisphere_only = upper_hemisphere_only,
+		numbercores = numbercores,
+		precision_multiplier = 1000000
+	)
+	planet_exr = rayimage::ray_read_image(planet_tmp) / 1000000
+	if (!is.na(filename)) {
+		file.copy(filename, planet_tmp, overwrite = TRUE)
+		return(invisible(planet_exr))
+	} else {
+		return(planet_exr)
+	}
 }

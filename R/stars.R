@@ -1,8 +1,13 @@
 # ---------------------------------------------------------------------------
 # Helpers to convert POSIXct → Julian Date (UTC noon 1 Jan 2000 = 2451545).
-#' @noRd
+#' Convert POSIXct timestamps to Julian Date
+#'
+#' @description Transform a POSIXct time value into an astronomical Julian Date
+#' (days since noon UTC 1 Jan 4713 BCE).
+#' @param time_utc POSIXct vector in UTC.
+#' @keywords internal
 jd_utc = function(time_utc) {
-	unclass(time_utc) / 86400 + 2440587.5 # Unix epoch to JD
+  unclass(time_utc) / 86400 + 2440587.5 # Unix epoch to JD
 }
 
 # ---------------------------------------------------------------------------
