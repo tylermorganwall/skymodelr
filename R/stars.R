@@ -39,7 +39,6 @@ jd_utc = function(time_utc) {
 #'   datetime   = as.POSIXct("2025-03-21 02:20:00", tz = "EST"),
 #'   color      = TRUE,
 #'   star_width = 1,
-#'   zero_point = 10,
 #'   atmosphere_effects   = TRUE,
 #'   upper_hemisphere_only = TRUE,
 #'   numbercores = 2
@@ -55,7 +54,6 @@ jd_utc = function(time_utc) {
 #'   datetime   = as.POSIXct("2025-06-01 08:00:00", tz = "UTC"),
 #'   color      = FALSE,
 #'   star_width = 1,
-#'   zero_point = 10,
 #'   upper_hemisphere_only = FALSE,
 #'   atmosphere_effects    = FALSE
 #' ) |>
@@ -79,7 +77,6 @@ jd_utc = function(time_utc) {
 generate_stars = function(
 	outfile = NA,
 	resolution = 2048,
-	zero_point = 1,
 	lon = 0,
 	lat = 0,
 	datetime = as.POSIXct("2000-01-01 00:00:00", tz = "UTC"),
