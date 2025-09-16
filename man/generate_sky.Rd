@@ -5,7 +5,7 @@
 \title{Write a Hosek–Wilkie sky dome to EXR}
 \usage{
 generate_sky(
-  outfile = NA,
+  filename = NA,
   albedo = 0.5,
   turbidity = 3,
   elevation = 10,
@@ -21,7 +21,7 @@ generate_sky(
 )
 }
 \arguments{
-\item{outfile}{Default `NA`. Path to `.exr` file. If not given, the data will be returned instead.}
+\item{filename}{Default `NA`. Path to `.exr` file. If not given, the data will be returned instead.}
 
 \item{albedo}{Default `0.5`. 0–1 ground albedo.}
 
@@ -29,17 +29,17 @@ generate_sky(
 
 \item{elevation}{Default `10`. Solar elevation above the horizon (degrees).}
 
-\item{azimuth}{Default `90`, sun directly east. Solar azimuth (degrees). Left side of the image represents North.
-Halfway across the image represents South.}
+\item{azimuth}{Default `90`, sun directly east. Solar azimuth (degrees). The left edge of the image faces north and the middle faces south.}
 
-\item{altitude}{Default `0`. Altitude of the viewer in meters. Valid [0,15000]. Only valid for the
-Prague model.}
+\item{altitude}{Default `0`. Altitude of the viewer in meters. Valid [0, 15000]. Only valid for the Prague model.}
 
-\item{resolution}{Default `2048`. Height of the image. Width is 2x this number.}
+\item{resolution}{Default `2048`. Height of the image. Width is 2 × this number.}
 
 \item{numbercores}{Default `1`. Number of threads to use in computation.}
 
-\item{hosek}{Default `TRUE`. Use `"prague"` to enable the Prague 2021-22 spectral sky model.}
+\item{hosek}{Default `TRUE`. Use `"prague"` to enable the Prague 2021–22 spectral sky model.}
+
+\item{wide_spectrum}{Default `FALSE`. Use the 55-channel Prague coefficients (sea level only).}
 
 \item{visibility}{Default `50`. Meteorological range in kilometres for Prague model.}
 
@@ -48,10 +48,12 @@ Prague model.}
 \item{render_solar_disk}{Default `TRUE`. Whether to render the solar disk in addition to the atmosphere.}
 }
 \value{
-Either the raw data, or the data is invisibly returned if outfile is given. The EXR is written to `outfile`.
+Either the raw data, or the data is invisibly returned if filename is given. The EXR is written to `filename`.
 }
 \description{
-Write a Hosek–Wilkie sky dome to EXR
+Evaluate either the Hosek–Wilkie or Prague analytic sky models
+and return a 32-bit floating-point EXR or the raw pixel array for the given
+solar configuration.
 }
 \examples{
 if(run_documentation()) {

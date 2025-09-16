@@ -39,7 +39,8 @@ calculate_sky_values(
 3 column RGB matrix.
 }
 \description{
-Sample a direction from the Prague model.
+Evaluate the Prague spectral sky model at arbitrary spherical
+directions without writing an image, returning radiance-only samples.
 }
 \examples{
 #Generate a basic atmosphere with the Hosek model

@@ -5,7 +5,7 @@
 \title{Generate the atmosphere with the moon}
 \usage{
 generate_moon_latlong(
-  outfile = NA,
+  filename = NA,
   datetime = "2025-07-29 18:00:00",
   lat = 38.9072,
   lon = -77.0369,
@@ -14,6 +14,7 @@ generate_moon_latlong(
   altitude = 0,
   resolution = 2048,
   numbercores = 1,
+  atmospheric_scattering = FALSE,
   hosek = TRUE,
   wide_spectrum = FALSE,
   visibility = 50,
@@ -22,7 +23,7 @@ generate_moon_latlong(
 )
 }
 \arguments{
-\item{outfile}{Default `NA`. Path to the `.exr` file to write.}
+\item{filename}{Default `NA`. Path to the `.exr` file to write.}
 
 \item{datetime}{Default `"2025-07-29 18:00:00"`. POSIX-compatible
 date-time; if missing a time-zone it is assumed to be local.}
@@ -43,6 +44,8 @@ date-time; if missing a time-zone it is assumed to be local.}
 
 \item{numbercores}{Default `1`. CPU threads to use.}
 
+\item{atmospheric_scattering}{Default `FALSE`. If `TRUE`, render atmospheric scattering for the moon via [generate_sky()].}
+
 \item{hosek}{Default `TRUE`. `FALSE` selects the Prague model.}
 
 \item{wide_spectrum}{Default `FALSE`. 55-channel Prague coefficients (altitude = 0 m only).}
@@ -54,7 +57,7 @@ date-time; if missing a time-zone it is assumed to be local.}
 \item{...}{Additional arguments passed to [generate_stars()]}
 }
 \value{
-Either the raw data, or the data is invisibly returned if outfile is given. The EXR is written to `outfile`.
+Either the raw data, or the data is invisibly returned if filename is given. The EXR is written to `filename`.
 }
 \description{
 Note that this is just a scaled version of `generate_sky()`, scaled down by the luminance
@@ -65,7 +68,7 @@ along with the increase in luminosity around a full moon (known as opposition su
 # Moonlit sky (Hosek), mid-evening in DC
 if(run_documentation()) {
 generate_moon_latlong(
-  datetime   = as.POSIXct("2025-07-30 20:20:00",tz="EST"),
+  datetime   = as.POSIXct("2025-09-05 19:30:00",tz="America/New_York"),
   lat        = 38.9072,
   lon        = -77.0369,
   resolution = 400,

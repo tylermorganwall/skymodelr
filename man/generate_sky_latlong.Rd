@@ -5,7 +5,7 @@
 \title{Generate a location and time-specific sky dome (optionally with stars)}
 \usage{
 generate_sky_latlong(
-  outfile = NA,
+  filename = NA,
   datetime = "2025-01-01 12:00:00",
   lat = 38.9072,
   lon = -77.0369,
@@ -19,13 +19,14 @@ generate_sky_latlong(
   visibility = 50,
   stars = FALSE,
   star_width = 1,
+  planets = FALSE,
   moon = FALSE,
   verbose = FALSE,
   ...
 )
 }
 \arguments{
-\item{outfile}{Default `NA`. Path to the `.exr` file to write.}
+\item{filename}{Default `NA`. Path to the `.exr` file to write.}
 
 \item{datetime}{Default `"2025-07-29 18:00:00"`. POSIX-compatible
 date-time; if missing a time-zone it is assumed to be local.}
@@ -53,17 +54,21 @@ date-time; if missing a time-zone it is assumed to be local.}
 \item{visibility}{Default `50`. Meteorological range (km); *Prague only*.}
 
 \item{stars}{Default `FALSE`. If `TRUE`, composite a star field
-using [generate_stars()].  Automatically falls back to a pure star render
+using [generate_stars()]. Automatically falls back to a pure star render
 when the black-sky condition is met (see *Details*).}
+
+\item{star_width}{Default `1`. Passed to [generate_stars()] to control stellar point-spread size.}
+
+\item{planets}{Default `FALSE`. If `TRUE`, composite bright planets via [generate_planets()].}
+
+\item{moon}{Default `FALSE`. If `TRUE`, overlay a moon render from [generate_moon()].}
 
 \item{verbose}{Default `FALSE`. Whether to print progress bars/diagnostic info.}
 
-\item{...}{Additional arguments passed to [generate_stars()]}
-
-\item{square_projection}{Default `FALSE`. `TRUE` results in an equal-area square mapping.}
+\item{...}{Additional arguments passed to [generate_stars()] and, when enabled, [generate_planets()].}
 }
 \value{
-Either the raw data, or the data is invisibly returned if outfile is given. The EXR is written to `outfile`.
+Either the raw data, or the data is invisibly returned if filename is given. The EXR is written to `filename`.
 }
 \description{
 Convenience wrapper around [generate_sky()] that:
