@@ -2,11 +2,14 @@
 # Helpers to convert POSIXct → Julian Date (UTC noon 1 Jan 2000 = 2451545).
 #' @noRd
 jd_utc = function(time_utc) {
-  unclass(time_utc) / 86400 + 2440587.5 # Unix epoch to JD
+	unclass(time_utc) / 86400 + 2440587.5 # Unix epoch to JD
 }
 
 # ---------------------------------------------------------------------------
 #' Write a star‑field EXR aligned with `generate_sky()`
+#'
+#' @description Render a star map for a given observer location, time, and atmospheric
+#' conditions so it can be composited with [generate_sky()].
 #'
 #' @param outfile Default `NA`. Path to a `.exr` file to write. If `NA`, no file is written and the image data are returned.
 #' @param resolution Default `2048`. Map half-width; the output image is `2 * resolution` × `resolution`.
@@ -74,50 +77,50 @@ jd_utc = function(time_utc) {
 #'   rayimage::plot_image()
 #'}
 generate_stars = function(
-  outfile = NA,
-  resolution = 2048,
-  zero_point = 1,
-  lon = 0,
-  lat = 0,
-  datetime = as.POSIXct("2000-01-01 00:00:00", tz = "UTC"),
-  turbidity = 3.0,
-  ozone_du = 300.0,
-  altitude = 0.0,
-  color = TRUE,
-  star_width = 1,
-  upper_hemisphere_only = TRUE,
-  atmosphere_effects = TRUE,
-  numbercores = 1
+	outfile = NA,
+	resolution = 2048,
+	zero_point = 1,
+	lon = 0,
+	lat = 0,
+	datetime = as.POSIXct("2000-01-01 00:00:00", tz = "UTC"),
+	turbidity = 3.0,
+	ozone_du = 300.0,
+	altitude = 0.0,
+	color = TRUE,
+	star_width = 1,
+	upper_hemisphere_only = TRUE,
+	atmosphere_effects = TRUE,
+	numbercores = 1
 ) {
-  starfield_tmp = tempfile(fileext = ".exr")
-  if (!inherits(datetime, "POSIXct")) {
-    stop("datetime must be POSIXct in UTC")
-  }
-  attr(datetime, "tzone") = "UTC"
-  jd = jd_utc(datetime)
+	starfield_tmp = tempfile(fileext = ".exr")
+	if (!inherits(datetime, "POSIXct")) {
+		stop("datetime must be POSIXct in UTC")
+	}
+	attr(datetime, "tzone") = "UTC"
+	jd = jd_utc(datetime)
 
-  make_starfield_rcpp(
-    outfile = starfield_tmp,
-    stars = skymodelr::stars,
-    resolution = resolution,
-    lon_deg = lon,
-    lat_deg = lat,
-    jd = jd,
-    use_rgb = color,
-    turbidity = turbidity,
-    ozone_du = ozone_du,
-    altitude = altitude,
-    star_width = star_width,
-    atmosphere_effects = atmosphere_effects,
-    upper_hemisphere_only = upper_hemisphere_only,
-    numbercores = numbercores,
-    precision_multiplier = 1000000
-  )
-  star_exr = rayimage::ray_read_image(starfield_tmp) / 1000000
-  if (!is.na(outfile)) {
-    file.copy(outfile, starfield_tmp, overwrite = TRUE)
-    return(invisible(star_exr))
-  } else {
-    return(star_exr)
-  }
+	make_starfield_rcpp(
+		outfile = starfield_tmp,
+		stars = skymodelr::stars,
+		resolution = resolution,
+		lon_deg = lon,
+		lat_deg = lat,
+		jd = jd,
+		use_rgb = color,
+		turbidity = turbidity,
+		ozone_du = ozone_du,
+		altitude = altitude,
+		star_width = star_width,
+		atmosphere_effects = atmosphere_effects,
+		upper_hemisphere_only = upper_hemisphere_only,
+		numbercores = numbercores,
+		precision_multiplier = 1000000
+	)
+	star_exr = rayimage::ray_read_image(starfield_tmp) / 1000000
+	if (!is.na(outfile)) {
+		file.copy(outfile, starfield_tmp, overwrite = TRUE)
+		return(invisible(star_exr))
+	} else {
+		return(star_exr)
+	}
 }

@@ -1,6 +1,6 @@
 #' Generate the atmosphere with the moon
 #'
-#' Note that this is just a scaled version of `generate_sky()`, scaled down by the luminance
+#' @description Note that this is just a scaled version of `generate_sky()`, scaled down by the luminance
 #' of the moon as compared to the sun. This function takes the phase of the moon into account,
 #' along with the increase in luminosity around a full moon (known as opposition surge).
 #'
@@ -16,6 +16,7 @@
 #'   [0, 15000] (*Prague only*).
 #' @param resolution         Default `2048`. Image height in pixels (width = 2 × height).
 #' @param numbercores        Default `1`. CPU threads to use.
+#' @param atmospheric_scattering Default `FALSE`. If `TRUE`, render atmospheric scattering for the moon via [generate_sky()].
 #' @param hosek              Default `TRUE`. `FALSE` selects the Prague model.
 #' @param wide_spectrum      Default `FALSE`. 55-channel Prague coefficients (altitude = 0 m only).
 #' @param visibility         Default `50`. Meteorological range (km); *Prague only*.

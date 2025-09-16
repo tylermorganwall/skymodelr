@@ -1,16 +1,19 @@
 #' Write a Hosek–Wilkie sky dome to EXR
 #'
-#' @param filename            Default `NA`. Path to `.exr` file. If not given, the data will be returned instead.
+#' @description Evaluate either the Hosek–Wilkie or Prague analytic sky models
+#' and return a 32-bit floating-point EXR or the raw pixel array for the given
+#' solar configuration.
+#'
+#' @param filename           Default `NA`. Path to `.exr` file. If not given, the data will be returned instead.
 #' @param albedo             Default `0.5`. 0–1 ground albedo.
 #' @param turbidity          Default `3`. 1.7–10 atmospheric turbidity. Only valid for Hosek model.
 #' @param elevation          Default `10`. Solar elevation above the horizon (degrees).
-#' @param azimuth            Default `90`, sun directly east. Solar azimuth (degrees). Left side of the image represents North.
-#' Halfway across the image represents South.
-#' @param altitude 	         Default `0`. Altitude of the viewer in meters. Valid [0,15000]. Only valid for the
-#' Prague model.
-#' @param resolution         Default `2048`. Height of the image. Width is 2x this number.
+#' @param azimuth            Default `90`, sun directly east. Solar azimuth (degrees). The left edge of the image faces north and the middle faces south.
+#' @param altitude           Default `0`. Altitude of the viewer in meters. Valid [0, 15000]. Only valid for the Prague model.
+#' @param resolution         Default `2048`. Height of the image. Width is 2 × this number.
 #' @param numbercores        Default `1`. Number of threads to use in computation.
-#' @param hosek              Default `TRUE`. Use `"prague"` to enable the Prague 2021-22 spectral sky model.
+#' @param hosek              Default `TRUE`. Use `"prague"` to enable the Prague 2021–22 spectral sky model.
+#' @param wide_spectrum      Default `FALSE`. Use the 55-channel Prague coefficients (sea level only).
 #' @param visibility         Default `50`. Meteorological range in kilometres for Prague model.
 #' @param verbose            Default `FALSE`. Whether to print progress bars/diagnostic info.
 #' @param render_solar_disk  Default `TRUE`. Whether to render the solar disk in addition to the atmosphere.
@@ -197,7 +200,7 @@ generate_sky = function(
 
 #' Generate a location and time-specific sky dome (optionally with stars)
 #'
-#' Convenience wrapper around [generate_sky()] that:
+#' @description Convenience wrapper around [generate_sky()] that:
 #' 1. Computes the Sun’s apparent position for `datetime`, `lat`, and `lon`
 #'    (via **suncalc**).
 #' 2. Renders the corresponding sky model.
@@ -218,12 +221,14 @@ generate_sky = function(
 #' @param hosek              Default `TRUE`. `FALSE` selects the Prague model.
 #' @param wide_spectrum      Default `FALSE`. 55-channel Prague coefficients (altitude = 0 m only).
 #' @param visibility         Default `50`. Meteorological range (km); *Prague only*.
-#' @param square_projection  Default `FALSE`. `TRUE` results in an equal-area square mapping.
 #' @param stars              Default `FALSE`. If `TRUE`, composite a star field
-#'   using [generate_stars()].  Automatically falls back to a pure star render
+#'   using [generate_stars()]. Automatically falls back to a pure star render
 #'   when the black-sky condition is met (see *Details*).
+#' @param star_width         Default `1`. Passed to [generate_stars()] to control stellar point-spread size.
+#' @param planets            Default `FALSE`. If `TRUE`, composite bright planets via [generate_planets()].
+#' @param moon               Default `FALSE`. If `TRUE`, overlay a moon render from [generate_moon()].
 #' @param verbose            Default `FALSE`. Whether to print progress bars/diagnostic info.
-#' @param ...                Additional arguments passed to [generate_stars()]
+#' @param ...                Additional arguments passed to [generate_stars()] and, when enabled, [generate_planets()].
 #'
 #' @details
 #' *Solar angles* — altitude (degrees above the horizon) and azimuth (degrees clockwise from
@@ -382,6 +387,9 @@ generate_sky_latlong = function(
 }
 
 #' Sample a direction from the Prague model.
+#'
+#' @description Evaluate the Prague spectral sky model at arbitrary spherical
+#' directions without writing an image, returning radiance-only samples.
 #'
 #' @param phi                Horizontal angle of the sample, degrees. Vectorized. Range [0, 360].
 #' @param theta              Vertical angle of the sample, degrees. Vectorized. Range [-90, 90].
