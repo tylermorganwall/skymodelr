@@ -7,11 +7,11 @@
 download_sky_data(sea_level = TRUE, wide_spectrum = FALSE)
 }
 \arguments{
-\item{sea_level}{Default `TRUE`. Download the sea‑level–only data.
-Set to `FALSE` to download the full‑altitude dataset.}
+\item{sea_level}{Default \code{TRUE}. Download the sea‑level–only data.
+Set to \code{FALSE} to download the full‑altitude dataset.}
 
-\item{wide_spectrum}{Default `FALSE`. If `TRUE`, downloads the
-wide‑spectrum (55‑channel, polarised) version. Valid only when `sea_level = TRUE`.}
+\item{wide_spectrum}{Default \code{FALSE}. If \code{TRUE}, downloads the
+wide‑spectrum (55‑channel, polarised) version. Valid only when \code{sea_level = TRUE}.}
 }
 \value{
 Invisibly, the full path to the data file.
@@ -23,11 +23,12 @@ rendering at altitude) need to download a coefficient file. There are three vers
 of this dataset, listed here in order of increasing size:
 }
 \details{
-| Argument combination               | File                                 | Size |
-|------------------------------------|--------------------------------------|----------------|
-| `sea_level = TRUE,  wide_spectrum = FALSE` | `SkyModelDatasetGround.dat`            |   107MB |
-| `sea_level = TRUE,  wide_spectrum = TRUE`  | `PragueSkyModelDatasetGroundInfra.dat` |   574MB |
-| `sea_level = FALSE`                          | `SkyModelDataset.dat`                  | 2.4GB |
+\tabular{lll}{
+   Argument combination \tab File \tab Size \cr
+   \verb{sea_level = TRUE,  wide_spectrum = FALSE} \tab \code{SkyModelDatasetGround.dat} \tab 107MB \cr
+   \verb{sea_level = TRUE,  wide_spectrum = TRUE} \tab \code{PragueSkyModelDatasetGroundInfra.dat} \tab 574MB \cr
+   \code{sea_level = FALSE} \tab \code{SkyModelDataset.dat} \tab 2.4GB \cr
+}
 }
 \examples{
 \dontrun{

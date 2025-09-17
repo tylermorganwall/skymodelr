@@ -10,7 +10,7 @@ sweph_info_to_stars_df(sweph_info)
 \item{sweph_info}{List of planetary info objects.}
 }
 \description{
-Build a data frame compatible with `make_starfield_rcpp()` from
+Build a data frame compatible with \code{make_starfield_rcpp()} from
 Swiss Ephemeris results.
 }
 \keyword{internal}

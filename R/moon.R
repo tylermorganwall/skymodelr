@@ -4,11 +4,11 @@
 #' of the moon as compared to the sun. This function takes the phase of the moon into account,
 #' along with the increase in luminosity around a full moon (known as opposition surge).
 #'
-#' @param filename           Default `NA`. Path to the `.exr` file to write.
 #' @param datetime           Default `"2025-07-29 18:00:00"`. POSIX-compatible
 #'   date-time; if missing a time-zone it is assumed to be local.
 #' @param lat                Default `38.9072`. Observer latitude (degrees N).
 #' @param lon                Default `-77.0369`. Observer longitude (degrees E; west < 0).
+#' @param filename           Default `NA`. Path to the image file to write.
 #' @param albedo             Default `0.5`. Ground albedo, range [0, 1].
 #' @param turbidity          Default `3`. Atmospheric turbidity, range
 #'   [1.7, 10] (*Hosek only*).
@@ -23,7 +23,11 @@
 #' @param verbose            Default `FALSE`. Whether to print progress bars/diagnostic info.
 #' @param ...                Additional arguments passed to [generate_stars()]
 #'
-#' @return Either the raw data, or the data is invisibly returned if filename is given. The EXR is written to `filename`.
+#' @return Either the image array, or the array is invisibly returned if a file
+#'   is written. The array has dimensions `(resolution, 2 * resolution, 4)`.
+#' @note Writing to non-EXR formats will introduce precision loss because HDR
+#'   data are quantised to the destination format, and low dynamic range outputs like PNG
+#'   and JPEG files will not represent the true luminosity values encoded in the array.
 #' @export
 #'
 #' @examples
@@ -41,10 +45,10 @@
 #'   rayimage::plot_image()
 #' }
 generate_moon_latlong = function(
-  filename = NA,
   datetime = "2025-07-29 18:00:00",
   lat = 38.9072,
   lon = -77.0369,
+  filename = NA,
   albedo = 0.5,
   turbidity = 3,
   altitude = 0,
@@ -95,7 +99,7 @@ generate_moon_latlong = function(
     ))
   }
   if (atmospheric_scattering) {
-    moon_exr = generate_sky(
+    moon_array = generate_sky(
       albedo = albedo,
       turbidity = turbidity,
       altitude = altitude,
@@ -110,13 +114,13 @@ generate_moon_latlong = function(
       render_solar_disk = FALSE
     )
   } else {
-    moon_exr = rayimage::ray_read_image(array(
+    moon_array = array(
       0,
       dim = c(resolution, resolution * 2, 4)
-    ))
-    moon_exr[,, 4] = 1
+    )
+    moon_array[,, 4] = 1
   }
-  moon_exr[,, 1:3] = moon_exr[,, 1:3] * scale_sun_to_moon
+  moon_array[,, 1:3] = moon_array[,, 1:3] * scale_sun_to_moon
 
   moon_dir_vec = c(
     cospi(moon_azimuth / 180) * cospi(moon_elevation / 180),
@@ -189,15 +193,16 @@ generate_moon_latlong = function(
       u_i = rayrender:::clamp(round(u_px), 1, 401)
       v_i = rayrender:::clamp(round(v_px), 1, 401)
 
-      moon_exr[j, i, 1] = moon_luminance_array[v_i, u_i, 1]
-      moon_exr[j, i, 2] = moon_luminance_array[v_i, u_i, 2]
-      moon_exr[j, i, 3] = moon_luminance_array[v_i, u_i, 3]
+      moon_array[j, i, 1] = moon_luminance_array[v_i, u_i, 1]
+      moon_array[j, i, 2] = moon_luminance_array[v_i, u_i, 2]
+      moon_array[j, i, 3] = moon_luminance_array[v_i, u_i, 3]
     }
   }
   if (!is.na(filename)) {
-    rayimage::ray_write_image(moon_exr, filename, clamp = FALSE)
-    return(invisible(moon_exr))
+    warn_precision_loss(filename)
+    rayimage::ray_write_image(moon_array, filename, clamp = FALSE)
+    return(invisible(moon_array))
   } else {
-    return(moon_exr)
+    return(moon_array)
   }
 }

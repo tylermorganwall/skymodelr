@@ -11,16 +11,19 @@ jd_utc = function(time_utc) {
 }
 
 # ---------------------------------------------------------------------------
-#' Write a star‑field EXR aligned with `generate_sky()`
+#' Generate a star‑field array aligned with `generate_sky()`
 #'
 #' @description Render a star map for a given observer location, time, and atmospheric
-#' conditions so it can be composited with [generate_sky()].
+#' conditions so it can be composited with [generate_sky()]. Returns a
+#' `(resolution, 2 * resolution, 4)` array with an opaque alpha channel. An
+#' image file is written only when `filename` is supplied.
 #'
-#' @param outfile Default `NA`. Path to a `.exr` file to write. If `NA`, no file is written and the image data are returned.
-#' @param resolution Default `2048`. Map half-width; the output image is `2 * resolution` × `resolution`.
+#' @param datetime Default `as.POSIXct("2000-01-01 00:00:00", tz = "UTC")`. `POSIXct` timestamp used to compute local sidereal time.
 #' @param lon Default `0`. Observer longitude in degrees (east positive).
 #' @param lat Default `0`. Observer latitude in degrees.
-#' @param datetime Default `as.POSIXct("2000-01-01 00:00:00", tz = "UTC")`. `POSIXct` timestamp used to compute local sidereal time.
+#' @param filename Default `NA`. Path to an image file to write. If `NA`, the
+#'   image array is returned without writing.
+#' @param resolution Default `2048`. Map half-width; the output image is `2 * resolution` × `resolution`.
 #' @param turbidity Default `3.0`. Atmospheric turbidity controlling aerosol optical depth for extinction/reddening.
 #' @param ozone_du Default `300.0`. Column ozone in Dobson Units used in atmospheric absorption.
 #' @param altitude Default `0.0`. Observer altitude above mean sea level in meters.
@@ -29,6 +32,12 @@ jd_utc = function(time_utc) {
 #' @param upper_hemisphere_only Default `TRUE`. If `TRUE`, pixels below the local horizon are suppressed to match `generate_sky()`’s visible hemisphere.
 #' @param atmosphere_effects Default `TRUE`. If `TRUE`, apply atmospheric extinction and color shift using `turbidity`, `ozone_du`, and `altitude`.
 #' @param numbercores Default `1`. Number of CPU threads to use.
+#'
+#' @return Either the image array, or the array is invisibly returned if a file
+#'   is written. The array has dimensions `(resolution, 2 * resolution, 4)`.
+#' @note Writing to non-EXR formats will introduce precision loss because HDR
+#'   data are quantised to the destination format, and low dynamic range outputs like PNG
+#'   and JPEG files will not represent the true luminosity values encoded in the array.
 #'
 #' @export
 #' @examples
@@ -80,11 +89,11 @@ jd_utc = function(time_utc) {
 #'   rayimage::plot_image()
 #'}
 generate_stars = function(
-	outfile = NA,
-	resolution = 2048,
 	lon = 0,
 	lat = 0,
 	datetime = as.POSIXct("2000-01-01 00:00:00", tz = "UTC"),
+	filename = NA,
+	resolution = 2048,
 	turbidity = 3.0,
 	ozone_du = 300.0,
 	altitude = 0.0,
@@ -94,15 +103,13 @@ generate_stars = function(
 	atmosphere_effects = TRUE,
 	numbercores = 1
 ) {
-	starfield_tmp = tempfile(fileext = ".exr")
 	if (!inherits(datetime, "POSIXct")) {
 		stop("datetime must be POSIXct in UTC")
 	}
 	attr(datetime, "tzone") = "UTC"
 	jd = jd_utc(datetime)
 
-	make_starfield_rcpp(
-		outfile = starfield_tmp,
+	star_rgb = make_starfield_rcpp(
 		stars = skymodelr::stars,
 		resolution = resolution,
 		lon_deg = lon,
@@ -115,14 +122,16 @@ generate_stars = function(
 		star_width = star_width,
 		atmosphere_effects = atmosphere_effects,
 		upper_hemisphere_only = upper_hemisphere_only,
-		numbercores = numbercores,
-		precision_multiplier = 1000000
+		numbercores = numbercores
 	)
-	star_exr = rayimage::ray_read_image(starfield_tmp) / 1000000
-	if (!is.na(outfile)) {
-		file.copy(outfile, starfield_tmp, overwrite = TRUE)
-		return(invisible(star_exr))
+	star_array = array(0, dim = c(resolution, resolution * 2, 4))
+	star_array[, , 1:3] = star_rgb
+	star_array[, , 4] = 1
+	if (!is.na(filename)) {
+		warn_precision_loss(filename)
+		rayimage::ray_write_image(star_array, filename)
+		return(invisible(star_array))
 	} else {
-		return(star_exr)
+		return(star_array)
 	}
 }

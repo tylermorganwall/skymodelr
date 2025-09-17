@@ -2,14 +2,14 @@
 % Please edit documentation in R/stars.R
 \name{generate_stars}
 \alias{generate_stars}
-\title{Write a star‑field EXR aligned with `generate_sky()`}
+\title{Generate a star‑field array aligned with \code{generate_sky()}}
 \usage{
 generate_stars(
-  outfile = NA,
-  resolution = 2048,
   lon = 0,
   lat = 0,
   datetime = as.POSIXct("2000-01-01 00:00:00", tz = "UTC"),
+  filename = NA,
+  resolution = 2048,
   turbidity = 3,
   ozone_du = 300,
   altitude = 0,
@@ -21,35 +21,47 @@ generate_stars(
 )
 }
 \arguments{
-\item{outfile}{Default `NA`. Path to a `.exr` file to write. If `NA`, no file is written and the image data are returned.}
+\item{lon}{Default \code{0}. Observer longitude in degrees (east positive).}
 
-\item{resolution}{Default `2048`. Map half-width; the output image is `2 * resolution` × `resolution`.}
+\item{lat}{Default \code{0}. Observer latitude in degrees.}
 
-\item{lon}{Default `0`. Observer longitude in degrees (east positive).}
+\item{datetime}{Default \code{as.POSIXct("2000-01-01 00:00:00", tz = "UTC")}. \code{POSIXct} timestamp used to compute local sidereal time.}
 
-\item{lat}{Default `0`. Observer latitude in degrees.}
+\item{filename}{Default \code{NA}. Path to an image file to write. If \code{NA}, the
+image array is returned without writing.}
 
-\item{datetime}{Default `as.POSIXct("2000-01-01 00:00:00", tz = "UTC")`. `POSIXct` timestamp used to compute local sidereal time.}
+\item{resolution}{Default \code{2048}. Map half-width; the output image is \code{2 * resolution} × \code{resolution}.}
 
-\item{turbidity}{Default `3.0`. Atmospheric turbidity controlling aerosol optical depth for extinction/reddening.}
+\item{turbidity}{Default \code{3.0}. Atmospheric turbidity controlling aerosol optical depth for extinction/reddening.}
 
-\item{ozone_du}{Default `300.0`. Column ozone in Dobson Units used in atmospheric absorption.}
+\item{ozone_du}{Default \code{300.0}. Column ozone in Dobson Units used in atmospheric absorption.}
 
-\item{altitude}{Default `0.0`. Observer altitude above mean sea level in meters.}
+\item{altitude}{Default \code{0.0}. Observer altitude above mean sea level in meters.}
 
-\item{color}{Default `TRUE`. If `TRUE`, render RGB star colors; if `FALSE`, render monochrome luminance.}
+\item{color}{Default \code{TRUE}. If \code{TRUE}, render RGB star colors; if \code{FALSE}, render monochrome luminance.}
 
-\item{star_width}{Default `1`. Approximate stellar point-spread size in pixels (controls apparent star sharpness).}
+\item{star_width}{Default \code{1}. Approximate stellar point-spread size in pixels (controls apparent star sharpness).}
 
-\item{upper_hemisphere_only}{Default `TRUE`. If `TRUE`, pixels below the local horizon are suppressed to match `generate_sky()`’s visible hemisphere.}
+\item{upper_hemisphere_only}{Default \code{TRUE}. If \code{TRUE}, pixels below the local horizon are suppressed to match \code{generate_sky()}’s visible hemisphere.}
 
-\item{atmosphere_effects}{Default `TRUE`. If `TRUE`, apply atmospheric extinction and color shift using `turbidity`, `ozone_du`, and `altitude`.}
+\item{atmosphere_effects}{Default \code{TRUE}. If \code{TRUE}, apply atmospheric extinction and color shift using \code{turbidity}, \code{ozone_du}, and \code{altitude}.}
 
-\item{numbercores}{Default `1`. Number of CPU threads to use.}
+\item{numbercores}{Default \code{1}. Number of CPU threads to use.}
+}
+\value{
+Either the image array, or the array is invisibly returned if a file
+is written. The array has dimensions \verb{(resolution, 2 * resolution, 4)}.
 }
 \description{
 Render a star map for a given observer location, time, and atmospheric
-conditions so it can be composited with [generate_sky()].
+conditions so it can be composited with \code{\link[=generate_sky]{generate_sky()}}. Returns a
+\verb{(resolution, 2 * resolution, 4)} array with an opaque alpha channel. An
+image file is written only when \code{filename} is supplied.
+}
+\note{
+Writing to non-EXR formats will introduce precision loss because HDR
+data are quantised to the destination format, and low dynamic range outputs like PNG
+and JPEG files will not represent the true luminosity values encoded in the array.
 }
 \examples{
 # Note: exposure has been increased for all examples (via white_point) for

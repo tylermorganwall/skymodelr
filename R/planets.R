@@ -1,4 +1,4 @@
-#' Render bright planets into an EXR map
+#' Generate a bright-planet image array
 #'
 #' @description Build a planetary luminance map aligned with the sky dome for
 #' compositing within [generate_sky_latlong()].
@@ -6,7 +6,8 @@
 #' @param datetime POSIXct timestamp in UTC used for ephemerides.
 #' @param lon Observer longitude in degrees (east positive).
 #' @param lat Observer latitude in degrees.
-#' @param filename Default `NA`. Destination `.exr` path to write.
+#' @param filename Default `NA`. Destination image path to write. When `NA`, the
+#'   image array is returned without writing.
 #' @param resolution Default `2048`. Map half-width (image is `2 * resolution` × `resolution`).
 #' @param turbidity Atmospheric turbidity for extinction modelling.
 #' @param ozone_du Column ozone (Dobson Units) for colour shifts.
@@ -17,6 +18,12 @@
 #' @param atmosphere_effects If `TRUE`, apply atmospheric extinction.
 #' @param numbercores CPU threads used for rendering.
 #' @param verbose Emit diagnostic output when `TRUE`.
+#'
+#' @return Either the image array, or the array is invisibly returned if a file
+#'   is written. The array has dimensions `(resolution, 2 * resolution, 4)`.
+#' @note Writing to non-EXR formats will introduce precision loss because HDR
+#'   data are quantised to the destination format, and low dynamic range outputs like PNG
+#'   and JPEG files will not represent the true luminosity values encoded in the array.
 #'
 #' @export
 #' @examples
@@ -52,7 +59,6 @@ generate_planets = function(
 	numbercores = 1,
 	verbose = FALSE
 ) {
-	planet_tmp = tempfile(fileext = ".exr")
 	if (!inherits(datetime, "POSIXct")) {
 		stop("datetime must be POSIXct in UTC")
 	}
@@ -63,8 +69,7 @@ generate_planets = function(
 	if (verbose) {
 		print(planet_temp)
 	}
-	make_starfield_rcpp(
-		outfile = planet_tmp,
+	planet_rgb = make_starfield_rcpp(
 		stars = planet_temp,
 		resolution = resolution,
 		lon_deg = lon,
@@ -77,14 +82,16 @@ generate_planets = function(
 		star_width = planet_width,
 		atmosphere_effects = atmosphere_effects,
 		upper_hemisphere_only = upper_hemisphere_only,
-		numbercores = numbercores,
-		precision_multiplier = 1000000
+		numbercores = numbercores
 	)
-	planet_exr = rayimage::ray_read_image(planet_tmp) / 1000000
+	planet_array = array(0, dim = c(resolution, resolution * 2, 4))
+	planet_array[, , 1:3] = planet_rgb
+	planet_array[, , 4] = 1
 	if (!is.na(filename)) {
-		file.copy(filename, planet_tmp, overwrite = TRUE)
-		return(invisible(planet_exr))
+		warn_precision_loss(filename)
+		rayimage::ray_write_image(planet_array, filename)
+		return(invisible(planet_array))
 	} else {
-		return(planet_exr)
+		return(planet_array)
 	}
 }

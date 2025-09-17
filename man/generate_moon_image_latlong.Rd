@@ -2,7 +2,7 @@
 % Please edit documentation in R/generate_moon_image_latlong.R
 \name{generate_moon_image_latlong}
 \alias{generate_moon_image_latlong}
-\title{Render the moon into a lat-long EXR patch}
+\title{Generate the moon into a lat-long image array patch}
 \usage{
 generate_moon_image_latlong(
   datetime,

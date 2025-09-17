@@ -2,7 +2,7 @@
 % Please edit documentation in R/planets.R
 \name{generate_planets}
 \alias{generate_planets}
-\title{Render bright planets into an EXR map}
+\title{Generate a bright-planet image array}
 \usage{
 generate_planets(
   datetime = as.POSIXct("2000-01-01 00:00:00", tz = "UTC"),
@@ -28,9 +28,10 @@ generate_planets(
 
 \item{lat}{Observer latitude in degrees.}
 
-\item{filename}{Default `NA`. Destination `.exr` path to write.}
+\item{filename}{Default \code{NA}. Destination image path to write. When \code{NA}, the
+image array is returned without writing.}
 
-\item{resolution}{Default `2048`. Map half-width (image is `2 * resolution` × `resolution`).}
+\item{resolution}{Default \code{2048}. Map half-width (image is \code{2 * resolution} × \code{resolution}).}
 
 \item{turbidity}{Atmospheric turbidity for extinction modelling.}
 
@@ -38,21 +39,30 @@ generate_planets(
 
 \item{altitude}{Observer altitude in metres.}
 
-\item{color}{Render RGB (`TRUE`) stars or monochrome (`FALSE`).}
+\item{color}{Render RGB (\code{TRUE}) stars or monochrome (\code{FALSE}).}
 
 \item{planet_width}{Approximate point-spread size for planets in pixels.}
 
-\item{upper_hemisphere_only}{If `TRUE`, mask pixels below the horizon.}
+\item{upper_hemisphere_only}{If \code{TRUE}, mask pixels below the horizon.}
 
-\item{atmosphere_effects}{If `TRUE`, apply atmospheric extinction.}
+\item{atmosphere_effects}{If \code{TRUE}, apply atmospheric extinction.}
 
 \item{numbercores}{CPU threads used for rendering.}
 
-\item{verbose}{Emit diagnostic output when `TRUE`.}
+\item{verbose}{Emit diagnostic output when \code{TRUE}.}
+}
+\value{
+Either the image array, or the array is invisibly returned if a file
+is written. The array has dimensions \verb{(resolution, 2 * resolution, 4)}.
 }
 \description{
 Build a planetary luminance map aligned with the sky dome for
-compositing within [generate_sky_latlong()].
+compositing within \code{\link[=generate_sky_latlong]{generate_sky_latlong()}}.
+}
+\note{
+Writing to non-EXR formats will introduce precision loss because HDR
+data are quantised to the destination format, and low dynamic range outputs like PNG
+and JPEG files will not represent the true luminosity values encoded in the array.
 }
 \examples{
 # Basic star field over Washington, DC at a fixed time

@@ -5,10 +5,10 @@
 \title{Generate the atmosphere with the moon}
 \usage{
 generate_moon_latlong(
-  filename = NA,
   datetime = "2025-07-29 18:00:00",
   lat = 38.9072,
   lon = -77.0369,
+  filename = NA,
   albedo = 0.5,
   turbidity = 3,
   altitude = 0,
@@ -23,46 +23,52 @@ generate_moon_latlong(
 )
 }
 \arguments{
-\item{filename}{Default `NA`. Path to the `.exr` file to write.}
-
-\item{datetime}{Default `"2025-07-29 18:00:00"`. POSIX-compatible
+\item{datetime}{Default \code{"2025-07-29 18:00:00"}. POSIX-compatible
 date-time; if missing a time-zone it is assumed to be local.}
 
-\item{lat}{Default `38.9072`. Observer latitude (degrees N).}
+\item{lat}{Default \code{38.9072}. Observer latitude (degrees N).}
 
-\item{lon}{Default `-77.0369`. Observer longitude (degrees E; west < 0).}
+\item{lon}{Default \code{-77.0369}. Observer longitude (degrees E; west < 0).}
 
-\item{albedo}{Default `0.5`. Ground albedo, range [0, 1].}
+\item{filename}{Default \code{NA}. Path to the image file to write.}
 
-\item{turbidity}{Default `3`. Atmospheric turbidity, range
-[1.7, 10] (*Hosek only*).}
+\item{albedo}{Default \code{0.5}. Ground albedo, range \link{0, 1}.}
 
-\item{altitude}{Default `0`. Observer altitude (m), range
-[0, 15000] (*Prague only*).}
+\item{turbidity}{Default \code{3}. Atmospheric turbidity, range
+\link{1.7, 10} (\emph{Hosek only}).}
 
-\item{resolution}{Default `2048`. Image height in pixels (width = 2 × height).}
+\item{altitude}{Default \code{0}. Observer altitude (m), range
+\link{0, 15000} (\emph{Prague only}).}
 
-\item{numbercores}{Default `1`. CPU threads to use.}
+\item{resolution}{Default \code{2048}. Image height in pixels (width = 2 × height).}
 
-\item{atmospheric_scattering}{Default `FALSE`. If `TRUE`, render atmospheric scattering for the moon via [generate_sky()].}
+\item{numbercores}{Default \code{1}. CPU threads to use.}
 
-\item{hosek}{Default `TRUE`. `FALSE` selects the Prague model.}
+\item{atmospheric_scattering}{Default \code{FALSE}. If \code{TRUE}, render atmospheric scattering for the moon via \code{\link[=generate_sky]{generate_sky()}}.}
 
-\item{wide_spectrum}{Default `FALSE`. 55-channel Prague coefficients (altitude = 0 m only).}
+\item{hosek}{Default \code{TRUE}. \code{FALSE} selects the Prague model.}
 
-\item{visibility}{Default `50`. Meteorological range (km); *Prague only*.}
+\item{wide_spectrum}{Default \code{FALSE}. 55-channel Prague coefficients (altitude = 0 m only).}
 
-\item{verbose}{Default `FALSE`. Whether to print progress bars/diagnostic info.}
+\item{visibility}{Default \code{50}. Meteorological range (km); \emph{Prague only}.}
 
-\item{...}{Additional arguments passed to [generate_stars()]}
+\item{verbose}{Default \code{FALSE}. Whether to print progress bars/diagnostic info.}
+
+\item{...}{Additional arguments passed to \code{\link[=generate_stars]{generate_stars()}}}
 }
 \value{
-Either the raw data, or the data is invisibly returned if filename is given. The EXR is written to `filename`.
+Either the image array, or the array is invisibly returned if a file
+is written. The array has dimensions \verb{(resolution, 2 * resolution, 4)}.
 }
 \description{
-Note that this is just a scaled version of `generate_sky()`, scaled down by the luminance
+Note that this is just a scaled version of \code{generate_sky()}, scaled down by the luminance
 of the moon as compared to the sun. This function takes the phase of the moon into account,
 along with the increase in luminosity around a full moon (known as opposition surge).
+}
+\note{
+Writing to non-EXR formats will introduce precision loss because HDR
+data are quantised to the destination format, and low dynamic range outputs like PNG
+and JPEG files will not represent the true luminosity values encoded in the array.
 }
 \examples{
 # Moonlit sky (Hosek), mid-evening in DC

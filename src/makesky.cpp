@@ -7,11 +7,6 @@ extern "C" {
 
 #include "PragueSkyModel.h"
 
-// OpenEXR
-#include <OpenEXR/ImfRgbaFile.h>
-#include <OpenEXR/ImfRgba.h>
-#include <OpenEXR/ImfChannelList.h>
-
 #include <Imath/ImathVec.h>
 #include <Imath/ImathFun.h>
 #include <Imath/ImathBox.h>
@@ -20,7 +15,6 @@ extern "C" {
 #include <vector>
 #include <string>
 
-using namespace Imf;
 using namespace Imath;
 
 static inline float clamp_float(float x, float a, float b)
@@ -35,14 +29,12 @@ static PragueSkyModel  prague_model;
 static std::string     prague_loaded_file;
 
 // [[Rcpp::export]]
-void makesky_rcpp(std::string  outfile,
-                  double       albedo            = 0.5,
+Rcpp::NumericVector makesky_rcpp(double       albedo            = 0.5,
                   double       turbidity         = 3.0,
                   double       elevation         = 10.0,
 				          double       azimuth_deg       = 90,
                   unsigned int resolution        = 2048,
                   unsigned int numbercores       = 1,
-                  bool         square_projection = false,
                   std::string  model             = "hosek",  // hosek | prague
                   std::string  prg_dataset       = "",
 				          double       altitude          = 0.0,
@@ -172,34 +164,30 @@ void makesky_rcpp(std::string  outfile,
     },
     numbercores);
 
-  // Pack and write EXR
   const int width  = nPhi;
   const int height = nTheta;
   const int nPix   = width * height;
-
-  std::vector<Rgba> px(nPix);
-  for (int p = 0; p < nPix; ++p) {
-    px[p] = Rgba(img[3*p], img[3*p+1], img[3*p+2]);
-  }
-
-  try {
-    RgbaOutputFile out(outfile.c_str(), width, height, WRITE_RGB);
-    out.setFrameBuffer(px.data(), 1, width);
-    out.writePixels(height);
-  } catch (const std::exception& e) {
-    if (model == "hosek")
-      for (int i = 0; i < N_LAMBDA; ++i) {
-        arhosekskymodelstate_free(hosek[i]);
-	  }
-    Rcpp::stop("OpenEXR write failed: %s", e.what());
-  }
-
 
   if (model == "hosek") {
     for (int i = 0; i < N_LAMBDA; ++i) {
       arhosekskymodelstate_free(hosek[i]);
     }
   }
+
+  Rcpp::NumericVector result(nPix * 3);
+  result.attr("dim") = Rcpp::IntegerVector::create(height, width, 3);
+
+  for (int t = 0; t < height; ++t) {
+    for (int p = 0; p < width; ++p) {
+      const int pix_index = t * width + p;
+      for (int c = 0; c < 3; ++c) {
+        const int arr_index = t + height * (p + width * c);
+        result[arr_index] = static_cast<double>(img[3 * pix_index + c]);
+      }
+    }
+  }
+
+  return result;
 }
 
 // [[Rcpp::export]]

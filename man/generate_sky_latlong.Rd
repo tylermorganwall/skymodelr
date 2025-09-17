@@ -5,10 +5,10 @@
 \title{Generate a location and time-specific sky dome (optionally with stars)}
 \usage{
 generate_sky_latlong(
-  filename = NA,
   datetime = "2025-01-01 12:00:00",
   lat = 38.9072,
   lon = -77.0369,
+  filename = NA,
   albedo = 0.5,
   turbidity = 3,
   altitude = 0,
@@ -26,65 +26,67 @@ generate_sky_latlong(
 )
 }
 \arguments{
-\item{filename}{Default `NA`. Path to the `.exr` file to write.}
-
-\item{datetime}{Default `"2025-07-29 18:00:00"`. POSIX-compatible
+\item{datetime}{Default \code{"2025-07-29 18:00:00"}. POSIX-compatible
 date-time; if missing a time-zone it is assumed to be local.}
 
-\item{lat}{Default `38.9072`. Observer latitude (degrees N).}
+\item{lat}{Default \code{38.9072}. Observer latitude (degrees N).}
 
-\item{lon}{Default `-77.0369`. Observer longitude (degrees E; west < 0).}
+\item{lon}{Default \code{-77.0369}. Observer longitude (degrees E; west < 0).}
 
-\item{albedo}{Default `0.5`. Ground albedo, range [0, 1].}
+\item{filename}{Default \code{NA}. Path to the \code{.exr} file to write.}
 
-\item{turbidity}{Default `3`. Atmospheric turbidity, range
-[1.7, 10] (*Hosek only*).}
+\item{albedo}{Default \code{0.5}. Ground albedo, range \link{0, 1}.}
 
-\item{altitude}{Default `0`. Observer altitude (m), range
-[0, 15000] (*Prague only*).}
+\item{turbidity}{Default \code{3}. Atmospheric turbidity, range
+\link{1.7, 10} (\emph{Hosek only}).}
 
-\item{resolution}{Default `2048`. Image height in pixels (width = 2 × height).}
+\item{altitude}{Default \code{0}. Observer altitude (m), range
+\link{0, 15000} (\emph{Prague only}).}
 
-\item{numbercores}{Default `1`. CPU threads to use.}
+\item{resolution}{Default \code{2048}. Image height in pixels (width = 2 × height).}
 
-\item{hosek}{Default `TRUE`. `FALSE` selects the Prague model.}
+\item{numbercores}{Default \code{1}. CPU threads to use.}
 
-\item{wide_spectrum}{Default `FALSE`. 55-channel Prague coefficients (altitude = 0 m only).}
+\item{hosek}{Default \code{TRUE}. \code{FALSE} selects the Prague model.}
 
-\item{visibility}{Default `50`. Meteorological range (km); *Prague only*.}
+\item{wide_spectrum}{Default \code{FALSE}. 55-channel Prague coefficients (altitude = 0 m only).}
 
-\item{stars}{Default `FALSE`. If `TRUE`, composite a star field
-using [generate_stars()]. Automatically falls back to a pure star render
-when the black-sky condition is met (see *Details*).}
+\item{visibility}{Default \code{50}. Meteorological range (km); \emph{Prague only}.}
 
-\item{star_width}{Default `1`. Passed to [generate_stars()] to control stellar point-spread size.}
+\item{stars}{Default \code{FALSE}. If \code{TRUE}, composite a star field
+using \code{\link[=generate_stars]{generate_stars()}}. Automatically falls back to a pure star render
+when the black-sky condition is met (see \emph{Details}).}
 
-\item{planets}{Default `FALSE`. If `TRUE`, composite bright planets via [generate_planets()].}
+\item{star_width}{Default \code{1}. Passed to \code{\link[=generate_stars]{generate_stars()}} to control stellar point-spread size.}
 
-\item{moon}{Default `FALSE`. If `TRUE`, overlay a moon render from [generate_moon()].}
+\item{planets}{Default \code{FALSE}. If \code{TRUE}, composite bright planets via \code{\link[=generate_planets]{generate_planets()}}.}
 
-\item{verbose}{Default `FALSE`. Whether to print progress bars/diagnostic info.}
+\item{moon}{Default \code{FALSE}. If \code{TRUE}, overlay a moon render from \code{\link[=generate_moon]{generate_moon()}}.}
 
-\item{...}{Additional arguments passed to [generate_stars()] and, when enabled, [generate_planets()].}
+\item{verbose}{Default \code{FALSE}. Whether to print progress bars/diagnostic info.}
+
+\item{...}{Additional arguments passed to \code{\link[=generate_stars]{generate_stars()}} and, when enabled, \code{\link[=generate_planets]{generate_planets()}}.}
 }
 \value{
-Either the raw data, or the data is invisibly returned if filename is given. The EXR is written to `filename`.
+Either the raw data, or the data is invisibly returned if filename is given. The EXR is written to \code{filename}.
 }
 \description{
-Convenience wrapper around [generate_sky()] that:
-1. Computes the Sun’s apparent position for `datetime`, `lat`, and `lon`
-   (via **suncalc**).
-2. Renders the corresponding sky model.
-3. Optionally overlays a star field using [generate_stars()] or moon with [generate_moon()].
+Convenience wrapper around \code{\link[=generate_sky]{generate_sky()}} that:
+\enumerate{
+\item Computes the Sun’s apparent position for \code{datetime}, \code{lat}, and \code{lon}
+(via \strong{suncalc}).
+\item Renders the corresponding sky model.
+\item Optionally overlays a star field using \code{\link[=generate_stars]{generate_stars()}} or moon with \code{\link[=generate_moon]{generate_moon()}}.
+}
 }
 \details{
-*Solar angles* — altitude (degrees above the horizon) and azimuth (degrees clockwise from
+\emph{Solar angles} — altitude (degrees above the horizon) and azimuth (degrees clockwise from
 east, so 90 degrees = south) — are derived internally; you never have to supply
 them directly.
 
-*Black-sky rule* — With the Prague model the sky radiance is defined only
+\emph{Black-sky rule} — With the Prague model the sky radiance is defined only
 down to −4.2 degrees, and with the Hosek model it is defined only about 0 degrees.
-Below that the function skips the sky render and writes **only stars** when `stars = TRUE`.
+Below that the function skips the sky render and writes \strong{only stars} when \code{stars = TRUE}.
 }
 \examples{
 # Morning sunrise on spring solstice over Washington, DC with Prague model

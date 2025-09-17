@@ -2,9 +2,7 @@
 // [[Rcpp::plugins(cpp17)]]
 #include <Rcpp.h>
 #include <RcppThread.h>
-#include <OpenEXR/ImfRgbaFile.h>
-#include <OpenEXR/ImfRgba.h>
-#include <Imath/ImathVec.h>
+#include <algorithm>
 #include <mutex>
 #include <cmath>
 
@@ -13,9 +11,6 @@ inline double mag_to_luminance(double Vmagnitude,
   return zeroPoint * std::pow(10.0, (-14.18 - Vmagnitude)/2.5);
 }
 
-using Imf::Rgba;
-using Imf::RgbaOutputFile;
-using Imath::Vec3;
 
 static inline int wrap_col(int x, int W) {
   int r = x % W; return r < 0 ? r + W : r;
@@ -39,8 +34,7 @@ static inline double jd_to_gmst(double jd)
 }
 
 // [[Rcpp::export]]
-void make_starfield_rcpp(std::string     outfile,
-                         Rcpp::DataFrame stars,
+Rcpp::NumericVector make_starfield_rcpp(Rcpp::DataFrame stars,
                          unsigned int    resolution = 2048,
                          double          zero_point = 1.0,
             						 double          lon_deg   = 0.0,
@@ -53,8 +47,7 @@ void make_starfield_rcpp(std::string     outfile,
             						 bool            use_rgb   = true,
             						 bool            atmosphere_effects = true,
             						 bool            upper_hemisphere_only = true,
-            						 unsigned int    numbercores  = 1,
-            						 double          precision_multiplier = 10000)
+            						 unsigned int    numbercores  = 1)
 {
   if (resolution == 0) Rcpp::stop("resolution must be greater than or equal to 1");
   if(!upper_hemisphere_only & atmosphere_effects) {
@@ -65,7 +58,7 @@ void make_starfield_rcpp(std::string     outfile,
   const int nPhi   = 2 * resolution;    // cols (longitude)
   const int nPix   = nTheta * nPhi;
 
-  std::vector<double> img(3 * nPix, 0.0f);
+  std::vector<double> img(3 * nPix, 0.0);
 
   // pull columns out of the data frame
   Rcpp::NumericVector ra   = stars["ra_rad"];
@@ -222,21 +215,26 @@ void make_starfield_rcpp(std::string     outfile,
   		      double w = wyj * wx[dx + rad];   // separable Gaussian
 
   		      std::size_t idx = base + 3ULL * (std::size_t)p;
-  		      img[idx    ] += double(w * R0 * precision_multiplier);
-  		      img[idx + 1] += double(w * G0 * precision_multiplier);
-  		      img[idx + 2] += double(w * B0 * precision_multiplier);
+  		      img[idx    ] += double(w * R0);
+  		      img[idx + 1] += double(w * G0);
+  		      img[idx + 2] += double(w * B0);
   		    }
   		  }
   		}
     }, numbercores);
 
-    // convert to OpenEXR RGBA array
-    std::vector<Rgba> px(nPix);
-    for (int k = 0; k < nPix; ++k) {
-        px[k] = Rgba(img[3*k], img[3*k+1], img[3*k+2]);
+    Rcpp::NumericVector result(nPix * 3);
+    result.attr("dim") = Rcpp::IntegerVector::create(nTheta, nPhi, 3);
+
+    for (int t = 0; t < nTheta; ++t) {
+      for (int p = 0; p < nPhi; ++p) {
+        const int pix_index = t * nPhi + p;
+        for (int c = 0; c < 3; ++c) {
+          const int arr_index = t + nTheta * (p + nPhi * c);
+          result[arr_index] = img[3 * pix_index + c];
+        }
+      }
     }
 
-    RgbaOutputFile out(outfile.c_str(), nPhi, nTheta, Imf::WRITE_RGB);
-    out.setFrameBuffer(px.data(), 1, nPhi);
-    out.writePixels(nTheta);
+    return result;
 }

@@ -36,7 +36,7 @@ dataset(s) once (see `download_sky_data()` below).
 - `generate_sky()` — Write/return an EXR sky dome using either the
   Hosek–Wilkie (default) or Prague model.
 
-  - `outfile = NA` to return the HDR array in‑memory (otherwise a `.exr`
+  - `filename = NA` to return the HDR array in‑memory (otherwise a `.exr`
     is written).
   - `albedo = 0.5` ground reflectance (0–1).
   - `turbidity = 3` atmospheric turbidity (1.7–10; Hosek only).
@@ -53,7 +53,7 @@ dataset(s) once (see `download_sky_data()` below).
   array/EXR. Accepts date/time and observer location, and (optionally)
   adds stars and a moon‑lit atmosphere.
 
-  - Core args: `outfile = NA`, `datetime`, `lat`, `lon`, `albedo`,
+  - Core args: `filename = NA`, `datetime`, `lat`, `lon`, `albedo`,
     `turbidity`, `resolution`, `numbercores`.
   - Model selection: `hosek = TRUE` (Hosek–Wilkie) or set
     `hosek = FALSE` to use the Prague spectral model; Prague extras:
@@ -68,7 +68,7 @@ dataset(s) once (see `download_sky_data()` below).
 - `generate_stars()` — Generate a star‑field EXR aligned with the sky
   dome:
 
-  - `outfile = NA`, `resolution = 2048`.
+  - `filename = NA`, `resolution = 2048`.
   - `lon`, `lat` observer longitude/latitude (deg) and `datetime` (used
     for local sidereal time).
   - Optional extinction/appearance controls: `turbidity`, `ozone_du`,
@@ -96,7 +96,7 @@ library(skymodelr)
 library(rayimage)
 
 env = generate_sky_latlong(
-  outfile    = NA,
+  filename    = NA,
   datetime   = as.POSIXct("2025-03-21 06:15:00",tz="EST"),
   lat        = 38.9072,
   lon        = -77.0369,
@@ -111,7 +111,7 @@ Afternoon in DC:
 
 ``` r
 env = generate_sky_latlong(
-  outfile    = NA,
+  filename    = NA,
   datetime   = as.POSIXct("2025-03-21 12:15:00",tz="EST"),
   lat        = 38.9072,
   lon        = -77.0369,
@@ -126,7 +126,7 @@ Evening in DC:
 
 ``` r
 env = generate_sky_latlong(
-  outfile    = NA,
+  filename    = NA,
   datetime   = as.POSIXct("2025-03-21 18:15:00",tz="EST"),
   lat        = 38.9072,
   lon        = -77.0369,
@@ -141,7 +141,7 @@ Evening in DC (Prague model):
 
 ``` r
 env = generate_sky_latlong(
-  outfile    = NA,
+  filename    = NA,
   datetime   = as.POSIXct("2025-03-21 18:15:00",tz="EST"),
   lat        = 38.9072,
   lon        = -77.0369,
@@ -157,7 +157,7 @@ Full sun + moon + stars:
 
 ``` r
 env = generate_sky_latlong(
-  outfile    = NA,
+  filename    = NA,
   datetime   = as.POSIXct("2025-03-21 18:00:00",tz="EST"),
   lat        = 38.9072,
   lon        = -77.0369,
@@ -174,7 +174,7 @@ rayimage::plot_image(env)
 
 ``` r
 sky = generate_sky(
-  outfile = NA,
+  filename = NA,
   albedo = 0.2,
   turbidity = 3,
   elevation = 15,
@@ -193,7 +193,7 @@ rayimage::plot_image(sky)
 
 ``` r
 moon_sky = generate_moon_latlong(
-  outfile   = NA,
+  filename   = NA,
   datetime  = as.POSIXct("2025-03-21 02:15:00",tz="EST"),
   lat       = 38.9072,
   lon       = -77.0369,
@@ -214,7 +214,7 @@ moon_sky |>
 
 ``` r
 stars = generate_stars(
-  outfile   = NA,
+  filename   = NA,
   datetime  = as.POSIXct("2025-03-21 02:15:00",tz="EST"),
   lat       = 38.9072,
   lon       = -77.0369,
@@ -233,7 +233,7 @@ Now render the entire sphere:
 
 ``` r
 stars_full = generate_stars(
-  outfile   = NA,
+  filename   = NA,
   datetime  = as.POSIXct("2025-03-21 02:15:00",tz="EST"),
   lat       = 38.9072,
   lon       = -77.0369,

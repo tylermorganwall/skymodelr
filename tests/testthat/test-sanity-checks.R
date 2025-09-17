@@ -1,3 +1,16 @@
+angle_diff = function(a, b) {
+	diff = (a - b + 180) %% 360 - 180
+	abs(diff)
+}
+
+column_azimuth = function(col_index, degrees_per_pixel) {
+	((col_index - 0.5) * degrees_per_pixel) %% 360
+}
+
+row_altitude = function(row_index, degrees_per_pixel) {
+	90 - ((row_index - 0.5) * degrees_per_pixel)
+}
+
 test_that("sun is correct at equinox", {
 	resolution_height = 2000
 	resolution_width = 2 * resolution_height
@@ -37,3 +50,103 @@ test_that("sun is correct at equinox", {
 # 1) Eclipse at 44.906907, -72.804280, April 8, 2024, approx 3:29 PM EST
 # 2) On Tuesday, September 16, 2025 at 04:21:11 UTC the Sun is at its zenith at Latitude: 2° 33' North, Longitude: 113° 26' East
 # 3) On Tuesday, September 16, 2025 at 04:21:11 UTC the Moon is at its zenith at Latitude: 27° 08' North, Longitude: 47° 16' East
+
+test_that("sun position matches ephemeris during eclipse", {
+	resolution_height = 512
+	resolution_width = 2 * resolution_height
+	degrees_per_pixel = 360 / resolution_width
+	date_time = as.POSIXct("2024-04-08 15:29:00", tz = "America/New_York")
+	lat = 44.906907
+	lon = -72.804280
+	sky = generate_sky_latlong(
+		datetime = date_time,
+		lat = lat,
+		lon = lon,
+		resolution = resolution_height,
+		numbercores = 1
+	)
+	col_luminance = apply(sky[,, 3], 2, sum)
+	brightest_col = which.max(col_luminance)
+	sun_position = suncalc::getSunlightPosition(date_time, lat, lon)
+	expected_az = (180 + sun_position$azimuth * 180 / pi) %% 360
+	actual_az = column_azimuth(brightest_col, degrees_per_pixel)
+	testthat::expect_lt(
+		angle_diff(actual_az, expected_az),
+		max(2, degrees_per_pixel * 3)
+	)
+})
+
+test_that("sun is overhead at Borneo zenith time", {
+	resolution_height = 2000
+	resolution_width = 2 * resolution_height
+	degrees_per_pixel = 360 / resolution_width
+	date_time = as.POSIXct("2025-09-16 04:21:11", tz = "UTC")
+	lat = 2 + 33 / 60
+	lon = 113 + 26 / 60
+	sky = generate_sky_latlong(
+		datetime = date_time,
+		lat = lat,
+		lon = lon,
+		resolution = resolution_height,
+		numbercores = 1
+	)
+	col_luminance = apply(sky[,, 3], 2, sum)
+	row_luminance = apply(sky[,, 3], 1, sum)
+
+	brightest_col = which.max(col_luminance)
+	brightest_row = which.max(row_luminance)
+
+	sun_position = suncalc::getSunlightPosition(date_time, lat, lon)
+	expected_az = (180 + sun_position$azimuth * 180 / pi) %% 360
+	actual_az = column_azimuth(brightest_col, degrees_per_pixel)
+	testthat::expect_lt(
+		angle_diff(actual_az, expected_az),
+		max(2, degrees_per_pixel * 3)
+	)
+	testthat::expect_gt(sun_position$altitude * 180 / pi, 85)
+	expected_alt = sun_position$altitude * 180 / pi
+	actual_alt = row_altitude(brightest_row, degrees_per_pixel)
+	testthat::expect_lt(
+		angle_diff(expected_alt, actual_alt),
+		max(2, degrees_per_pixel * 3)
+	)
+})
+
+test_that("moon aligns with zenith ephemeris", {
+	resolution_height = 2000
+	resolution_width = 2 * resolution_height
+	degrees_per_pixel = 360 / resolution_width
+	date_time = as.POSIXct("2025-09-16 04:21:11", tz = "UTC")
+	lat = 27 + 8 / 60
+	lon = 47 + 16 / 60
+	moon = generate_moon_latlong(
+		datetime = date_time,
+		lat = lat,
+		lon = lon,
+		resolution = resolution_height,
+		numbercores = 1,
+		atmospheric_scattering = FALSE
+	)
+	col_luminance = apply(sky[,, 3], 2, sum)
+	row_luminance = apply(sky[,, 3], 1, sum)
+
+	brightest_col = which.max(col_luminance)
+	brightest_row = which.max(row_luminance)
+
+	moon_position = suncalc::getMoonPosition(date_time, lat, lon)
+	expected_az = (90 + moon_position$azimuth * 180 / pi) %% 360
+	actual_az = column_azimuth(brightest_col, degrees_per_pixel)
+	#This is broken currently, probably due to oddities around 90 degrees
+
+	testthat::expect_lt(
+		angle_diff(actual_az, expected_az),
+		max(2, degrees_per_pixel * 3)
+	)
+	testthat::expect_gt(moon_position$altitude * 180 / pi, 80)
+  expected_alt = moon_position$altitude * 180 / pi
+	actual_alt = row_altitude(brightest_row, degrees_per_pixel)
+	testthat::expect_lt(
+		angle_diff(expected_alt, actual_alt),
+		max(2, degrees_per_pixel * 3)
+	)
+})

@@ -12,25 +12,24 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // makesky_rcpp
-void makesky_rcpp(std::string outfile, double albedo, double turbidity, double elevation, double azimuth_deg, unsigned int resolution, unsigned int numbercores, bool square_projection, std::string model, std::string prg_dataset, double altitude, double visibility, bool render_solar_disk);
-RcppExport SEXP _skymodelr_makesky_rcpp(SEXP outfileSEXP, SEXP albedoSEXP, SEXP turbiditySEXP, SEXP elevationSEXP, SEXP azimuth_degSEXP, SEXP resolutionSEXP, SEXP numbercoresSEXP, SEXP square_projectionSEXP, SEXP modelSEXP, SEXP prg_datasetSEXP, SEXP altitudeSEXP, SEXP visibilitySEXP, SEXP render_solar_diskSEXP) {
+Rcpp::NumericVector makesky_rcpp(double albedo, double turbidity, double elevation, double azimuth_deg, unsigned int resolution, unsigned int numbercores, std::string model, std::string prg_dataset, double altitude, double visibility, bool render_solar_disk);
+RcppExport SEXP _skymodelr_makesky_rcpp(SEXP albedoSEXP, SEXP turbiditySEXP, SEXP elevationSEXP, SEXP azimuth_degSEXP, SEXP resolutionSEXP, SEXP numbercoresSEXP, SEXP modelSEXP, SEXP prg_datasetSEXP, SEXP altitudeSEXP, SEXP visibilitySEXP, SEXP render_solar_diskSEXP) {
 BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< std::string >::type outfile(outfileSEXP);
     Rcpp::traits::input_parameter< double >::type albedo(albedoSEXP);
     Rcpp::traits::input_parameter< double >::type turbidity(turbiditySEXP);
     Rcpp::traits::input_parameter< double >::type elevation(elevationSEXP);
     Rcpp::traits::input_parameter< double >::type azimuth_deg(azimuth_degSEXP);
     Rcpp::traits::input_parameter< unsigned int >::type resolution(resolutionSEXP);
     Rcpp::traits::input_parameter< unsigned int >::type numbercores(numbercoresSEXP);
-    Rcpp::traits::input_parameter< bool >::type square_projection(square_projectionSEXP);
     Rcpp::traits::input_parameter< std::string >::type model(modelSEXP);
     Rcpp::traits::input_parameter< std::string >::type prg_dataset(prg_datasetSEXP);
     Rcpp::traits::input_parameter< double >::type altitude(altitudeSEXP);
     Rcpp::traits::input_parameter< double >::type visibility(visibilitySEXP);
     Rcpp::traits::input_parameter< bool >::type render_solar_disk(render_solar_diskSEXP);
-    makesky_rcpp(outfile, albedo, turbidity, elevation, azimuth_deg, resolution, numbercores, square_projection, model, prg_dataset, altitude, visibility, render_solar_disk);
-    return R_NilValue;
+    rcpp_result_gen = Rcpp::wrap(makesky_rcpp(albedo, turbidity, elevation, azimuth_deg, resolution, numbercores, model, prg_dataset, altitude, visibility, render_solar_disk));
+    return rcpp_result_gen;
 END_RCPP
 }
 // calculate_raw_prague
@@ -54,11 +53,11 @@ BEGIN_RCPP
 END_RCPP
 }
 // make_starfield_rcpp
-void make_starfield_rcpp(std::string outfile, Rcpp::DataFrame stars, unsigned int resolution, double zero_point, double lon_deg, double lat_deg, double jd, double turbidity, double ozone_du, double altitude, double star_width, bool use_rgb, bool atmosphere_effects, bool upper_hemisphere_only, unsigned int numbercores, double precision_multiplier);
-RcppExport SEXP _skymodelr_make_starfield_rcpp(SEXP outfileSEXP, SEXP starsSEXP, SEXP resolutionSEXP, SEXP zero_pointSEXP, SEXP lon_degSEXP, SEXP lat_degSEXP, SEXP jdSEXP, SEXP turbiditySEXP, SEXP ozone_duSEXP, SEXP altitudeSEXP, SEXP star_widthSEXP, SEXP use_rgbSEXP, SEXP atmosphere_effectsSEXP, SEXP upper_hemisphere_onlySEXP, SEXP numbercoresSEXP, SEXP precision_multiplierSEXP) {
+Rcpp::NumericVector make_starfield_rcpp(Rcpp::DataFrame stars, unsigned int resolution, double zero_point, double lon_deg, double lat_deg, double jd, double turbidity, double ozone_du, double altitude, double star_width, bool use_rgb, bool atmosphere_effects, bool upper_hemisphere_only, unsigned int numbercores);
+RcppExport SEXP _skymodelr_make_starfield_rcpp(SEXP starsSEXP, SEXP resolutionSEXP, SEXP zero_pointSEXP, SEXP lon_degSEXP, SEXP lat_degSEXP, SEXP jdSEXP, SEXP turbiditySEXP, SEXP ozone_duSEXP, SEXP altitudeSEXP, SEXP star_widthSEXP, SEXP use_rgbSEXP, SEXP atmosphere_effectsSEXP, SEXP upper_hemisphere_onlySEXP, SEXP numbercoresSEXP) {
 BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< std::string >::type outfile(outfileSEXP);
     Rcpp::traits::input_parameter< Rcpp::DataFrame >::type stars(starsSEXP);
     Rcpp::traits::input_parameter< unsigned int >::type resolution(resolutionSEXP);
     Rcpp::traits::input_parameter< double >::type zero_point(zero_pointSEXP);
@@ -73,16 +72,15 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type atmosphere_effects(atmosphere_effectsSEXP);
     Rcpp::traits::input_parameter< bool >::type upper_hemisphere_only(upper_hemisphere_onlySEXP);
     Rcpp::traits::input_parameter< unsigned int >::type numbercores(numbercoresSEXP);
-    Rcpp::traits::input_parameter< double >::type precision_multiplier(precision_multiplierSEXP);
-    make_starfield_rcpp(outfile, stars, resolution, zero_point, lon_deg, lat_deg, jd, turbidity, ozone_du, altitude, star_width, use_rgb, atmosphere_effects, upper_hemisphere_only, numbercores, precision_multiplier);
-    return R_NilValue;
+    rcpp_result_gen = Rcpp::wrap(make_starfield_rcpp(stars, resolution, zero_point, lon_deg, lat_deg, jd, turbidity, ozone_du, altitude, star_width, use_rgb, atmosphere_effects, upper_hemisphere_only, numbercores));
+    return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_skymodelr_makesky_rcpp", (DL_FUNC) &_skymodelr_makesky_rcpp, 13},
+    {"_skymodelr_makesky_rcpp", (DL_FUNC) &_skymodelr_makesky_rcpp, 11},
     {"_skymodelr_calculate_raw_prague", (DL_FUNC) &_skymodelr_calculate_raw_prague, 10},
-    {"_skymodelr_make_starfield_rcpp", (DL_FUNC) &_skymodelr_make_starfield_rcpp, 16},
+    {"_skymodelr_make_starfield_rcpp", (DL_FUNC) &_skymodelr_make_starfield_rcpp, 14},
     {NULL, NULL, 0}
 };
 

@@ -247,7 +247,7 @@ build_from_z = function(x) {
   return(matrix(c(xx, yy, zz), ncol = 3, byrow = FALSE))
 }
 
-#' Render the moon into a lat-long EXR patch
+#' Generate the moon into a lat-long image array patch
 #'
 #' @description Produce a rasterised moon texture aligned for composition into
 #' the sky dome.
