@@ -275,7 +275,7 @@ generate_moon_image_latlong = function(
   local_up = normalize(moon_sun_data$local_up_geo)
 
   moon_material = rayvertex::material_list(
-    texture_location = "lroc_color_poles_1k.jpg",
+    texture_location =system.file("textures", "lroc_color_poles_1k.jpg", package="skymodelr"),
     sigma = 10
   )
 

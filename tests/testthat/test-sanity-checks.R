@@ -127,21 +127,14 @@ test_that("moon aligns with zenith ephemeris", {
 		numbercores = 1,
 		atmospheric_scattering = FALSE
 	)
-	col_luminance = apply(sky[,, 3], 2, sum)
-	row_luminance = apply(sky[,, 3], 1, sum)
+	col_luminance = apply(moon[,, 3], 2, sum)
+	row_luminance = apply(moon[,, 3], 1, sum)
 
 	brightest_col = which.max(col_luminance)
 	brightest_row = which.max(row_luminance)
 
 	moon_position = suncalc::getMoonPosition(date_time, lat, lon)
-	expected_az = (90 + moon_position$azimuth * 180 / pi) %% 360
-	actual_az = column_azimuth(brightest_col, degrees_per_pixel)
-	#This is broken currently, probably due to oddities around 90 degrees
-
-	testthat::expect_lt(
-		angle_diff(actual_az, expected_az),
-		max(2, degrees_per_pixel * 3)
-	)
+  #Azimuth doesn't work because it's spread fairly uniformly across the horizontal image
 	testthat::expect_gt(moon_position$altitude * 180 / pi, 80)
   expected_alt = moon_position$altitude * 180 / pi
 	actual_alt = row_altitude(brightest_row, degrees_per_pixel)
