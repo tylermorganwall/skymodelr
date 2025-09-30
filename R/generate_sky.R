@@ -192,8 +192,8 @@ generate_sky = function(
   )
 
   generated_sky = array(0, dim = c(resolution, resolution * 2, 4))
-  generated_sky[, , 1:3] = generated_rgb
-  generated_sky[, , 4] = 1
+  generated_sky[,, 1:3] = generated_rgb
+  generated_sky[,, 4] = 1
 
   if (!is.na(filename)) {
     warn_precision_loss(filename)
@@ -291,10 +291,10 @@ generate_sky = function(
 #'   rayimage::plot_image()
 #' }
 generate_sky_latlong = function(
-  datetime = "2025-01-01 12:00:00",
+  datetime = as.POSIXct("2025-03-21 18:00:00", tz = "EST"),
   lat = 38.9072,
   lon = -77.0369,
-	filename = NA,
+  filename = NA,
   albedo = 0.5,
   turbidity = 3,
   altitude = 0,
@@ -310,6 +310,11 @@ generate_sky_latlong = function(
   verbose = FALSE,
   ...
 ) {
+  if (is.character(datetime)) {
+    message(
+      "Assuming timezone is UTC, pass explicit POSIXct object to set timezone."
+    )
+  }
   sun_altitude_azimuth = suncalc::getSunlightPosition(datetime, lat, lon)
   elevation = sun_altitude_azimuth$altitude * 180 / pi
   azimuth = 180 + sun_altitude_azimuth$azimuth * 180 / pi
@@ -407,7 +412,8 @@ generate_sky_latlong = function(
 #' @param azimuth            Default `90`, single value. Solar azimuth (degrees). Defaults South.
 #' @param numbercores        Default `1`. Number of threads to use in computation.
 #' @param wide_spectrum      Default `FALSE`. Whether to use the wide‑spectrum (55‑channel, polarised) coefficients.
-#'
+#' @param solar_disk 		 Default `TRUE`. Whether to sample the solar disk as well.
+#' 
 #' @return 3 column RGB matrix.
 #' @export
 #' @examples
@@ -437,7 +443,8 @@ calculate_sky_values = function(
   albedo = 0.5,
   azimuth = 90,
   numbercores = 1,
-  wide_spectrum = FALSE
+  wide_spectrum = FALSE,
+  solar_disk = TRUE
 ) {
   sea_level = all(altitude == 0)
   stopifnot(all(phi <= 360 & phi >= 0))
@@ -507,7 +514,8 @@ calculate_sky_values = function(
     df_values$visibility,
     azimuth[1],
     numbercores,
-    coef_file
+    coef_file,
+	solar_disk
   )
   colnames(vals) = c("r", "g", "b")
   return(as.data.frame(vals))

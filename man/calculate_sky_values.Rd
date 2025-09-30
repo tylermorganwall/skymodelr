@@ -13,7 +13,8 @@ calculate_sky_values(
   albedo = 0.5,
   azimuth = 90,
   numbercores = 1,
-  wide_spectrum = FALSE
+  wide_spectrum = FALSE,
+  solar_disk = TRUE
 )
 }
 \arguments{
@@ -34,6 +35,8 @@ calculate_sky_values(
 \item{numbercores}{Default \code{1}. Number of threads to use in computation.}
 
 \item{wide_spectrum}{Default \code{FALSE}. Whether to use the wide‑spectrum (55‑channel, polarised) coefficients.}
+
+\item{solar_disk}{Default \code{TRUE}. Whether to sample the solar disk as well.}
 }
 \value{
 3 column RGB matrix.

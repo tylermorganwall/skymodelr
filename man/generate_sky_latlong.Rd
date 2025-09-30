@@ -5,7 +5,7 @@
 \title{Generate a location and time-specific sky dome (optionally with stars)}
 \usage{
 generate_sky_latlong(
-  datetime = "2025-01-01 12:00:00",
+  datetime = as.POSIXct("2025-03-21 18:00:00", tz = "EST"),
   lat = 38.9072,
   lon = -77.0369,
   filename = NA,

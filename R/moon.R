@@ -61,6 +61,11 @@ generate_moon_latlong = function(
   verbose = FALSE,
   ...
 ) {
+  if (is.character(datetime)) {
+    message(
+      "Assuming timezone is UTC, pass explicit POSIXct object to set timezone."
+    )
+  }
   moon_altitude_azimuth = suncalc::getMoonPosition(datetime, lat, lon)
   moon_elevation = moon_altitude_azimuth$altitude * 180 / pi
   moon_azimuth = 90 + moon_altitude_azimuth$azimuth * 180 / pi

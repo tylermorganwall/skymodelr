@@ -44,54 +44,54 @@
 #'   rayimage::plot_image()
 #'}
 generate_planets = function(
-	datetime = as.POSIXct("2000-01-01 00:00:00", tz = "UTC"),
-	lon = 0,
-	lat = 0,
-	filename = NA,
-	resolution = 2048,
-	turbidity = 3.0,
-	ozone_du = 300.0,
-	altitude = 0.0,
-	color = FALSE,
-	planet_width = 1,
-	upper_hemisphere_only = TRUE,
-	atmosphere_effects = TRUE,
-	numbercores = 1,
-	verbose = FALSE
+  datetime = as.POSIXct("2000-01-01 00:00:00", tz = "UTC"),
+  lon = 0,
+  lat = 0,
+  filename = NA,
+  resolution = 2048,
+  turbidity = 3.0,
+  ozone_du = 300.0,
+  altitude = 0.0,
+  color = FALSE,
+  planet_width = 1,
+  upper_hemisphere_only = TRUE,
+  atmosphere_effects = TRUE,
+  numbercores = 1,
+  verbose = FALSE
 ) {
-	if (!inherits(datetime, "POSIXct")) {
-		stop("datetime must be POSIXct in UTC")
-	}
-	attr(datetime, "tzone") = "UTC"
-	jd = jd_utc(datetime)
+  if (!inherits(datetime, "POSIXct")) {
+    stop("datetime must be POSIXct in UTC")
+  }
+  attr(datetime, "tzone") = "UTC"
+  jd = jd_utc(datetime)
 
-	planet_temp = swe_dirs_topo_planets_df(datetime, lon, lat)
-	if (verbose) {
-		print(planet_temp)
-	}
-	planet_rgb = make_starfield_rcpp(
-		stars = planet_temp,
-		resolution = resolution,
-		lon_deg = lon,
-		lat_deg = lat,
-		jd = jd,
-		use_rgb = color,
-		turbidity = turbidity,
-		ozone_du = ozone_du,
-		altitude = altitude,
-		star_width = planet_width,
-		atmosphere_effects = atmosphere_effects,
-		upper_hemisphere_only = upper_hemisphere_only,
-		numbercores = numbercores
-	)
-	planet_array = array(0, dim = c(resolution, resolution * 2, 4))
-	planet_array[, , 1:3] = planet_rgb
-	planet_array[, , 4] = 1
-	if (!is.na(filename)) {
-		warn_precision_loss(filename)
-		rayimage::ray_write_image(planet_array, filename)
-		return(invisible(planet_array))
-	} else {
-		return(planet_array)
-	}
+  planet_temp = swe_dirs_topo_planets_df(datetime, lon, lat)
+  if (verbose) {
+    print(planet_temp)
+  }
+  planet_rgb = make_starfield_rcpp(
+    stars = planet_temp,
+    resolution = resolution,
+    lon_deg = lon,
+    lat_deg = lat,
+    jd = jd,
+    use_rgb = color,
+    turbidity = turbidity,
+    ozone_du = ozone_du,
+    altitude = altitude,
+    star_width = planet_width,
+    atmosphere_effects = atmosphere_effects,
+    upper_hemisphere_only = upper_hemisphere_only,
+    numbercores = numbercores
+  )
+  planet_array = array(0, dim = c(resolution, resolution * 2, 4))
+  planet_array[,, 1:3] = planet_rgb
+  planet_array[,, 4] = 1
+  if (!is.na(filename)) {
+    warn_precision_loss(filename)
+    rayimage::ray_write_image(planet_array, filename)
+    return(invisible(planet_array))
+  } else {
+    return(planet_array)
+  }
 }

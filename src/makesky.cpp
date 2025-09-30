@@ -243,13 +243,13 @@ Rcpp::NumericMatrix calculate_raw_prague(Rcpp::NumericVector phi,
                           std::sin(elev_rad),                     // +Y (Up)
                           std::sin(az_rad) * std::cos(elev_rad)); // +Z (West)
 
-      Vec3<float> v(std::cos(phi_rad) * std::sin(theta_rad),
-                    std::cos(theta_rad),
-                    std::sin(phi_rad) * std::sin(theta_rad));
+      Vec3<float> v(std::cos(phi_rad) * std::cos(theta_rad),
+                    std::sin(theta_rad),
+                    std::sin(phi_rad) * std::cos(theta_rad));
 
-      Vec3<float> v_zup(std::cos(phi_rad) * std::sin(theta_rad),
-                        std::sin(phi_rad) * std::sin(theta_rad),
-                        std::cos(theta_rad));
+      Vec3<float> v_zup(std::cos(phi_rad) * std::cos(theta_rad),
+                        std::sin(phi_rad) * std::cos(theta_rad),
+                        std::sin(theta_rad));
       auto P = prague_model.computeParameters(
         /*viewPoint*/   { 0.0, 0.0, altitude[t] },
         /*viewDir  */   toPrague(v_zup),
