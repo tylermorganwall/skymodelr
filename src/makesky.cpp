@@ -197,12 +197,11 @@ Rcpp::NumericMatrix calculate_raw_prague(Rcpp::NumericVector phi,
                            Rcpp::NumericVector albedo,
                            Rcpp::NumericVector altitude,
                            Rcpp::NumericVector visibility,
-                           double       azimuth_deg       = 90,
-                            unsigned int numbercores       = 1,
+						   Rcpp::NumericVector azimuth,
+                           unsigned int numbercores       = 1,
                             std::string  prg_dataset       = "",
                             bool render_solar_disk = true)
 {
-  float az_rad = static_cast<float>(azimuth_deg * M_PI / 180.0);
 
   // Prague model initialisation
   if (prg_dataset.empty()) {
@@ -234,18 +233,11 @@ Rcpp::NumericMatrix calculate_raw_prague(Rcpp::NumericVector phi,
       float theta_rad = theta[t] * static_cast<float>(M_PI)/180;
       float phi_rad = phi[t] * static_cast<float>(M_PI)/180;
       float elev_rad = elevation[t] * static_cast<float>(M_PI)/180;
+  	  float az_rad = azimuth[t] * static_cast<float>(M_PI) / 180;
 
       if (theta_rad > static_cast<float>(M_PI_2)) {
         return;
       }
-
-      Vec3<float> sun_dir(std::cos(az_rad) * std::cos(elev_rad),  // +X (South)
-                          std::sin(elev_rad),                     // +Y (Up)
-                          std::sin(az_rad) * std::cos(elev_rad)); // +Z (West)
-
-      Vec3<float> v(std::cos(phi_rad) * std::cos(theta_rad),
-                    std::sin(theta_rad),
-                    std::sin(phi_rad) * std::cos(theta_rad));
 
       Vec3<float> v_zup(std::cos(phi_rad) * std::cos(theta_rad),
                         std::sin(phi_rad) * std::cos(theta_rad),

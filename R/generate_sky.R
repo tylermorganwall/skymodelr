@@ -458,7 +458,8 @@ calculate_sky_values = function(
     altitude = altitude,
     elevation = elevation,
     visibility = visibility,
-    albedo = albedo
+    albedo = albedo,
+		azimuth = azimuth
   ))
   if (sea_level & !wide_spectrum) {
     filesize = "107MB"
@@ -512,7 +513,7 @@ calculate_sky_values = function(
     df_values$albedo,
     df_values$altitude,
     df_values$visibility,
-    azimuth[1],
+    df_values$azimuth,
     numbercores,
     coef_file,
 	solar_disk
