@@ -21,6 +21,7 @@ generate_sky_latlong(
   star_width = 1,
   planets = FALSE,
   moon = FALSE,
+  render_solar_disk = TRUE,
   verbose = FALSE,
   ...
 )
@@ -62,6 +63,8 @@ when the black-sky condition is met (see \emph{Details}).}
 \item{planets}{Default \code{FALSE}. If \code{TRUE}, composite bright planets via \code{\link[=generate_planets]{generate_planets()}}.}
 
 \item{moon}{Default \code{FALSE}. If \code{TRUE}, overlay a moon render from \code{\link[=generate_moon]{generate_moon()}}.}
+
+\item{render_solar_disk}{Default \code{TRUE}. Whether to render the solar disk in addition to the atmosphere.}
 
 \item{verbose}{Default \code{FALSE}. Whether to print progress bars/diagnostic info.}
 

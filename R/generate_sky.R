@@ -75,133 +75,133 @@
 #' }
 #' }
 generate_sky = function(
-  filename = NA,
-  albedo = 0.5,
-  turbidity = 3,
-  elevation = 10,
-  azimuth = 90,
-  altitude = 0,
-  resolution = 2048,
-  numbercores = 1,
-  hosek = TRUE,
-  wide_spectrum = FALSE,
-  visibility = 50,
-  verbose = FALSE,
-  render_solar_disk = TRUE
+	filename = NA,
+	albedo = 0.5,
+	turbidity = 3,
+	elevation = 10,
+	azimuth = 90,
+	altitude = 0,
+	resolution = 2048,
+	numbercores = 1,
+	hosek = TRUE,
+	wide_spectrum = FALSE,
+	visibility = 50,
+	verbose = FALSE,
+	render_solar_disk = TRUE
 ) {
-  sea_level = altitude == 0
-  filesize = ""
-  if (sea_level & !wide_spectrum) {
-    filesize = "107MB"
-  } else if (sea_level & wide_spectrum) {
-    filesize = "574MB"
-  } else if (!sea_level & !wide_spectrum) {
-    filesize = "2.4GB"
-  }
-  check_coef_file = function(filename) {
-    coef_file = file.path(tools::R_user_dir("skymodelr", "data"), filename)
-    if (!file.exists(coef_file)) {
-      response = readline(
-        prompt = sprintf(
-          " Coefficient file for this setting not yet present: this is a large file (%s), download? [y/n] ",
-          filesize
-        )
-      )
-      if (response == "y") {
-        download_sky_data(sea_level, wide_spectrum)
-      } else if (response == "n") {
-        return("")
-      } else {
-        stop("Input not recognized.")
-      }
-    }
-    return(coef_file)
-  }
-  coef_file = ""
-  if (!hosek) {
-    stopifnot(altitude >= 0 && altitude <= 15000)
-    model = "prague"
-    if (!wide_spectrum) {
-      if (altitude == 0) {
-        coef_file = check_coef_file("SkyModelDatasetGround.dat")
-      } else {
-        coef_file = check_coef_file("SkyModelDataset.dat")
-      }
-    } else {
-      if (altitude == 0) {
-        coef_file = check_coef_file("PragueSkyModelDatasetGroundInfra.dat")
-      } else {
-        stop("`wide_spectrum = TRUE` is only valid when `altitude == 0`.")
-      }
-    }
-    if (coef_file == "") {
-      stop("No coefficient file downloaded for this set of inputs.")
-    }
-  } else {
-    model = "hosek"
-  }
-  #If sun below valid region, write black image
-  if (model == "hosek") {
-    if (elevation < 0.0) {
-      if (verbose) {
-        message(
-          "Drawing black image as Hosek model does not produce valid output for elevation < 0."
-        )
-      }
-      black_sky = array(0, dim = c(resolution, resolution * 2, 4))
-      black_sky[,, 4] = 1
-      if (!is.na(filename)) {
-        warn_precision_loss(filename)
-        rayimage::ray_write_image(black_sky, filename)
-        return(invisible(black_sky))
-      } else {
-        return(black_sky)
-      }
-    }
-  } else {
-    if (elevation < -4.2) {
-      if (verbose) {
-        message(
-          "Drawing black image as Prague model does not produce valid output for elevation < -4.2."
-        )
-      }
-      black_sky = array(0, dim = c(resolution, resolution * 2, 4))
-      black_sky[,, 4] = 1
-      if (!is.na(filename)) {
-        warn_precision_loss(filename)
-        rayimage::ray_write_image(black_sky, filename)
-        return(invisible(black_sky))
-      } else {
-        return(black_sky)
-      }
-    }
-  }
+	sea_level = altitude == 0
+	filesize = ""
+	if (sea_level & !wide_spectrum) {
+		filesize = "107MB"
+	} else if (sea_level & wide_spectrum) {
+		filesize = "574MB"
+	} else if (!sea_level & !wide_spectrum) {
+		filesize = "2.4GB"
+	}
+	check_coef_file = function(filename) {
+		coef_file = file.path(tools::R_user_dir("skymodelr", "data"), filename)
+		if (!file.exists(coef_file)) {
+			response = readline(
+				prompt = sprintf(
+					" Coefficient file for this setting not yet present: this is a large file (%s), download? [y/n] ",
+					filesize
+				)
+			)
+			if (response == "y") {
+				download_sky_data(sea_level, wide_spectrum)
+			} else if (response == "n") {
+				return("")
+			} else {
+				stop("Input not recognized.")
+			}
+		}
+		return(coef_file)
+	}
+	coef_file = ""
+	if (!hosek) {
+		stopifnot(altitude >= 0 && altitude <= 15000)
+		model = "prague"
+		if (!wide_spectrum) {
+			if (altitude == 0) {
+				coef_file = check_coef_file("SkyModelDatasetGround.dat")
+			} else {
+				coef_file = check_coef_file("SkyModelDataset.dat")
+			}
+		} else {
+			if (altitude == 0) {
+				coef_file = check_coef_file("PragueSkyModelDatasetGroundInfra.dat")
+			} else {
+				stop("`wide_spectrum = TRUE` is only valid when `altitude == 0`.")
+			}
+		}
+		if (coef_file == "") {
+			stop("No coefficient file downloaded for this set of inputs.")
+		}
+	} else {
+		model = "hosek"
+	}
+	#If sun below valid region, write black image
+	if (model == "hosek") {
+		if (elevation < 0.0) {
+			if (verbose) {
+				message(
+					"Drawing black image as Hosek model does not produce valid output for elevation < 0."
+				)
+			}
+			black_sky = array(0, dim = c(resolution, resolution * 2, 4))
+			black_sky[,, 4] = 1
+			if (!is.na(filename)) {
+				warn_precision_loss(filename)
+				rayimage::ray_write_image(black_sky, filename)
+				return(invisible(black_sky))
+			} else {
+				return(black_sky)
+			}
+		}
+	} else {
+		if (elevation < -4.2) {
+			if (verbose) {
+				message(
+					"Drawing black image as Prague model does not produce valid output for elevation < -4.2."
+				)
+			}
+			black_sky = array(0, dim = c(resolution, resolution * 2, 4))
+			black_sky[,, 4] = 1
+			if (!is.na(filename)) {
+				warn_precision_loss(filename)
+				rayimage::ray_write_image(black_sky, filename)
+				return(invisible(black_sky))
+			} else {
+				return(black_sky)
+			}
+		}
+	}
 
-  generated_rgb = makesky_rcpp(
-    albedo = albedo,
-    turbidity = turbidity,
-    elevation = elevation,
-    azimuth_deg = azimuth,
-    resolution = resolution,
-    numbercores = numbercores,
-    model = model,
-    prg_dataset = coef_file,
-    altitude = altitude,
-    visibility = visibility,
-    render_solar_disk = render_solar_disk
-  )
+	generated_rgb = makesky_rcpp(
+		albedo = albedo,
+		turbidity = turbidity,
+		elevation = elevation,
+		azimuth_deg = azimuth,
+		resolution = resolution,
+		numbercores = numbercores,
+		model = model,
+		prg_dataset = coef_file,
+		altitude = altitude,
+		visibility = visibility,
+		render_solar_disk = render_solar_disk
+	)
 
-  generated_sky = array(0, dim = c(resolution, resolution * 2, 4))
-  generated_sky[,, 1:3] = generated_rgb
-  generated_sky[,, 4] = 1
+	generated_sky = array(0, dim = c(resolution, resolution * 2, 4))
+	generated_sky[,, 1:3] = generated_rgb
+	generated_sky[,, 4] = 1
 
-  if (!is.na(filename)) {
-    warn_precision_loss(filename)
-    rayimage::ray_write_image(generated_sky, filename)
-    return(invisible(generated_sky))
-  } else {
-    return(generated_sky)
-  }
+	if (!is.na(filename)) {
+		warn_precision_loss(filename)
+		rayimage::ray_write_image(generated_sky, filename)
+		return(invisible(generated_sky))
+	} else {
+		return(generated_sky)
+	}
 }
 
 #' Generate a location and time-specific sky dome (optionally with stars)
@@ -233,6 +233,7 @@ generate_sky = function(
 #' @param star_width         Default `1`. Passed to [generate_stars()] to control stellar point-spread size.
 #' @param planets            Default `FALSE`. If `TRUE`, composite bright planets via [generate_planets()].
 #' @param moon               Default `FALSE`. If `TRUE`, overlay a moon render from [generate_moon()].
+#' @param render_solar_disk  Default `TRUE`. Whether to render the solar disk in addition to the atmosphere.
 #' @param verbose            Default `FALSE`. Whether to print progress bars/diagnostic info.
 #' @param ...                Additional arguments passed to [generate_stars()] and, when enabled, [generate_planets()].
 #'
@@ -291,111 +292,113 @@ generate_sky = function(
 #'   rayimage::plot_image()
 #' }
 generate_sky_latlong = function(
-  datetime = as.POSIXct("2025-03-21 18:00:00", tz = "EST"),
-  lat = 38.9072,
-  lon = -77.0369,
-  filename = NA,
-  albedo = 0.5,
-  turbidity = 3,
-  altitude = 0,
-  resolution = 2048,
-  numbercores = 1,
-  hosek = TRUE,
-  wide_spectrum = FALSE,
-  visibility = 50,
-  stars = FALSE,
-  star_width = 1.0,
-  planets = FALSE,
-  moon = FALSE,
-  verbose = FALSE,
-  ...
+	datetime = as.POSIXct("2025-03-21 18:00:00", tz = "EST"),
+	lat = 38.9072,
+	lon = -77.0369,
+	filename = NA,
+	albedo = 0.5,
+	turbidity = 3,
+	altitude = 0,
+	resolution = 2048,
+	numbercores = 1,
+	hosek = TRUE,
+	wide_spectrum = FALSE,
+	visibility = 50,
+	stars = FALSE,
+	star_width = 1.0,
+	planets = FALSE,
+	moon = FALSE,
+	render_solar_disk = TRUE,
+	verbose = FALSE,
+	...
 ) {
-  if (is.character(datetime)) {
-    message(
-      "Assuming timezone is UTC, pass explicit POSIXct object to set timezone."
-    )
-  }
-  sun_altitude_azimuth = suncalc::getSunlightPosition(datetime, lat, lon)
-  elevation = sun_altitude_azimuth$altitude * 180 / pi
-  azimuth = 180 + sun_altitude_azimuth$azimuth * 180 / pi
-  if (verbose) {
-    message(sprintf(
-      "Sun: %0.1f° elevation, %0.1f° azimuth",
-      elevation,
-      azimuth
-    ))
-  }
-  # Just add up all three
-  sky_array = generate_sky(
-    albedo = albedo,
-    turbidity = turbidity,
-    altitude = altitude,
-    elevation = elevation,
-    azimuth = azimuth,
-    resolution = resolution,
-    numbercores = numbercores,
-    hosek = hosek,
-    wide_spectrum = wide_spectrum,
-    visibility = visibility,
-    verbose = verbose
-  )
+	if (is.character(datetime)) {
+		message(
+			"Assuming timezone is UTC, pass explicit POSIXct object to set timezone."
+		)
+	}
+	sun_altitude_azimuth = suncalc::getSunlightPosition(datetime, lat, lon)
+	elevation = sun_altitude_azimuth$altitude * 180 / pi
+	azimuth = 180 + sun_altitude_azimuth$azimuth * 180 / pi
+	if (verbose) {
+		message(sprintf(
+			"Sun: %0.1f° elevation, %0.1f° azimuth",
+			elevation,
+			azimuth
+		))
+	}
+	# Just add up all three
+	sky_array = generate_sky(
+		albedo = albedo,
+		turbidity = turbidity,
+		altitude = altitude,
+		elevation = elevation,
+		azimuth = azimuth,
+		resolution = resolution,
+		numbercores = numbercores,
+		hosek = hosek,
+		wide_spectrum = wide_spectrum,
+		visibility = visibility,
+		verbose = verbose,
+		render_solar_disk = render_solar_disk
+	)
 
-  if (moon) {
-    moon_array = generate_moon_latlong(
-      filename = filename,
-      datetime = datetime,
-      lat = lat,
-      lon = lon,
-      albedo = albedo,
-      turbidity = turbidity,
-      altitude = altitude,
-      resolution = resolution,
-      numbercores = numbercores,
-      hosek = hosek,
-      wide_spectrum = wide_spectrum,
-      visibility = visibility,
-      verbose = verbose,
-      ...
-    )
-    sky_array = sky_array + moon_array
-  }
-  if (stars) {
-    stars_array = generate_stars(
-      resolution = resolution,
-      lon = lon,
-      lat = lat,
-      datetime = as.POSIXct(datetime),
-      turbidity = turbidity,
-      altitude = altitude,
-      numbercores = numbercores,
-      star_width = star_width,
-      ...
-    )
-    sky_array = sky_array + stars_array
-  }
-  if (planets) {
-    planets_array = generate_planets(
-      resolution = resolution,
-      datetime = as.POSIXct(datetime),
-      lon = lon,
-      lat = lat,
-      turbidity = turbidity,
-      altitude = altitude,
-      numbercores = numbercores,
-      planet_width = star_width,
-      verbose = verbose,
-      ...
-    )
-    sky_array = sky_array + planets_array
-  }
-  sky_array[,, 4] = 1
-  if (!is.na(filename)) {
-    warn_precision_loss(filename)
-    rayimage::ray_write_image(sky_array, filename, clamp = FALSE)
-    return(invisible(sky_array))
-  } else {
-    return(sky_array)
-  }
+	if (moon) {
+		moon_array = generate_moon_latlong(
+			filename = filename,
+			datetime = datetime,
+			lat = lat,
+			lon = lon,
+			albedo = albedo,
+			turbidity = turbidity,
+			altitude = altitude,
+			resolution = resolution,
+			numbercores = numbercores,
+			hosek = hosek,
+			wide_spectrum = wide_spectrum,
+			visibility = visibility,
+			verbose = verbose,
+			...
+		)
+		sky_array = sky_array + moon_array
+	}
+	if (stars) {
+		stars_array = generate_stars(
+			resolution = resolution,
+			lon = lon,
+			lat = lat,
+			datetime = as.POSIXct(datetime),
+			turbidity = turbidity,
+			altitude = altitude,
+			numbercores = numbercores,
+			star_width = star_width,
+			...
+		)
+		sky_array = sky_array + stars_array
+	}
+	if (planets) {
+		planets_array = generate_planets(
+			resolution = resolution,
+			datetime = as.POSIXct(datetime),
+			lon = lon,
+			lat = lat,
+			turbidity = turbidity,
+			altitude = altitude,
+			numbercores = numbercores,
+			planet_width = star_width,
+			verbose = verbose,
+			...
+		)
+		sky_array = sky_array + planets_array
+	}
+	sky_array[,, 4] = 1
+	if (!is.na(filename)) {
+		warn_precision_loss(filename)
+		rayimage::ray_write_image(sky_array, filename, clamp = FALSE)
+		return(invisible(sky_array))
+	} else {
+		return(sky_array)
+	}
 }
 
 #' Sample a direction from the Prague model.
@@ -413,7 +416,7 @@ generate_sky_latlong = function(
 #' @param numbercores        Default `1`. Number of threads to use in computation.
 #' @param wide_spectrum      Default `FALSE`. Whether to use the wide‑spectrum (55‑channel, polarised) coefficients.
 #' @param solar_disk 		 Default `TRUE`. Whether to sample the solar disk as well.
-#' 
+#'
 #' @return 3 column RGB matrix.
 #' @export
 #' @examples
@@ -435,89 +438,89 @@ generate_sky_latlong = function(
 #'  cbind(value_grid, vals)
 #' }
 calculate_sky_values = function(
-  phi,
-  theta,
-  altitude = 0,
-  elevation = 10,
-  visibility = 50,
-  albedo = 0.5,
-  azimuth = 90,
-  numbercores = 1,
-  wide_spectrum = FALSE,
-  solar_disk = TRUE
+	phi,
+	theta,
+	altitude = 0,
+	elevation = 10,
+	visibility = 50,
+	albedo = 0.5,
+	azimuth = 90,
+	numbercores = 1,
+	wide_spectrum = FALSE,
+	solar_disk = TRUE
 ) {
-  sea_level = all(altitude == 0)
-  stopifnot(all(phi <= 360 & phi >= 0))
-  stopifnot(all(theta <= 90 & theta >= -90))
-  stopifnot(all(altitude <= 15000 & altitude >= 0))
-  stopifnot(all(visibility <= 15000 & altitude >= 0))
-  filesize = ""
-  df_values = as.list(data.frame(
-    phi = phi,
-    theta = theta,
-    altitude = altitude,
-    elevation = elevation,
-    visibility = visibility,
-    albedo = albedo,
+	sea_level = all(altitude == 0)
+	stopifnot(all(phi <= 360 & phi >= 0))
+	stopifnot(all(theta <= 90 & theta >= -90))
+	stopifnot(all(altitude <= 15000 & altitude >= 0))
+	stopifnot(all(visibility <= 15000 & altitude >= 0))
+	filesize = ""
+	df_values = as.list(data.frame(
+		phi = phi,
+		theta = theta,
+		altitude = altitude,
+		elevation = elevation,
+		visibility = visibility,
+		albedo = albedo,
 		azimuth = azimuth
-  ))
-  if (sea_level & !wide_spectrum) {
-    filesize = "107MB"
-  } else if (sea_level & wide_spectrum) {
-    filesize = "574MB"
-  } else if (!sea_level & !wide_spectrum) {
-    filesize = "2.4GB"
-  }
-  check_coef_file = function(filename) {
-    coef_file = file.path(tools::R_user_dir("skymodelr", "data"), filename)
-    if (!file.exists(coef_file)) {
-      response = readline(
-        prompt = sprintf(
-          " Coefficient file for this setting not yet present: this is a large file (%s), download? [y/n] ",
-          filesize
-        )
-      )
-      if (response == "y") {
-        download_sky_data(sea_level, wide_spectrum)
-      } else if (response == "n") {
-        return("")
-      } else {
-        stop("Input not recognized.")
-      }
-    }
-    return(coef_file)
-  }
-  coef_file = ""
-  stopifnot(all(altitude >= 0 & altitude <= 15000))
-  model = "prague"
-  if (!wide_spectrum) {
-    if (sea_level) {
-      coef_file = check_coef_file("SkyModelDatasetGround.dat")
-    } else {
-      coef_file = check_coef_file("SkyModelDataset.dat")
-    }
-  } else {
-    if (sea_level) {
-      coef_file = check_coef_file("PragueSkyModelDatasetGroundInfra.dat")
-    } else {
-      stop("`wide_spectrum = TRUE` is only valid when `altitude == 0`.")
-    }
-  }
-  if (coef_file == "") {
-    stop("No coefficient file downloaded for this set of inputs.")
-  }
-  vals = calculate_raw_prague(
-    df_values$phi,
-    df_values$theta,
-    df_values$elevation,
-    df_values$albedo,
-    df_values$altitude,
-    df_values$visibility,
-    df_values$azimuth,
-    numbercores,
-    coef_file,
-	solar_disk
-  )
-  colnames(vals) = c("r", "g", "b")
-  return(as.data.frame(vals))
+	))
+	if (sea_level & !wide_spectrum) {
+		filesize = "107MB"
+	} else if (sea_level & wide_spectrum) {
+		filesize = "574MB"
+	} else if (!sea_level & !wide_spectrum) {
+		filesize = "2.4GB"
+	}
+	check_coef_file = function(filename) {
+		coef_file = file.path(tools::R_user_dir("skymodelr", "data"), filename)
+		if (!file.exists(coef_file)) {
+			response = readline(
+				prompt = sprintf(
+					" Coefficient file for this setting not yet present: this is a large file (%s), download? [y/n] ",
+					filesize
+				)
+			)
+			if (response == "y") {
+				download_sky_data(sea_level, wide_spectrum)
+			} else if (response == "n") {
+				return("")
+			} else {
+				stop("Input not recognized.")
+			}
+		}
+		return(coef_file)
+	}
+	coef_file = ""
+	stopifnot(all(altitude >= 0 & altitude <= 15000))
+	model = "prague"
+	if (!wide_spectrum) {
+		if (sea_level) {
+			coef_file = check_coef_file("SkyModelDatasetGround.dat")
+		} else {
+			coef_file = check_coef_file("SkyModelDataset.dat")
+		}
+	} else {
+		if (sea_level) {
+			coef_file = check_coef_file("PragueSkyModelDatasetGroundInfra.dat")
+		} else {
+			stop("`wide_spectrum = TRUE` is only valid when `altitude == 0`.")
+		}
+	}
+	if (coef_file == "") {
+		stop("No coefficient file downloaded for this set of inputs.")
+	}
+	vals = calculate_raw_prague(
+		df_values$phi,
+		df_values$theta,
+		df_values$elevation,
+		df_values$albedo,
+		df_values$altitude,
+		df_values$visibility,
+		df_values$azimuth,
+		numbercores,
+		coef_file,
+		solar_disk
+	)
+	colnames(vals) = c("r", "g", "b")
+	return(as.data.frame(vals))
 }

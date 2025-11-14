@@ -28,19 +28,38 @@ static inline PragueSkyModel::Vector3 toPrague(const Vec3<float>& v)
 static PragueSkyModel  prague_model;
 static std::string     prague_loaded_file;
 
-// [[Rcpp::export]]
-Rcpp::NumericVector makesky_rcpp(double       albedo            = 0.5,
-                  double       turbidity         = 3.0,
-                  double       elevation         = 10.0,
-				          double       azimuth_deg       = 90,
-                  unsigned int resolution        = 2048,
-                  unsigned int numbercores       = 1,
-                  std::string  model             = "hosek",  // hosek | prague
-                  std::string  prg_dataset       = "",
-				          double       altitude          = 0.0,
-                  double       visibility        = 50.0, // Prague only (km)
-                  bool         render_solar_disk = true)
+static inline void xyz_to_srgb(double X, double Y, double Z,
+                               double& R, double& G, double& B)
 {
+  // IEC 61966-2-1 sRGB (D65), 1931 2°
+  const double M[9] = {
+     3.2404542, -1.5371385, -0.4985314,
+    -0.9692660,  1.8760108,  0.0415560,
+     0.0556434, -0.2040259,  1.0572252
+  };
+  R = M[0]*X + M[1]*Y + M[2]*Z;
+  G = M[3]*X + M[4]*Y + M[5]*Z;
+  B = M[6]*X + M[7]*Y + M[8]*Z;
+}
+
+static inline double clamp_floor(double v, double floor_v = -1e-10) {
+  return (v < floor_v) ? floor_v : v;
+}
+
+// [[Rcpp::export]]
+Rcpp::NumericVector makesky_rcpp(
+	double       albedo            = 0.5,
+    double       turbidity         = 3.0,
+    double       elevation         = 10.0,
+	double       azimuth_deg       = 90,
+    unsigned int resolution        = 2048,
+    unsigned int numbercores       = 1,
+    std::string  model             = "hosek",  // hosek | prague
+    std::string  prg_dataset       = "",
+	double       altitude          = 0.0,
+    double       visibility        = 50.0, // Prague only (km)
+    bool         render_solar_disk = true
+) {
   if (albedo < 0.0 || albedo > 1.0) {
     Rcpp::stop("albedo must be in [0,1]");
   }
@@ -71,30 +90,54 @@ Rcpp::NumericVector makesky_rcpp(double       albedo            = 0.5,
   }
 
   // Spectral sampling and Hosek state
-  constexpr int    N_LAMBDA = 9;
-  constexpr double lambda_nm[N_LAMBDA] =
-    { 630,680,710, 500,530,560, 460,480,490 };
+  constexpr int N_LAMBDA = 33;
 
-  ArHosekSkyModelState* hosek[N_LAMBDA] = { nullptr };
-  if (model == "hosek") {
-    if (elevation < 0.0 || elevation > 90.0) {
-      Rcpp::stop("elevation must be in [0,90]");
-    }
-    if (turbidity < 1.7 || turbidity > 10.0) {
-      Rcpp::stop("turbidity must be in [1.7,10]");
-    }
-    for (int i = 0; i < N_LAMBDA; ++i) {
-      hosek[i] = arhosekskymodelstate_alloc_init(
-        elev_rad, turbidity, albedo);
-      if (!hosek[i]) {
-        Rcpp::stop("Hosek–Wilkie initialisation failed");
-      }
-    }
-  } else {
-    if (elevation < -4.2|| elevation > 90.0) {
-      Rcpp::stop("elevation must be in [-4.2, 90]");
-    }
-  }
+  constexpr double lambda_nm[N_LAMBDA] = { 
+	380,390,400,410,420,430,440,450,460,470,480,
+	490,500,510,520,530,540,550,560,570,580,590,
+	600,610,620,630,640,650,660,670,680,690,700
+  };
+
+  	constexpr double xbar[N_LAMBDA] = {
+	0.001368, 0.004243, 0.01431, 0.04351, 0.13438, 0.2839, 0.34828, 0.3362, 0.2908, 0.19536, 0.09564, 
+	0.03201, 0.0049, 0.0093, 0.06327, 0.1655, 0.2904, 0.4334499, 0.5945, 0.7621, 0.9163, 1.0263, 
+	1.0622, 1.0026, 0.8544499, 0.6424, 0.4479, 0.2835, 0.1649, 0.0874, 0.04677, 0.0227, 0.01135916
+  };
+	constexpr double ybar[N_LAMBDA] = {
+	3.9e-05, 0.00012, 0.000396, 0.00121, 0.004, 0.0116, 0.023, 0.038, 0.06, 0.09098, 0.13902, 
+	0.20802, 0.323, 0.503, 0.71, 0.862, 0.954, 0.9949501, 0.995, 0.952, 0.87, 0.757, 
+	0.631, 0.503, 0.381, 0.265, 0.175, 0.107, 0.061, 0.032, 0.017, 0.00821, 0.004102
+  };
+    constexpr double zbar[N_LAMBDA] = {
+	0.006450001, 0.02005001, 0.06785001, 0.2074, 0.6456, 1.3856, 1.74706, 1.77211, 1.6692, 1.28764, 0.8129501, 
+	0.46518, 0.272, 0.1582, 0.07824999, 0.04216, 0.0203, 0.008749999, 0.0039, 0.0021, 0.001650001, 
+	0.0011, 8e-04, 0.00034, 0.00019, 4.999999e-05, 2e-05, 0, 0, 0, 0, 0, 0
+  };
+
+	constexpr double trapez_weights[N_LAMBDA] = {
+		5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 
+		10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 
+		10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 5
+	};
+
+	ArHosekSkyModelState* hosek = nullptr;
+	if (model == "hosek") {
+		if (elevation < 0.0 || elevation > 90.0) {
+			Rcpp::stop("elevation must be in [0,90]");
+		}
+		if (turbidity < 1.7 || turbidity > 10.0) {
+			Rcpp::stop("turbidity must be in [1.7,10]");
+		}
+		hosek = arhosekskymodelstate_alloc_init(
+			elevation * M_PI / 180.0, turbidity, albedo
+		);
+		if (!hosek) Rcpp::stop("Hosek–Wilkie initialisation failed");
+
+	} else {
+		if (elevation < -4.2|| elevation > 90.0) {
+			Rcpp::stop("elevation must be in [-4.2, 90]");
+		}
+	}
 
   // Initialize image buffer
   const int nTheta = resolution;          // rows  (latitude)
@@ -124,42 +167,55 @@ Rcpp::NumericVector makesky_rcpp(double       albedo            = 0.5,
                       std::cos(theta),
                       std::sin(phi) * std::sin(theta));
 
+		double X = 0.0, Y = 0.0, Z = 0.0;
+
         if (model == "hosek") {
           float gamma = std::acos(
             clamp_float(v.dot(sun_dir), -1.0f, 1.0f));
           for (int c = 0; c < N_LAMBDA; ++c) {
-            if(render_solar_disk) {
-              float L = arhosekskymodel_solar_radiance(
-                hosek[c], theta, gamma, lambda_nm[c]);
-              img[3 * (t * nPhi + p) + c / 3] += L / 3.0f;
-            } else {
-              float L = arhosekskymodel_radiance(
-                hosek[c], theta, gamma, lambda_nm[c]);
-              img[3 * (t * nPhi + p) + c / 3] += L / 3.0f;
-            }
+			const double lam = lambda_nm[c];
+			float L = render_solar_disk ? 
+			  arhosekskymodel_solar_radiance(hosek, theta, gamma, lam) : 
+			  arhosekskymodel_radiance      (hosek, theta, gamma, lam);
+			// Accumulate XYZ
+            double Li = static_cast<double>(L);
+            X += Li * xbar[c] * trapez_weights[c];
+            Y += Li * ybar[c] * trapez_weights[c];
+            Z += Li * zbar[c] * trapez_weights[c];
           }
         } else {
+		// Prague uses Z-up vector
           Vec3<float> v_zup(std::cos(phi) * std::sin(theta),
                             std::sin(phi) * std::sin(theta),
                             std::cos(theta));
           auto P = prague_model.computeParameters(
-            /*viewPoint*/   { 0.0, 0.0, altitude },
-            /*viewDir  */   toPrague(v_zup),
-            /*sunElev  */   elev_rad,
-            /*sunAzim  */   az_rad,
-            /*visibility*/  visibility,
-            /*albedo   */   albedo);
-            for (int c = 0; c < N_LAMBDA; ++c) {
-              if(render_solar_disk) {
-                double L = prague_model.skyRadiance(P, lambda_nm[c]) +
-                  prague_model.sunRadiance(P, lambda_nm[c]);
-                img[3 * (t * nPhi + p) + c / 3] += static_cast<float>(L / 3.0);
-              } else {
-                double L = prague_model.skyRadiance(P, lambda_nm[c]);
-                img[3 * (t * nPhi + p) + c / 3] += static_cast<float>(L / 3.0);
-              }
-            }
+            { 0.0, 0.0, altitude }, 
+			toPrague(v_zup),
+            elev_rad, 
+			az_rad, 
+			visibility, 
+			albedo
+		);
+
+          for (int i = 0; i < N_LAMBDA; ++i) {
+            double Li = prague_model.skyRadiance(P, lambda_nm[i]);
+            if (render_solar_disk) Li += prague_model.sunRadiance(P, lambda_nm[i]);
+            X += Li * xbar[i] * trapez_weights[i];
+            Y += Li * ybar[i] * trapez_weights[i];
+            Z += Li * zbar[i] * trapez_weights[i];
+          }
         }
+		double R, G, B;
+  		xyz_to_srgb(X, Y, Z, R, G, B);
+		// Avoid tiny negative noise; don't hard clip highlights here
+        R = std::max(0.0, clamp_floor(R));
+        G = std::max(0.0, clamp_floor(G));
+        B = std::max(0.0, clamp_floor(B));
+
+        const int idx = 3 * (int(t) * nPhi + p);
+        img[idx + 0] = static_cast<float>(R);
+        img[idx + 1] = static_cast<float>(G);
+        img[idx + 2] = static_cast<float>(B);
       }
     },
     numbercores);
@@ -169,9 +225,7 @@ Rcpp::NumericVector makesky_rcpp(double       albedo            = 0.5,
   const int nPix   = width * height;
 
   if (model == "hosek") {
-    for (int i = 0; i < N_LAMBDA; ++i) {
-      arhosekskymodelstate_free(hosek[i]);
-    }
+	arhosekskymodelstate_free(hosek);
   }
 
   Rcpp::NumericVector result(nPix * 3);
