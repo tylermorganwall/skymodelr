@@ -10,10 +10,13 @@ extern "C" {
 #include <Imath/ImathVec.h>
 #include <Imath/ImathFun.h>
 #include <Imath/ImathBox.h>
+#include "CIE1931Data.h"
 
 #include <cmath>
 #include <vector>
 #include <string>
+#include <algorithm>
+#include <iterator>
 
 using namespace Imath;
 
@@ -46,6 +49,72 @@ static inline double clamp_floor(double v, double floor_v = -1e-10) {
   return (v < floor_v) ? floor_v : v;
 }
 
+struct CIETristimulus {
+  double x;
+  double y;
+  double z;
+};
+
+
+
+static const std::vector<double>& default_lambda_low()
+{
+  static const double lambda_low_arr[] = {
+    380, 400, 420, 440, 460, 480, 500, 520, 540, 560, 580, 600, 620, 640, 660, 680, 700
+  };
+  static const std::vector<double> lambda_low(
+    std::begin(lambda_low_arr), std::end(lambda_low_arr));
+  return lambda_low;
+}
+
+static CIETristimulus interpolate_cie_xyz(double lambda_nm_value)
+{
+  constexpr int n = sizeof(cie_lambda_nm) / sizeof(double);
+  if (lambda_nm_value < cie_lambda_nm[0] ||
+      lambda_nm_value > cie_lambda_nm[n - 1]) {
+    Rcpp::stop("lambda_nm entries must be within [%f, %f]",
+               cie_lambda_nm[0], cie_lambda_nm[n - 1]);
+  }
+  auto upper = std::lower_bound(std::begin(cie_lambda_nm),
+                                std::end(cie_lambda_nm),
+                                lambda_nm_value);
+  if (upper != std::end(cie_lambda_nm) && *upper == lambda_nm_value) {
+    const int idx = int(upper - std::begin(cie_lambda_nm));
+    return { cie_xbar[idx], cie_ybar[idx], cie_zbar[idx] };
+  }
+
+  const int idx_hi = int(upper - std::begin(cie_lambda_nm));
+  const int idx_lo = idx_hi - 1;
+  const double lam_lo = cie_lambda_nm[idx_lo];
+  const double lam_hi = cie_lambda_nm[idx_hi];
+  const double t = (lambda_nm_value - lam_lo) / (lam_hi - lam_lo);
+  const double x = cie_xbar[idx_lo] + t * (cie_xbar[idx_hi] - cie_xbar[idx_lo]);
+  const double y = cie_ybar[idx_lo] + t * (cie_ybar[idx_hi] - cie_ybar[idx_lo]);
+  const double z = cie_zbar[idx_lo] + t * (cie_zbar[idx_hi] - cie_zbar[idx_lo]);
+  return { x, y, z };
+}
+
+static std::vector<double> trapezoid_weights(const std::vector<double>& lambda_values)
+{
+  const size_t n = lambda_values.size();
+  std::vector<double> weights(n, 0.0);
+  if (n == 0) return weights;
+  if (n == 1) {
+    weights[0] = 1.0;
+    return weights;
+  }
+  for (size_t i = 0; i < n; ++i) {
+    if (i == 0) {
+      weights[i] = (lambda_values[1] - lambda_values[0]) / 2.0;
+    } else if (i == n - 1) {
+      weights[i] = (lambda_values[i] - lambda_values[i - 1]) / 2.0;
+    } else {
+      weights[i] = (lambda_values[i + 1] - lambda_values[i - 1]) / 2.0;
+    }
+  }
+  return weights;
+}
+
 // [[Rcpp::export]]
 Rcpp::NumericVector makesky_rcpp(
 	double       albedo            = 0.5,
@@ -58,7 +127,8 @@ Rcpp::NumericVector makesky_rcpp(
     std::string  prg_dataset       = "",
 	double       altitude          = 0.0,
     double       visibility        = 50.0, // Prague only (km)
-    bool         render_solar_disk = true
+    bool         render_solar_disk = true,
+    Rcpp::Nullable<Rcpp::NumericVector> lambda_nm = R_NilValue
 ) {
   if (albedo < 0.0 || albedo > 1.0) {
     Rcpp::stop("albedo must be in [0,1]");
@@ -89,36 +159,34 @@ Rcpp::NumericVector makesky_rcpp(
     Rcpp::stop("unknown model \"%s\"", model.c_str());
   }
 
-  // Spectral sampling and Hosek state
-  constexpr int N_LAMBDA = 33;
-
-  constexpr double lambda_nm[N_LAMBDA] = { 
-	380,390,400,410,420,430,440,450,460,470,480,
-	490,500,510,520,530,540,550,560,570,580,590,
-	600,610,620,630,640,650,660,670,680,690,700
-  };
-
-  	constexpr double xbar[N_LAMBDA] = {
-	0.001368, 0.004243, 0.01431, 0.04351, 0.13438, 0.2839, 0.34828, 0.3362, 0.2908, 0.19536, 0.09564, 
-	0.03201, 0.0049, 0.0093, 0.06327, 0.1655, 0.2904, 0.4334499, 0.5945, 0.7621, 0.9163, 1.0263, 
-	1.0622, 1.0026, 0.8544499, 0.6424, 0.4479, 0.2835, 0.1649, 0.0874, 0.04677, 0.0227, 0.01135916
-  };
-	constexpr double ybar[N_LAMBDA] = {
-	3.9e-05, 0.00012, 0.000396, 0.00121, 0.004, 0.0116, 0.023, 0.038, 0.06, 0.09098, 0.13902, 
-	0.20802, 0.323, 0.503, 0.71, 0.862, 0.954, 0.9949501, 0.995, 0.952, 0.87, 0.757, 
-	0.631, 0.503, 0.381, 0.265, 0.175, 0.107, 0.061, 0.032, 0.017, 0.00821, 0.004102
-  };
-    constexpr double zbar[N_LAMBDA] = {
-	0.006450001, 0.02005001, 0.06785001, 0.2074, 0.6456, 1.3856, 1.74706, 1.77211, 1.6692, 1.28764, 0.8129501, 
-	0.46518, 0.272, 0.1582, 0.07824999, 0.04216, 0.0203, 0.008749999, 0.0039, 0.0021, 0.001650001, 
-	0.0011, 8e-04, 0.00034, 0.00019, 4.999999e-05, 2e-05, 0, 0, 0, 0, 0, 0
-  };
-
-	constexpr double trapez_weights[N_LAMBDA] = {
-		5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 
-		10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 
-		10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 5
-	};
+  // Spectral sampling setup
+  std::vector<double> lambda_values;
+  const auto& default_values = default_lambda_low();
+  if (lambda_nm.isNull()) {
+    lambda_values.assign(default_values.begin(), default_values.end());
+  } else {
+    Rcpp::NumericVector lambda_vec(lambda_nm.get());
+    if (lambda_vec.size() == 0) {
+      lambda_values.assign(default_values.begin(), default_values.end());
+    } else {
+      lambda_values.assign(lambda_vec.begin(), lambda_vec.end());
+    }
+  }
+  if (lambda_values.size() < 2) {
+    Rcpp::stop("lambda_nm must contain at least two wavelengths");
+  }
+  for (size_t i = 1; i < lambda_values.size(); ++i) {
+    if (!(lambda_values[i] > lambda_values[i - 1])) {
+      Rcpp::stop("lambda_nm must be strictly increasing");
+    }
+  }
+  const auto lambda_weights = trapezoid_weights(lambda_values);
+  std::vector<CIETristimulus> cie_samples;
+  cie_samples.reserve(lambda_values.size());
+  for (double lam : lambda_values) {
+    cie_samples.push_back(interpolate_cie_xyz(lam));
+  }
+  const size_t N_LAMBDA = lambda_values.size();
 
 	ArHosekSkyModelState* hosek = nullptr;
 	if (model == "hosek") {
@@ -172,16 +240,16 @@ Rcpp::NumericVector makesky_rcpp(
         if (model == "hosek") {
           float gamma = std::acos(
             clamp_float(v.dot(sun_dir), -1.0f, 1.0f));
-          for (int c = 0; c < N_LAMBDA; ++c) {
-			const double lam = lambda_nm[c];
+          for (size_t c = 0; c < N_LAMBDA; ++c) {
+			const double lam = lambda_values[c];
 			float L = render_solar_disk ? 
 			  arhosekskymodel_solar_radiance(hosek, theta, gamma, lam) : 
 			  arhosekskymodel_radiance      (hosek, theta, gamma, lam);
 			// Accumulate XYZ
             double Li = static_cast<double>(L);
-            X += Li * xbar[c] * trapez_weights[c];
-            Y += Li * ybar[c] * trapez_weights[c];
-            Z += Li * zbar[c] * trapez_weights[c];
+            X += Li * cie_samples[c].x * lambda_weights[c];
+            Y += Li * cie_samples[c].y * lambda_weights[c];
+            Z += Li * cie_samples[c].z * lambda_weights[c];
           }
         } else {
 		// Prague uses Z-up vector
@@ -197,12 +265,12 @@ Rcpp::NumericVector makesky_rcpp(
 			albedo
 		);
 
-          for (int i = 0; i < N_LAMBDA; ++i) {
-            double Li = prague_model.skyRadiance(P, lambda_nm[i]);
-            if (render_solar_disk) Li += prague_model.sunRadiance(P, lambda_nm[i]);
-            X += Li * xbar[i] * trapez_weights[i];
-            Y += Li * ybar[i] * trapez_weights[i];
-            Z += Li * zbar[i] * trapez_weights[i];
+          for (size_t i = 0; i < N_LAMBDA; ++i) {
+            double Li = prague_model.skyRadiance(P, lambda_values[i]);
+            if (render_solar_disk) Li += prague_model.sunRadiance(P, lambda_values[i]);
+            X += Li * cie_samples[i].x * lambda_weights[i];
+            Y += Li * cie_samples[i].y * lambda_weights[i];
+            Z += Li * cie_samples[i].z * lambda_weights[i];
           }
         }
 		double R, G, B;

@@ -17,6 +17,7 @@
 #' @param visibility         Default `50`. Meteorological range in kilometres for Prague model.
 #' @param verbose            Default `FALSE`. Whether to print progress bars/diagnostic info.
 #' @param render_solar_disk  Default `TRUE`. Whether to render the solar disk in addition to the atmosphere.
+#' @param lambda_nm          Default `"low"`. Spectral sampling resolution: `"low"` uses 20 nm increments from 380–700 nm, `"high"` uses 10 nm increments, or provide a numeric vector of wavelengths (360–830 nm).
 #'
 #' @return Either the image array, or the array is invisibly returned if a file
 #'   is written. The array has dimensions `(resolution, 2 * resolution, 4)`.
@@ -87,7 +88,8 @@ generate_sky = function(
 	wide_spectrum = FALSE,
 	visibility = 50,
 	verbose = FALSE,
-	render_solar_disk = TRUE
+	render_solar_disk = TRUE,
+	lambda_nm = "low"
 ) {
 	sea_level = altitude == 0
 	filesize = ""
@@ -177,6 +179,8 @@ generate_sky = function(
 		}
 	}
 
+	lambda_values = .resolve_lambda_nm(lambda_nm)
+
 	generated_rgb = makesky_rcpp(
 		albedo = albedo,
 		turbidity = turbidity,
@@ -188,7 +192,8 @@ generate_sky = function(
 		prg_dataset = coef_file,
 		altitude = altitude,
 		visibility = visibility,
-		render_solar_disk = render_solar_disk
+		render_solar_disk = render_solar_disk,
+		lambda_nm = lambda_values
 	)
 
 	generated_sky = array(0, dim = c(resolution, resolution * 2, 4))
@@ -234,6 +239,7 @@ generate_sky = function(
 #' @param planets            Default `FALSE`. If `TRUE`, composite bright planets via [generate_planets()].
 #' @param moon               Default `FALSE`. If `TRUE`, overlay a moon render from [generate_moon()].
 #' @param render_solar_disk  Default `TRUE`. Whether to render the solar disk in addition to the atmosphere.
+#' @param lambda_nm          Default `"low"`. Spectral sampling resolution forwarded to [generate_sky()]; accepts `"low"`, `"high"`, or a numeric vector of wavelengths (360–830 nm).
 #' @param verbose            Default `FALSE`. Whether to print progress bars/diagnostic info.
 #' @param ...                Additional arguments passed to [generate_stars()] and, when enabled, [generate_planets()].
 #'
@@ -309,6 +315,7 @@ generate_sky_latlong = function(
 	planets = FALSE,
 	moon = FALSE,
 	render_solar_disk = TRUE,
+	lambda_nm = "low",
 	verbose = FALSE,
 	...
 ) {
@@ -340,7 +347,8 @@ generate_sky_latlong = function(
 		wide_spectrum = wide_spectrum,
 		visibility = visibility,
 		verbose = verbose,
-		render_solar_disk = render_solar_disk
+		render_solar_disk = render_solar_disk,
+		lambda_nm = lambda_nm
 	)
 
 	if (moon) {
@@ -357,6 +365,7 @@ generate_sky_latlong = function(
 			hosek = hosek,
 			wide_spectrum = wide_spectrum,
 			visibility = visibility,
+			lambda_nm = lambda_nm,
 			verbose = verbose,
 			...
 		)
@@ -523,4 +532,43 @@ calculate_sky_values = function(
 	)
 	colnames(vals) = c("r", "g", "b")
 	return(as.data.frame(vals))
+}
+
+.resolve_lambda_nm = function(lambda_nm) {
+	if (length(lambda_nm) == 0 || is.null(lambda_nm)) {
+		lambda_nm = "low"
+	}
+	if (is.factor(lambda_nm)) {
+		lambda_nm = as.character(lambda_nm)
+	}
+	if (is.character(lambda_nm)) {
+		if (length(lambda_nm) != 1) {
+			stop("lambda_nm must be length 1 when supplied as a character value.")
+		}
+		choice = match.arg(tolower(lambda_nm), c("low", "high"))
+		if (choice == "low") {
+			return(seq(380, 700, by = 20))
+		} else {
+			return(seq(380, 700, by = 10))
+		}
+	}
+	if (!is.numeric(lambda_nm)) {
+		stop("lambda_nm must be numeric or one of \"low\"/\"high\".")
+	}
+	lambda_vals = as.numeric(lambda_nm)
+	if (length(lambda_vals) < 2) {
+		stop("lambda_nm must contain at least two wavelengths.")
+	}
+	if (any(!is.finite(lambda_vals))) {
+		stop("lambda_nm must be finite.")
+	}
+	range_min = 360
+	range_max = 830
+	if (any(lambda_vals < range_min | lambda_vals > range_max)) {
+		stop(sprintf("lambda_nm must be within [%d, %d] nm.", range_min, range_max))
+	}
+	if (is.unsorted(lambda_vals, strictly = TRUE)) {
+		stop("lambda_nm must be strictly increasing.")
+	}
+	return(lambda_vals)
 }

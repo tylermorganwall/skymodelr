@@ -312,8 +312,13 @@ generate_moon_image_latlong = function(
 		10^((-14.18 - m) / 2.5)
 	}
 	moon_mean = mean(rayimage::render_bw(moon_image)[,, 1])
-	moon_image[,, 1] = (moon_image[,, 1] / moon_mean) *
+
+	moon_multiplier = 1 /
+		moon_mean *
 		mag_to_lux(moon_sun_data$moon_brightness_magnitude)
+	moon_image[,, 1] = moon_image[,, 1] * moon_multiplier
+	moon_image[,, 2] = moon_image[,, 2] * moon_multiplier
+	moon_image[,, 3] = moon_image[,, 3] * moon_multiplier
 	list(
 		moon_luminance_array = moon_image,
 		moon_angular_diameter_deg = moon_sun_data$moon_diameter_degrees
