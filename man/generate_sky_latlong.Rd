@@ -22,6 +22,8 @@ generate_sky_latlong(
   planets = FALSE,
   moon = FALSE,
   render_solar_disk = TRUE,
+  lambda_nm = "low",
+  below_horizon = TRUE,
   verbose = FALSE,
   ...
 )
@@ -36,13 +38,13 @@ date-time; if missing a time-zone it is assumed to be local.}
 
 \item{filename}{Default \code{NA}. Path to the \code{.exr} file to write.}
 
-\item{albedo}{Default \code{0.5}. Ground albedo, range \link{0, 1}.}
+\item{albedo}{Default \code{0.5}. Ground albedo, range 0 to 1.}
 
 \item{turbidity}{Default \code{3}. Atmospheric turbidity, range
-\link{1.7, 10} (\emph{Hosek only}).}
+1.7 to 10 (\emph{Hosek only}).}
 
 \item{altitude}{Default \code{0}. Observer altitude (m), range
-\link{0, 15000} (\emph{Prague only}).}
+0 to 15000 (\emph{Prague only}).}
 
 \item{resolution}{Default \code{2048}. Image height in pixels (width = 2 × height).}
 
@@ -50,7 +52,7 @@ date-time; if missing a time-zone it is assumed to be local.}
 
 \item{hosek}{Default \code{TRUE}. \code{FALSE} selects the Prague model.}
 
-\item{wide_spectrum}{Default \code{FALSE}. 55-channel Prague coefficients (altitude = 0 m only).}
+\item{wide_spectrum}{Default \code{FALSE}. 55-channel Prague coefficients (altitude = 0m only).}
 
 \item{visibility}{Default \code{50}. Meteorological range (km); \emph{Prague only}.}
 
@@ -62,9 +64,13 @@ when the black-sky condition is met (see \emph{Details}).}
 
 \item{planets}{Default \code{FALSE}. If \code{TRUE}, composite bright planets via \code{\link[=generate_planets]{generate_planets()}}.}
 
-\item{moon}{Default \code{FALSE}. If \code{TRUE}, overlay a moon render from \code{\link[=generate_moon]{generate_moon()}}.}
+\item{moon}{Default \code{FALSE}. If \code{TRUE}, overlay a moon render from \code{\link[=generate_moon_latlong]{generate_moon_latlong()}}.}
 
 \item{render_solar_disk}{Default \code{TRUE}. Whether to render the solar disk in addition to the atmosphere.}
+
+\item{lambda_nm}{Default \code{"low"}. Spectral sampling resolution forwarded to \code{\link[=generate_sky]{generate_sky()}}; accepts \code{"low"}, \code{"high"}, or a numeric vector of wavelengths (360–830 nm).}
+
+\item{below_horizon}{Default \code{TRUE}. Whether to sample atmospheric scattering below the horizon, which is non-zero when altitude > 0.}
 
 \item{verbose}{Default \code{FALSE}. Whether to print progress bars/diagnostic info.}
 
@@ -79,7 +85,7 @@ Convenience wrapper around \code{\link[=generate_sky]{generate_sky()}} that:
 \item Computes the Sun’s apparent position for \code{datetime}, \code{lat}, and \code{lon}
 (via \strong{suncalc}).
 \item Renders the corresponding sky model.
-\item Optionally overlays a star field using \code{\link[=generate_stars]{generate_stars()}} or moon with \code{\link[=generate_moon]{generate_moon()}}.
+\item Optionally overlays a star field using \code{\link[=generate_stars]{generate_stars()}} or moon with \code{\link[=generate_moon_latlong]{generate_moon_latlong()}}.
 }
 }
 \details{

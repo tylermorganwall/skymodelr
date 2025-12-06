@@ -20,11 +20,11 @@ extern "C" {
 
 using namespace Imath;
 
-static inline float clamp_float(float x, float a, float b)
+static inline double clamp_double(double x, double a, double b)
 { return (x < a) ? a : (x > b) ? b : x; }
 
 // Forward conversion to Prague’s tiny Vector3 wrapper
-static inline PragueSkyModel::Vector3 toPrague(const Vec3<float>& v)
+static inline PragueSkyModel::Vector3 toPrague(const Vec3<double>& v)
   { return { double(v.x), double(v.y), double(v.z) }; }
 
 // Static instance so the .dat stays in RAM across calls
@@ -45,10 +45,6 @@ static inline void xyz_to_srgb(double X, double Y, double Z,
   B = M[6]*X + M[7]*Y + M[8]*Z;
 }
 
-static inline double clamp_floor(double v, double floor_v = -1e-10) {
-  return (v < floor_v) ? floor_v : v;
-}
-
 struct CIETristimulus {
   double x;
   double y;
@@ -60,7 +56,7 @@ struct CIETristimulus {
 static const std::vector<double>& default_lambda_low()
 {
   static const double lambda_low_arr[] = {
-    380, 400, 420, 440, 460, 480, 500, 520, 540, 560, 580, 600, 620, 640, 660, 680, 700
+    360, 380, 400, 420, 440, 460, 480, 500, 520, 540, 560, 580, 600, 620, 640, 660, 680, 700
   };
   static const std::vector<double> lambda_low(
     std::begin(lambda_low_arr), std::end(lambda_low_arr));
@@ -69,22 +65,32 @@ static const std::vector<double>& default_lambda_low()
 
 static CIETristimulus interpolate_cie_xyz(double lambda_nm_value)
 {
-  constexpr int n = sizeof(cie_lambda_nm) / sizeof(double);
+  constexpr int n = CIE_N;
   if (lambda_nm_value < cie_lambda_nm[0] ||
       lambda_nm_value > cie_lambda_nm[n - 1]) {
     Rcpp::stop("lambda_nm entries must be within [%f, %f]",
                cie_lambda_nm[0], cie_lambda_nm[n - 1]);
   }
-  auto upper = std::lower_bound(std::begin(cie_lambda_nm),
-                                std::end(cie_lambda_nm),
-                                lambda_nm_value);
-  if (upper != std::end(cie_lambda_nm) && *upper == lambda_nm_value) {
-    const int idx = int(upper - std::begin(cie_lambda_nm));
-    return { cie_xbar[idx], cie_ybar[idx], cie_zbar[idx] };
+  const auto begin = std::begin(cie_lambda_nm);
+  const auto end = std::end(cie_lambda_nm);
+
+  auto upper = std::lower_bound(begin, end, lambda_nm_value);
+
+  if (upper == begin) {
+    return { cie_xbar[0], cie_ybar[0], cie_zbar[0] };
+  }
+  if (upper == end) {
+    const int last = n - 1;
+    return { cie_xbar[last], cie_ybar[last], cie_zbar[last] };
   }
 
-  const int idx_hi = int(upper - std::begin(cie_lambda_nm));
+  const int idx_hi = int(upper - begin);
   const int idx_lo = idx_hi - 1;
+
+  if (*upper == lambda_nm_value) {
+    return { cie_xbar[idx_hi], cie_ybar[idx_hi], cie_zbar[idx_hi] };
+  }
+
   const double lam_lo = cie_lambda_nm[idx_lo];
   const double lam_hi = cie_lambda_nm[idx_hi];
   const double t = (lambda_nm_value - lam_lo) / (lam_hi - lam_lo);
@@ -128,7 +134,8 @@ Rcpp::NumericVector makesky_rcpp(
 	double       altitude          = 0.0,
     double       visibility        = 50.0, // Prague only (km)
     bool         render_solar_disk = true,
-    Rcpp::Nullable<Rcpp::NumericVector> lambda_nm = R_NilValue
+    Rcpp::Nullable<Rcpp::NumericVector> lambda_nm = R_NilValue,
+	bool         below_horizon     = true
 ) {
   if (albedo < 0.0 || albedo > 1.0) {
     Rcpp::stop("albedo must be in [0,1]");
@@ -137,10 +144,11 @@ Rcpp::NumericVector makesky_rcpp(
     Rcpp::stop("resolution must be ≥ 1");
   }
 
-  float elev_rad = static_cast<float>(elevation * M_PI / 180.0);
-  float az_rad = static_cast<float>(azimuth_deg * M_PI / 180.0);
+  double elev_rad = elevation * M_PI / 180.0;
+  double az_rad = azimuth_deg * M_PI / 180.0;
 
   // Prague model initialisation
+  PragueSkyModel::AvailableData avail{};
   if (model == "prague") {
     if (prg_dataset.empty()) {
       Rcpp::stop("prg_dataset must be supplied when model=\"prague\"");
@@ -150,7 +158,7 @@ Rcpp::NumericVector makesky_rcpp(
       prague_model.initialize(prg_dataset);
       prague_loaded_file = prg_dataset;
     }
-    auto avail = prague_model.getAvailableData();
+    avail = prague_model.getAvailableData();
     if (albedo    < avail.albedoMin    || albedo    > avail.albedoMax ||
         visibility < avail.visibilityMin|| visibility > avail.visibilityMax) {
       Rcpp::stop("albedo or visibility outside dataset range");
@@ -161,90 +169,119 @@ Rcpp::NumericVector makesky_rcpp(
 
   // Spectral sampling setup
   std::vector<double> lambda_values;
-  const auto& default_values = default_lambda_low();
-  if (lambda_nm.isNull()) {
-    lambda_values.assign(default_values.begin(), default_values.end());
+  std::vector<double> lambda_weights;
+  std::vector<CIETristimulus> cie_samples;
+
+  if (model == "prague") {
+    // Prague sampling is locked to dataset channel centers within CIE bounds (380–740 nm).
+    lambda_values.reserve(avail.channels);
+    for (int i = 0; i < avail.channels; ++i) {
+      const double lam = avail.channelStart + (i + 0.5) * avail.channelWidth;
+      if (lam >= 380.0 && lam <= 740.0) {
+        lambda_values.push_back(lam);
+      }
+    }
+    if (lambda_values.empty()) {
+      Rcpp::stop("No Prague spectral channels fall within [380, 740] nm.");
+    }
+    // Prague channels are discrete bands; integrate with unit weights to avoid double-counting width.
+    lambda_weights.assign(lambda_values.size(), 1.0);
+    cie_samples.reserve(lambda_values.size());
+    for (double lam : lambda_values) {
+      cie_samples.push_back(interpolate_cie_xyz(lam));
+    }
+
   } else {
-    Rcpp::NumericVector lambda_vec(lambda_nm.get());
-    if (lambda_vec.size() == 0) {
+    // Hosek path (unchanged behavior)
+    const auto &default_values = default_lambda_low();
+
+    if (lambda_nm.isNull()) {
       lambda_values.assign(default_values.begin(), default_values.end());
     } else {
-      lambda_values.assign(lambda_vec.begin(), lambda_vec.end());
+      Rcpp::NumericVector lambda_vec(lambda_nm.get());
+      if (lambda_vec.size() == 0) {
+        lambda_values.assign(default_values.begin(), default_values.end());
+      } else {
+        lambda_values.assign(lambda_vec.begin(), lambda_vec.end());
+      }
+    }
+
+    if (lambda_values.size() < 2) {
+      Rcpp::stop("lambda_nm must contain at least two wavelengths");
+    }
+    for (size_t i = 1; i < lambda_values.size(); ++i) {
+      if (!(lambda_values[i] > lambda_values[i - 1])) {
+        Rcpp::stop("lambda_nm must be strictly increasing");
+      }
+    }
+
+    lambda_weights = trapezoid_weights(lambda_values);
+
+    cie_samples.reserve(lambda_values.size());
+    for (double lam : lambda_values) {
+      cie_samples.push_back(interpolate_cie_xyz(lam));
     }
   }
-  if (lambda_values.size() < 2) {
-    Rcpp::stop("lambda_nm must contain at least two wavelengths");
-  }
-  for (size_t i = 1; i < lambda_values.size(); ++i) {
-    if (!(lambda_values[i] > lambda_values[i - 1])) {
-      Rcpp::stop("lambda_nm must be strictly increasing");
-    }
-  }
-  const auto lambda_weights = trapezoid_weights(lambda_values);
-  std::vector<CIETristimulus> cie_samples;
-  cie_samples.reserve(lambda_values.size());
-  for (double lam : lambda_values) {
-    cie_samples.push_back(interpolate_cie_xyz(lam));
-  }
+
   const size_t N_LAMBDA = lambda_values.size();
 
-	ArHosekSkyModelState* hosek = nullptr;
-	if (model == "hosek") {
-		if (elevation < 0.0 || elevation > 90.0) {
-			Rcpp::stop("elevation must be in [0,90]");
-		}
-		if (turbidity < 1.7 || turbidity > 10.0) {
-			Rcpp::stop("turbidity must be in [1.7,10]");
-		}
-		hosek = arhosekskymodelstate_alloc_init(
-			elevation * M_PI / 180.0, turbidity, albedo
-		);
-		if (!hosek) Rcpp::stop("Hosek–Wilkie initialisation failed");
+  ArHosekSkyModelState *hosek = nullptr;
+  if (model == "hosek") {
+    if (elevation < 0.0 || elevation > 90.0) {
+      Rcpp::stop("elevation must be in [0,90]");
+    }
+    if (turbidity < 1.7 || turbidity > 10.0) {
+      Rcpp::stop("turbidity must be in [1.7,10]");
+    }
+    hosek = arhosekskymodelstate_alloc_init(elevation * M_PI / 180.0, turbidity,
+                                            albedo);
+    if (!hosek)
+      Rcpp::stop("Hosek–Wilkie initialisation failed");
 
-	} else {
-		if (elevation < -4.2|| elevation > 90.0) {
-			Rcpp::stop("elevation must be in [-4.2, 90]");
-		}
+  } else {
+    if (elevation < -4.2 || elevation > 90.0) {
+      Rcpp::stop("elevation must be in [-4.2, 90]");
+    }
 	}
 
   // Initialize image buffer
   const int nTheta = resolution;          // rows  (latitude)
   const int nPhi   = 2 * resolution;      // cols  (longitude)
-  std::vector<float> img(3 * nTheta * nPhi, 0.0f);
+  std::vector<double> img(3 * nTheta * nPhi, 0.0);
 
-  //   Vec3<float> sun_dir(0.0f, std::sin(elev_rad), std::cos(elev_rad));
-  Vec3<float> sun_dir(std::cos(az_rad) * std::cos(elev_rad),  // +X (South)
-                      std::sin(elev_rad),                     // +Y (Up)
-                      std::sin(az_rad) * std::cos(elev_rad)); // +Z (West)
+  //   Vec3<double> sun_dir(0.0, std::sin(elev_rad), std::cos(elev_rad));
+  Vec3<double> sun_dir(std::cos(az_rad) * std::cos(elev_rad),  // +X (South)
+                       std::sin(elev_rad),                     // +Y (Up)
+                       std::sin(az_rad) * std::cos(elev_rad)); // +Z (West)
   // Render loop (parallel over rows)
   RcppThread::parallelFor(
     0u, size_t(nTheta),
     [&](size_t t) {
-      float theta = (static_cast<float>(t) + 0.5f) /
-        static_cast<float>(nTheta) * static_cast<float>(M_PI);
+      double theta = (static_cast<double>(t) + 0.5) /
+        static_cast<double>(nTheta) * M_PI;
 
-      if (theta > static_cast<float>(M_PI_2)) {
+      if (!below_horizon && theta > M_PI_2) {
         return;
       }
 
       for (int p = 0; p < nPhi; ++p) {
-        float phi = (static_cast<float>(p) + 0.5f) / nPhi *
-          2.0f * static_cast<float>(M_PI);
+        double phi = (static_cast<double>(p) + 0.5) / nPhi *
+          2.0 * M_PI;
 
-        Vec3<float> v(std::cos(phi) * std::sin(theta),
-                      std::cos(theta),
-                      std::sin(phi) * std::sin(theta));
+        Vec3<double> v(std::cos(phi) * std::sin(theta),
+                       std::cos(theta),
+                       std::sin(phi) * std::sin(theta));
 
 		double X = 0.0, Y = 0.0, Z = 0.0;
 
         if (model == "hosek") {
-          float gamma = std::acos(
-            clamp_float(v.dot(sun_dir), -1.0f, 1.0f));
+          double gamma = std::acos(
+            clamp_double(v.dot(sun_dir), -1.0, 1.0));
           for (size_t c = 0; c < N_LAMBDA; ++c) {
-			const double lam = lambda_values[c];
-			float L = render_solar_disk ? 
-			  arhosekskymodel_solar_radiance(hosek, theta, gamma, lam) : 
-			  arhosekskymodel_radiance      (hosek, theta, gamma, lam);
+				const double lam = lambda_values[c];
+				double L = render_solar_disk ? 
+				  arhosekskymodel_solar_radiance(hosek, theta, gamma, lam) : 
+				  arhosekskymodel_radiance      (hosek, theta, gamma, lam);
 			// Accumulate XYZ
             double Li = static_cast<double>(L);
             X += Li * cie_samples[c].x * lambda_weights[c];
@@ -252,10 +289,10 @@ Rcpp::NumericVector makesky_rcpp(
             Z += Li * cie_samples[c].z * lambda_weights[c];
           }
         } else {
-		// Prague uses Z-up vector
-          Vec3<float> v_zup(std::cos(phi) * std::sin(theta),
-                            std::sin(phi) * std::sin(theta),
-                            std::cos(theta));
+        // Prague uses Z-up vector
+          Vec3<double> v_zup(std::cos(phi) * std::sin(theta),
+                             std::sin(phi) * std::sin(theta),
+                             std::cos(theta));
           auto P = prague_model.computeParameters(
             { 0.0, 0.0, altitude }, 
 			toPrague(v_zup),
@@ -273,17 +310,25 @@ Rcpp::NumericVector makesky_rcpp(
             Z += Li * cie_samples[i].z * lambda_weights[i];
           }
         }
+		if (!std::isfinite(X) || !std::isfinite(Y) || !std::isfinite(Z)) {
+			X = 0.0;
+			Y = 0.0;
+			Z = 0.0;
+        }
 		double R, G, B;
   		xyz_to_srgb(X, Y, Z, R, G, B);
-		// Avoid tiny negative noise; don't hard clip highlights here
-        R = std::max(0.0, clamp_floor(R));
-        G = std::max(0.0, clamp_floor(G));
-        B = std::max(0.0, clamp_floor(B));
+
+		if (!std::isfinite(R) || !std::isfinite(G) ||
+			!std::isfinite(B)) {
+			R = 0.0;
+			G = 0.0;
+			B = 0.0;
+		}
 
         const int idx = 3 * (int(t) * nPhi + p);
-        img[idx + 0] = static_cast<float>(R);
-        img[idx + 1] = static_cast<float>(G);
-        img[idx + 2] = static_cast<float>(B);
+        img[idx + 0] = R;
+        img[idx + 1] = G;
+        img[idx + 2] = B;
       }
     },
     numbercores);
@@ -300,14 +345,14 @@ Rcpp::NumericVector makesky_rcpp(
   result.attr("dim") = Rcpp::IntegerVector::create(height, width, 3);
 
   for (int t = 0; t < height; ++t) {
-    for (int p = 0; p < width; ++p) {
-      const int pix_index = t * width + p;
-      for (int c = 0; c < 3; ++c) {
-        const int arr_index = t + height * (p + width * c);
-        result[arr_index] = static_cast<double>(img[3 * pix_index + c]);
+      for (int p = 0; p < width; ++p) {
+        const int pix_index = t * width + p;
+        for (int c = 0; c < 3; ++c) {
+          const int arr_index = t + height * (p + width * c);
+          result[arr_index] = img[3 * pix_index + c];
+        }
       }
     }
-  }
 
   return result;
 }
@@ -334,36 +379,49 @@ Rcpp::NumericMatrix calculate_raw_prague(Rcpp::NumericVector phi,
     prague_model.initialize(prg_dataset);
     prague_loaded_file = prg_dataset;
   }
-  // auto avail = prague_model.getAvailableData();
-  // if (albedo    < avail.albedoMin    || albedo    > avail.albedoMax ||
-  //     visibility < avail.visibilityMin|| visibility > avail.visibilityMax) {
-  //   Rcpp::stop("albedo or visibility outside dataset range");
-  // }
+  auto avail = prague_model.getAvailableData();
 
-  // Spectral sampling and Hosek state
-  constexpr int    N_LAMBDA = 9;
-  constexpr double lambda_nm[N_LAMBDA] =
-    { 630,680,710, 500,530,560, 460,480,490 };
+  // Spectral sampling: lock to Prague dataset channel centers within CIE range (380–740 nm).
+  std::vector<double> lambda_values;
+  lambda_values.reserve(avail.channels);
+  for (int i = 0; i < avail.channels; ++i) {
+    const double lam = avail.channelStart + (i + 0.5) * avail.channelWidth;
+    if (lam >= 380.0 && lam <= 740.0) {
+      lambda_values.push_back(lam);
+    }
+  }
+  if (lambda_values.empty()) {
+    Rcpp::stop("No Prague spectral channels fall within [380, 740] nm.");
+  }
+  const size_t N_LAMBDA = lambda_values.size();
+  // Constant band weights equal to channel width for rectangular integration.
+  // Use unit weights: Prague channels are discrete bands and already represent the band value.
+  std::vector<double> lambda_weights(N_LAMBDA, 1.0);
+  std::vector<CIETristimulus> cie_samples;
+  cie_samples.reserve(N_LAMBDA);
+  for (double lam : lambda_values) {
+    cie_samples.push_back(interpolate_cie_xyz(lam));
+  }
 
   // Initialize image buffer
-  std::vector<float> img(3 * phi.size(), 0.0f);
+  std::vector<double> img(3 * phi.size(), 0.0);
 
   // Render loop (parallel over rows)
   RcppThread::parallelFor(
     0u, size_t(phi.size()),
     [&](size_t t) {
-      float theta_rad = theta[t] * static_cast<float>(M_PI)/180;
-      float phi_rad = phi[t] * static_cast<float>(M_PI)/180;
-      float elev_rad = elevation[t] * static_cast<float>(M_PI)/180;
-  	  float az_rad = azimuth[t] * static_cast<float>(M_PI) / 180;
+      double theta_rad = theta[t] * M_PI/180;
+      double phi_rad = phi[t] * M_PI/180;
+      double elev_rad = elevation[t] * M_PI/180;
+  	  double az_rad = azimuth[t] * M_PI / 180;
 
-      if (theta_rad > static_cast<float>(M_PI_2)) {
+      if (theta_rad > M_PI_2) {
         return;
       }
 
-      Vec3<float> v_zup(std::cos(phi_rad) * std::cos(theta_rad),
-                        std::sin(phi_rad) * std::cos(theta_rad),
-                        std::sin(theta_rad));
+      Vec3<double> v_zup(std::cos(phi_rad) * std::cos(theta_rad),
+                         std::sin(phi_rad) * std::cos(theta_rad),
+                         std::sin(theta_rad));
       auto P = prague_model.computeParameters(
         /*viewPoint*/   { 0.0, 0.0, altitude[t] },
         /*viewDir  */   toPrague(v_zup),
@@ -371,16 +429,30 @@ Rcpp::NumericMatrix calculate_raw_prague(Rcpp::NumericVector phi,
         /*sunAzim  */   az_rad,
         /*visibility*/  visibility[t],
         /*albedo   */   albedo[t]);
-        for (int c = 0; c < N_LAMBDA; ++c) {
-          if(render_solar_disk) {
-            double L = prague_model.skyRadiance(P, lambda_nm[c]) +
-              prague_model.sunRadiance(P, lambda_nm[c]);
-            img[3 * t + c / 3] += static_cast<float>(L / 3.0);
-          } else {
-            double L = prague_model.skyRadiance(P, lambda_nm[c]);
-            img[3 * t + c / 3] += static_cast<float>(L / 3.0);
-          }
+        double X = 0.0, Y = 0.0, Z = 0.0;
+        for (size_t c = 0; c < N_LAMBDA; ++c) {
+          const double lam = lambda_values[c];
+          double Li = prague_model.skyRadiance(P, lam);
+          if (render_solar_disk) Li += prague_model.sunRadiance(P, lam);
+          X += Li * cie_samples[c].x * lambda_weights[c];
+          Y += Li * cie_samples[c].y * lambda_weights[c];
+          Z += Li * cie_samples[c].z * lambda_weights[c];
         }
+        if (!std::isfinite(X) || !std::isfinite(Y) || !std::isfinite(Z)) {
+          X = 0.0;
+          Y = 0.0;
+          Z = 0.0;
+        }
+        double R, G, B;
+        xyz_to_srgb(X, Y, Z, R, G, B);
+        if (!std::isfinite(R) || !std::isfinite(G) || !std::isfinite(B)) {
+          R = 0.0;
+          G = 0.0;
+          B = 0.0;
+        }
+		img[3 * t + 0] = R;
+		img[3 * t + 1] = G;
+		img[3 * t + 2] = B;
     },
     numbercores);
 

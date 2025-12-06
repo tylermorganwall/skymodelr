@@ -16,11 +16,6 @@ static inline int wrap_col(int x, int W) {
   int r = x % W; return r < 0 ? r + W : r;
 }
 
-static inline int clamp_int(int x, int lo, int hi)
-{
-	return x < lo ? lo : (x > hi ? hi : x);
-}
-
 static inline double jd_to_gmst(double jd)
 {
     double d  = jd - 2451545.0;                  // days since J2000

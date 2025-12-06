@@ -9,7 +9,7 @@
 #' @param turbidity          Default `3`. 1.7–10 atmospheric turbidity. Only valid for Hosek model.
 #' @param elevation          Default `10`. Solar elevation above the horizon (degrees).
 #' @param azimuth            Default `90`, sun directly east. Solar azimuth (degrees). The left edge of the image faces north and the middle faces south.
-#' @param altitude           Default `0`. Altitude of the viewer in meters. Valid [0, 15000]. Only valid for the Prague model.
+#' @param altitude           Default `0`. Altitude of the viewer in meters. Valid range: 0 to 15000. Only valid for the Prague model.
 #' @param resolution         Default `2048`. Height of the image. Width is 2 × this number.
 #' @param numbercores        Default `1`. Number of threads to use in computation.
 #' @param hosek              Default `TRUE`. Use `"prague"` to enable the Prague 2021–22 spectral sky model.
@@ -18,6 +18,7 @@
 #' @param verbose            Default `FALSE`. Whether to print progress bars/diagnostic info.
 #' @param render_solar_disk  Default `TRUE`. Whether to render the solar disk in addition to the atmosphere.
 #' @param lambda_nm          Default `"low"`. Spectral sampling resolution: `"low"` uses 20 nm increments from 380–700 nm, `"high"` uses 10 nm increments, or provide a numeric vector of wavelengths (360–830 nm).
+#' @param below_horizon      Default `TRUE`. Whether to sample atmospheric scattering below the horizon, which is non-zero when altitude > 0.
 #'
 #' @return Either the image array, or the array is invisibly returned if a file
 #'   is written. The array has dimensions `(resolution, 2 * resolution, 4)`.
@@ -89,6 +90,7 @@ generate_sky = function(
 	visibility = 50,
 	verbose = FALSE,
 	render_solar_disk = TRUE,
+	below_horizon = TRUE,
 	lambda_nm = "low"
 ) {
 	sea_level = altitude == 0
@@ -193,7 +195,8 @@ generate_sky = function(
 		altitude = altitude,
 		visibility = visibility,
 		render_solar_disk = render_solar_disk,
-		lambda_nm = lambda_values
+		lambda_nm = lambda_values,
+		below_horizon = below_horizon
 	)
 
 	generated_sky = array(0, dim = c(resolution, resolution * 2, 4))
@@ -205,7 +208,11 @@ generate_sky = function(
 		rayimage::ray_write_image(generated_sky, filename)
 		return(invisible(generated_sky))
 	} else {
-		return(generated_sky)
+		return(ray_read_image(
+			generated_sky,
+			assume_white = "D65",
+			assume_colorspace = rayimage::CS_SRGB
+		))
 	}
 }
 
@@ -215,31 +222,32 @@ generate_sky = function(
 #' 1. Computes the Sun’s apparent position for `datetime`, `lat`, and `lon`
 #'    (via **suncalc**).
 #' 2. Renders the corresponding sky model.
-#' 3. Optionally overlays a star field using [generate_stars()] or moon with [generate_moon()].
+#' 3. Optionally overlays a star field using [generate_stars()] or moon with [generate_moon_latlong()].
 #'
 #' @param datetime           Default `"2025-07-29 18:00:00"`. POSIX-compatible
 #'   date-time; if missing a time-zone it is assumed to be local.
 #' @param lat                Default `38.9072`. Observer latitude (degrees N).
 #' @param lon                Default `-77.0369`. Observer longitude (degrees E; west < 0).
 #' @param filename            Default `NA`. Path to the `.exr` file to write.
-#' @param albedo             Default `0.5`. Ground albedo, range [0, 1].
+#' @param albedo             Default `0.5`. Ground albedo, range 0 to 1.
 #' @param turbidity          Default `3`. Atmospheric turbidity, range
-#'   [1.7, 10] (*Hosek only*).
+#'   1.7 to 10 (*Hosek only*).
 #' @param altitude           Default `0`. Observer altitude (m), range
-#'   [0, 15000] (*Prague only*).
+#'   0 to 15000 (*Prague only*).
 #' @param resolution         Default `2048`. Image height in pixels (width = 2 × height).
 #' @param numbercores        Default `1`. CPU threads to use.
 #' @param hosek              Default `TRUE`. `FALSE` selects the Prague model.
-#' @param wide_spectrum      Default `FALSE`. 55-channel Prague coefficients (altitude = 0 m only).
+#' @param wide_spectrum      Default `FALSE`. 55-channel Prague coefficients (altitude = 0m only).
 #' @param visibility         Default `50`. Meteorological range (km); *Prague only*.
 #' @param stars              Default `FALSE`. If `TRUE`, composite a star field
 #'   using [generate_stars()]. Automatically falls back to a pure star render
 #'   when the black-sky condition is met (see *Details*).
 #' @param star_width         Default `1`. Passed to [generate_stars()] to control stellar point-spread size.
 #' @param planets            Default `FALSE`. If `TRUE`, composite bright planets via [generate_planets()].
-#' @param moon               Default `FALSE`. If `TRUE`, overlay a moon render from [generate_moon()].
+#' @param moon               Default `FALSE`. If `TRUE`, overlay a moon render from [generate_moon_latlong()].
 #' @param render_solar_disk  Default `TRUE`. Whether to render the solar disk in addition to the atmosphere.
 #' @param lambda_nm          Default `"low"`. Spectral sampling resolution forwarded to [generate_sky()]; accepts `"low"`, `"high"`, or a numeric vector of wavelengths (360–830 nm).
+#' @param below_horizon      Default `TRUE`. Whether to sample atmospheric scattering below the horizon, which is non-zero when altitude > 0.
 #' @param verbose            Default `FALSE`. Whether to print progress bars/diagnostic info.
 #' @param ...                Additional arguments passed to [generate_stars()] and, when enabled, [generate_planets()].
 #'
@@ -316,6 +324,7 @@ generate_sky_latlong = function(
 	moon = FALSE,
 	render_solar_disk = TRUE,
 	lambda_nm = "low",
+	below_horizon = TRUE,
 	verbose = FALSE,
 	...
 ) {
@@ -415,12 +424,12 @@ generate_sky_latlong = function(
 #' @description Evaluate the Prague spectral sky model at arbitrary spherical
 #' directions without writing an image, returning radiance-only samples.
 #'
-#' @param phi                Horizontal angle of the sample, degrees. Vectorized. Range [0, 360].
-#' @param theta              Vertical angle of the sample, degrees. Vectorized. Range [-90, 90].
-#' @param altitude 	         Default `0`, vectorized. Altitude of the viewer in meters. Range [0, 15000].
-#' @param elevation          Default `10`, vectorized. Solar elevation angle above/below the horizon (degrees). Range [-4.2, 90].
-#' @param visibility         Default `50`, vectorized. Range [20, 131.8]. Meteorological range in kilometers for Prague model.
-#' @param albedo             Default `0.5`, vectorized. Range [0, 1]. Ground albedo.
+#' @param phi                Horizontal angle of the sample, degrees. Vectorized. Range 0 to 360.
+#' @param theta              Vertical angle of the sample, degrees. Vectorized. Range -90 to 90.
+#' @param altitude 	         Default `0`, vectorized. Altitude of the viewer in meters. Range 0 to 15000.
+#' @param elevation          Default `10`, vectorized. Solar elevation angle above/below the horizon (degrees). Range -4.2 to 90.
+#' @param visibility         Default `50`, vectorized. Range 20 to 131.8. Meteorological range in kilometers for Prague model.
+#' @param albedo             Default `0.5`, vectorized. Range 0 to 1. Ground albedo.
 #' @param azimuth            Default `90`, single value. Solar azimuth (degrees). Defaults South.
 #' @param numbercores        Default `1`. Number of threads to use in computation.
 #' @param wide_spectrum      Default `FALSE`. Whether to use the wide‑spectrum (55‑channel, polarised) coefficients.

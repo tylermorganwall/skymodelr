@@ -304,7 +304,6 @@ double ArHosekSkyModel_GetRadianceInternal(
     const double mieM = (1.0 + cos(gamma)*cos(gamma)) / pow((1.0 + configuration[8]*configuration[8] - 2.0*configuration[8]*cos(gamma)), 1.5);
     const double zenith = sqrt(cos(theta));
     const double cos_factor = (cos(theta) + 0.01);
-    const double conf1 = configuration[1];
     const double factor1 = (1.0 + configuration[0] * exp(configuration[1] / cos_factor));
     const double factor2 =  (configuration[2] + configuration[3] * expM + configuration[5] * rayM + configuration[6] * mieM + configuration[7] * zenith);
 

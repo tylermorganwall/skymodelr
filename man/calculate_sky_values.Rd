@@ -18,17 +18,17 @@ calculate_sky_values(
 )
 }
 \arguments{
-\item{phi}{Horizontal angle of the sample, degrees. Vectorized. Range \link{0, 360}.}
+\item{phi}{Horizontal angle of the sample, degrees. Vectorized. Range 0 to 360.}
 
-\item{theta}{Vertical angle of the sample, degrees. Vectorized. Range \link{-90, 90}.}
+\item{theta}{Vertical angle of the sample, degrees. Vectorized. Range -90 to 90.}
 
-\item{altitude}{Default \code{0}, vectorized. Altitude of the viewer in meters. Range \link{0, 15000}.}
+\item{altitude}{Default \code{0}, vectorized. Altitude of the viewer in meters. Range 0 to 15000.}
 
-\item{elevation}{Default \code{10}, vectorized. Solar elevation angle above/below the horizon (degrees). Range \link{-4.2, 90}.}
+\item{elevation}{Default \code{10}, vectorized. Solar elevation angle above/below the horizon (degrees). Range -4.2 to 90.}
 
-\item{visibility}{Default \code{50}, vectorized. Range \link{20, 131.8}. Meteorological range in kilometers for Prague model.}
+\item{visibility}{Default \code{50}, vectorized. Range 20 to 131.8. Meteorological range in kilometers for Prague model.}
 
-\item{albedo}{Default \code{0.5}, vectorized. Range \link{0, 1}. Ground albedo.}
+\item{albedo}{Default \code{0.5}, vectorized. Range 0 to 1. Ground albedo.}
 
 \item{azimuth}{Default \code{90}, single value. Solar azimuth (degrees). Defaults South.}
 

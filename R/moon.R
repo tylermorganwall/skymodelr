@@ -9,16 +9,16 @@
 #' @param lat                Default `38.9072`. Observer latitude (degrees N).
 #' @param lon                Default `-77.0369`. Observer longitude (degrees E; west < 0).
 #' @param filename           Default `NA`. Path to the image file to write.
-#' @param albedo             Default `0.5`. Ground albedo, range [0, 1].
+#' @param albedo             Default `0.5`. Ground albedo, range 0 to 1.
 #' @param turbidity          Default `3`. Atmospheric turbidity, range
-#'   [1.7, 10] (*Hosek only*).
+#'   1.7 to 10 (*Hosek only*).
 #' @param altitude           Default `0`. Observer altitude (m), range
-#'   [0, 15000] (*Prague only*).
+#'   0 to 15000 (*Prague only*).
 #' @param resolution         Default `2048`. Image height in pixels (width = 2 × height).
 #' @param numbercores        Default `1`. CPU threads to use.
 #' @param atmospheric_scattering Default `FALSE`. If `TRUE`, render atmospheric scattering for the moon via [generate_sky()].
 #' @param hosek              Default `TRUE`. `FALSE` selects the Prague model.
-#' @param wide_spectrum      Default `FALSE`. 55-channel Prague coefficients (altitude = 0 m only).
+#' @param wide_spectrum      Default `FALSE`. 55-channel Prague coefficients (altitude = 0m only).
 #' @param visibility         Default `50`. Meteorological range (km); *Prague only*.
 #' @param lambda_nm          Default `"low"`. Spectral sampling forwarded to [generate_sky()] when `atmospheric_scattering = TRUE`; accepts `"low"`, `"high"`, or numeric wavelengths (360–830 nm).
 #' @param verbose            Default `FALSE`. Whether to print progress bars/diagnostic info.
@@ -76,6 +76,37 @@ generate_moon_latlong = function(
 	}
 	moon_sun_data = swe_dirs_topo_moon_sun(datetime, lat, lon, altitude)
 
+	# Sample sun colour so the moon inherits the same atmospheric tint.
+	sun_rgb_ratio = c(1, 1, 1)
+	if (is.finite(moon_elevation) && moon_elevation >= 0) {
+		sun_sample = tryCatch(
+			{
+				calculate_sky_values(
+					phi = moon_azimuth,
+					theta = moon_elevation,
+					altitude = altitude,
+					elevation = moon_elevation,
+					visibility = visibility,
+					albedo = albedo,
+					azimuth = moon_azimuth,
+					numbercores = numbercores,
+					wide_spectrum = wide_spectrum,
+					solar_disk = TRUE
+				)
+			},
+			error = function(e) {
+				NULL
+			}
+		)
+		if (!is.null(sun_sample)) {
+			sun_rgb = as.numeric(sun_sample[1, c("r", "g", "b")])
+			sun_mean = mean(sun_rgb)
+			if (all(is.finite(sun_rgb)) && sun_mean > 0) {
+				sun_rgb_ratio = sun_rgb / sun_mean
+			}
+		}
+	}
+
 	mag_to_lux = function(m) {
 		10^((-14.18 - m) / 2.5)
 	}
@@ -93,6 +124,12 @@ generate_moon_latlong = function(
 	moon_luminance_array = moon_info_list$moon_luminance_array
 	moon_angular_diameter_deg = moon_info_list$moon_angular_diameter_deg
 	moon_angular_diameter_rad = moon_angular_diameter_deg * pi / 180
+	moon_luminance_array[,, 1:3] = sweep(
+		moon_luminance_array[,, 1:3],
+		3,
+		sun_rgb_ratio,
+		"*"
+	)
 
 	scale_sun_to_moon = moon_lux / sun_lux
 	if (verbose) {
@@ -128,7 +165,12 @@ generate_moon_latlong = function(
 		)
 		moon_array[,, 4] = 1
 	}
-	moon_array[,, 1:3] = moon_array[,, 1:3] * scale_sun_to_moon
+	moon_array[,, 1:3] = sweep(
+		moon_array[,, 1:3] * scale_sun_to_moon,
+		3,
+		sun_rgb_ratio,
+		"*"
+	)
 
 	moon_dir_vec = c(
 		cospi(moon_azimuth / 180) * cospi(moon_elevation / 180),

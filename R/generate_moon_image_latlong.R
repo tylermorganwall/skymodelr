@@ -270,9 +270,6 @@ generate_moon_image_latlong = function(
 ) {
 	moon_sun_data = swe_dirs_topo_moon_sun(datetime, lat, lon, elev_m)
 	dir_moon = normalize(moon_sun_data$moon_ecef_geo)
-	# dir_sun = normalize(
-	#   moon_sun_data$sun_ecef_geo - moon_sun_data$moon_ecef_geo
-	# )
 	dir_sun = -normalize(moon_sun_data$sun_ecef_geo)
 	local_up = normalize(moon_sun_data$local_up_geo)
 

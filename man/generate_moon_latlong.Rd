@@ -18,6 +18,7 @@ generate_moon_latlong(
   hosek = TRUE,
   wide_spectrum = FALSE,
   visibility = 50,
+  lambda_nm = "low",
   verbose = FALSE,
   ...
 )
@@ -32,13 +33,13 @@ date-time; if missing a time-zone it is assumed to be local.}
 
 \item{filename}{Default \code{NA}. Path to the image file to write.}
 
-\item{albedo}{Default \code{0.5}. Ground albedo, range \link{0, 1}.}
+\item{albedo}{Default \code{0.5}. Ground albedo, range 0 to 1.}
 
 \item{turbidity}{Default \code{3}. Atmospheric turbidity, range
-\link{1.7, 10} (\emph{Hosek only}).}
+1.7 to 10 (\emph{Hosek only}).}
 
 \item{altitude}{Default \code{0}. Observer altitude (m), range
-\link{0, 15000} (\emph{Prague only}).}
+0 to 15000 (\emph{Prague only}).}
 
 \item{resolution}{Default \code{2048}. Image height in pixels (width = 2 × height).}
 
@@ -48,9 +49,11 @@ date-time; if missing a time-zone it is assumed to be local.}
 
 \item{hosek}{Default \code{TRUE}. \code{FALSE} selects the Prague model.}
 
-\item{wide_spectrum}{Default \code{FALSE}. 55-channel Prague coefficients (altitude = 0 m only).}
+\item{wide_spectrum}{Default \code{FALSE}. 55-channel Prague coefficients (altitude = 0m only).}
 
 \item{visibility}{Default \code{50}. Meteorological range (km); \emph{Prague only}.}
+
+\item{lambda_nm}{Default \code{"low"}. Spectral sampling forwarded to \code{\link[=generate_sky]{generate_sky()}} when \code{atmospheric_scattering = TRUE}; accepts \code{"low"}, \code{"high"}, or numeric wavelengths (360–830 nm).}
 
 \item{verbose}{Default \code{FALSE}. Whether to print progress bars/diagnostic info.}
 

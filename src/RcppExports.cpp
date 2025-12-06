@@ -12,8 +12,8 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // makesky_rcpp
-Rcpp::NumericVector makesky_rcpp(double albedo, double turbidity, double elevation, double azimuth_deg, unsigned int resolution, unsigned int numbercores, std::string model, std::string prg_dataset, double altitude, double visibility, bool render_solar_disk, Rcpp::Nullable<Rcpp::NumericVector> lambda_nm);
-RcppExport SEXP _skymodelr_makesky_rcpp(SEXP albedoSEXP, SEXP turbiditySEXP, SEXP elevationSEXP, SEXP azimuth_degSEXP, SEXP resolutionSEXP, SEXP numbercoresSEXP, SEXP modelSEXP, SEXP prg_datasetSEXP, SEXP altitudeSEXP, SEXP visibilitySEXP, SEXP render_solar_diskSEXP, SEXP lambda_nmSEXP) {
+Rcpp::NumericVector makesky_rcpp(double albedo, double turbidity, double elevation, double azimuth_deg, unsigned int resolution, unsigned int numbercores, std::string model, std::string prg_dataset, double altitude, double visibility, bool render_solar_disk, Rcpp::Nullable<Rcpp::NumericVector> lambda_nm, bool below_horizon);
+RcppExport SEXP _skymodelr_makesky_rcpp(SEXP albedoSEXP, SEXP turbiditySEXP, SEXP elevationSEXP, SEXP azimuth_degSEXP, SEXP resolutionSEXP, SEXP numbercoresSEXP, SEXP modelSEXP, SEXP prg_datasetSEXP, SEXP altitudeSEXP, SEXP visibilitySEXP, SEXP render_solar_diskSEXP, SEXP lambda_nmSEXP, SEXP below_horizonSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -29,7 +29,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type visibility(visibilitySEXP);
     Rcpp::traits::input_parameter< bool >::type render_solar_disk(render_solar_diskSEXP);
     Rcpp::traits::input_parameter< Rcpp::Nullable<Rcpp::NumericVector> >::type lambda_nm(lambda_nmSEXP);
-    rcpp_result_gen = Rcpp::wrap(makesky_rcpp(albedo, turbidity, elevation, azimuth_deg, resolution, numbercores, model, prg_dataset, altitude, visibility, render_solar_disk, lambda_nm));
+    Rcpp::traits::input_parameter< bool >::type below_horizon(below_horizonSEXP);
+    rcpp_result_gen = Rcpp::wrap(makesky_rcpp(albedo, turbidity, elevation, azimuth_deg, resolution, numbercores, model, prg_dataset, altitude, visibility, render_solar_disk, lambda_nm, below_horizon));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -79,7 +80,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_skymodelr_makesky_rcpp", (DL_FUNC) &_skymodelr_makesky_rcpp, 12},
+    {"_skymodelr_makesky_rcpp", (DL_FUNC) &_skymodelr_makesky_rcpp, 13},
     {"_skymodelr_calculate_raw_prague", (DL_FUNC) &_skymodelr_calculate_raw_prague, 10},
     {"_skymodelr_make_starfield_rcpp", (DL_FUNC) &_skymodelr_make_starfield_rcpp, 14},
     {NULL, NULL, 0}

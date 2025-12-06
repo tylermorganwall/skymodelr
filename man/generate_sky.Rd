@@ -17,7 +17,9 @@ generate_sky(
   wide_spectrum = FALSE,
   visibility = 50,
   verbose = FALSE,
-  render_solar_disk = TRUE
+  render_solar_disk = TRUE,
+  below_horizon = TRUE,
+  lambda_nm = "low"
 )
 }
 \arguments{
@@ -31,7 +33,7 @@ generate_sky(
 
 \item{azimuth}{Default \code{90}, sun directly east. Solar azimuth (degrees). The left edge of the image faces north and the middle faces south.}
 
-\item{altitude}{Default \code{0}. Altitude of the viewer in meters. Valid \link{0, 15000}. Only valid for the Prague model.}
+\item{altitude}{Default \code{0}. Altitude of the viewer in meters. Valid range: 0 to 15000. Only valid for the Prague model.}
 
 \item{resolution}{Default \code{2048}. Height of the image. Width is 2 × this number.}
 
@@ -46,6 +48,10 @@ generate_sky(
 \item{verbose}{Default \code{FALSE}. Whether to print progress bars/diagnostic info.}
 
 \item{render_solar_disk}{Default \code{TRUE}. Whether to render the solar disk in addition to the atmosphere.}
+
+\item{below_horizon}{Default \code{TRUE}. Whether to sample atmospheric scattering below the horizon, which is non-zero when altitude > 0.}
+
+\item{lambda_nm}{Default \code{"low"}. Spectral sampling resolution: \code{"low"} uses 20 nm increments from 380–700 nm, \code{"high"} uses 10 nm increments, or provide a numeric vector of wavelengths (360–830 nm).}
 }
 \value{
 Either the image array, or the array is invisibly returned if a file
