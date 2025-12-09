@@ -252,13 +252,17 @@ build_from_z = function(x) {
 #' Generate the moon into a lat-long image array patch
 #'
 #' @description Produce a rasterised moon texture aligned for composition into
-#' the sky dome.
+#' the sky dome. The Earth phase is inferred from the Sun-Moon geometry, and earthshine is
+#' implemented as an emissive term scaled relative to solar irradiance.
+#'
 #' @param datetime POSIXct observation time (UTC).
 #' @param lat Latitude in degrees.
 #' @param lon Longitude in degrees.
 #' @param elev_m Observer elevation above sea level in metres.
 #' @param width Output width in pixels.
 #' @param height Output height in pixels.
+#' @param earthshine Default `TRUE`. If `FALSE`, skip the earthshine emissive term.
+#' @param verbose Default `FALSE`. If `TRUE`, print earthshine diagnostics.
 #' @keywords internal
 generate_moon_image_latlong = function(
 	datetime,
@@ -266,56 +270,154 @@ generate_moon_image_latlong = function(
 	lon,
 	elev_m = 0,
 	width = 400,
-	height = 400
+	height = 400,
+	earthshine = TRUE,
+	verbose = FALSE
 ) {
 	moon_sun_data = swe_dirs_topo_moon_sun(datetime, lat, lon, elev_m)
 	dir_moon = normalize(moon_sun_data$moon_ecef_geo)
 	dir_sun = -normalize(moon_sun_data$sun_ecef_geo)
 	local_up = normalize(moon_sun_data$local_up_geo)
 
-	moon_material = rayvertex::material_list(
-		texture_location = system.file(
-			"textures",
-			"lroc_color_poles_1k.jpg",
-			package = "skymodelr"
-		),
+	tex = system.file(
+		"textures",
+		"lroc_color_poles_1k.jpg",
+		package = "skymodelr"
+	)
+
+	clamp = function(x, a, b) {
+		pmax(a, pmin(b, x))
+	}
+	cot = function(x) {
+		1 / tan(x)
+	}
+
+	cos_phi = clamp(sum(dir_moon * dir_sun), -1, 1)
+	phi = acos(cos_phi)
+
+	earth_phase = pi - phi
+	earth_phase = clamp(earth_phase, 1e-6, pi - 1e-6)
+
+	# Paper-based earthshine irradiance model:
+	# E_em = 0.19 * 0.5 * [1 - sin(phase/2) * tan(phase/2) * ln(cot(phase/4))]
+	E_em = 0.19 *
+		0.5 *
+		(1 -
+			sin(earth_phase / 2) *
+				tan(earth_phase / 2) *
+				log(cot(earth_phase / 4)))
+
+	if (!is.finite(E_em) || E_em < 0) {
+		E_em = 0
+	}
+
+	# Convert to unitless emission scale relative to solar irradiance at 1 AU.
+	# sunlight ~ 1.3e3 W/m^2.
+	solar_irradiance = 1.3e3
+
+	earth_emissive_intensity = 0
+	if (earthshine) {
+		earth_emissive_intensity = E_em / solar_irradiance
+	}
+
+	# Build a base mesh transform shared by both passes
+	build_moon_mesh = function(material) {
+		rayvertex::sphere_mesh(material = material, radius = 0.5) |>
+			rayvertex::subdivide_mesh() |>
+			rayvertex::rotate_mesh(c(0, -90, 6.68), order_rotation = c(3, 1, 2)) |>
+			rayvertex::transform_mesh(rayvertex::lookat_transform(
+				pos = -dir_moon,
+				look = c(0, 0, 0),
+				up = c(0, 0, 1)
+			)) |>
+			rayvertex::translate_mesh(dir_moon * 10)
+	}
+
+	# Pass 1: sun-only material (no emission) for magnitude calibration
+	moon_material_sun = rayvertex::material_list(
+		texture_location = tex,
+		emissive_texture_location = tex,
+		diffuse = c(1, 1, 1),
+		emission = c(1, 1, 1),
+		diffuse_intensity = 1,
+		emission_intensity = 0,
 		sigma = 10
 	)
 
-	rayvertex::sphere_mesh(material = moon_material, radius = 0.5) |>
-		rayvertex::subdivide_mesh() |>
-		rayvertex::rotate_mesh(c(0, -90, 6.68), order_rotation = c(3, 1, 2)) |>
-		rayvertex::transform_mesh(rayvertex::lookat_transform(
-			pos = -dir_moon,
-			look = c(0, 0, 0),
-			up = c(0, 0, 1)
-		)) |>
-		rayvertex::translate_mesh(dir_moon * 10) |>
-		rayvertex::rasterize_scene(
-			lookfrom = c(0, 0, 0),
-			lookat = dir_moon * 10,
-			camera_up = local_up,
-			fov = 0,
-			light_info = rayvertex::directional_light(
-				direction = -dir_sun,
-				intensity = 1
-			),
-			transparent_background = TRUE,
-			plot = FALSE,
-			width = width,
-			height = height
-		) -> moon_image
+	moon_mesh_sun = build_moon_mesh(moon_material_sun)
+
+	moon_image_sun = rayvertex::rasterize_scene(
+		moon_mesh_sun,
+		lookfrom = c(0, 0, 0),
+		lookat = dir_moon * 10,
+		camera_up = local_up,
+		fov = 0,
+		light_info = rayvertex::directional_light(
+			direction = -dir_sun,
+			intensity = 1
+		),
+		transparent_background = TRUE,
+		plot = FALSE,
+		width = width,
+		height = height
+	)
+
 	mag_to_lux = function(m) {
 		10^((-14.18 - m) / 2.5)
 	}
-	moon_mean = mean(rayimage::render_bw(moon_image)[,, 1])
+
+	moon_mean_sun = mean(rayimage::render_bw(moon_image_sun)[,, 1])
+	if (!is.finite(moon_mean_sun) || moon_mean_sun <= 0) {
+		moon_mean_sun = 1
+	}
 
 	moon_multiplier = 1 /
-		moon_mean *
+		moon_mean_sun *
 		mag_to_lux(moon_sun_data$moon_brightness_magnitude)
+
+	# Pass 2: combined sun + earthshine using emissive intensity
+	moon_material = rayvertex::material_list(
+		texture_location = tex,
+		emissive_texture_location = tex,
+		diffuse = c(1, 1, 1),
+		emission = c(1, 1, 1),
+		diffuse_intensity = 1,
+		emission_intensity = earth_emissive_intensity,
+		sigma = 10
+	)
+
+	moon_mesh = build_moon_mesh(moon_material)
+
+	moon_image = rayvertex::rasterize_scene(
+		moon_mesh,
+		lookfrom = c(0, 0, 0),
+		lookat = dir_moon * 10,
+		camera_up = local_up,
+		fov = 0,
+		light_info = rayvertex::directional_light(
+			direction = -dir_sun,
+			intensity = 1
+		),
+		transparent_background = TRUE,
+		plot = FALSE,
+		width = width,
+		height = height
+	)
+
+	if (verbose) {
+		message(sprintf(
+			"phi=%0.4f, earth_phase=%0.4f, E_em=%0.4g W/m^2, emission_intensity=%0.4g",
+			phi,
+			earth_phase,
+			E_em,
+			earth_emissive_intensity
+		))
+	}
+
 	moon_image[,, 1] = moon_image[,, 1] * moon_multiplier
 	moon_image[,, 2] = moon_image[,, 2] * moon_multiplier
 	moon_image[,, 3] = moon_image[,, 3] * moon_multiplier
+
 	list(
 		moon_luminance_array = moon_image,
 		moon_angular_diameter_deg = moon_sun_data$moon_diameter_degrees

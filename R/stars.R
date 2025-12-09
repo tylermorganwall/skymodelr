@@ -7,7 +7,7 @@
 #' @param time_utc POSIXct vector in UTC.
 #' @keywords internal
 jd_utc = function(time_utc) {
-  unclass(time_utc) / 86400 + 2440587.5 # Unix epoch to JD
+	unclass(time_utc) / 86400 + 2440587.5 # Unix epoch to JD
 }
 
 # ---------------------------------------------------------------------------
@@ -125,8 +125,13 @@ generate_stars = function(
 		numbercores = numbercores
 	)
 	star_array = array(0, dim = c(resolution, resolution * 2, 4))
-	star_array[, , 1:3] = star_rgb
-	star_array[, , 4] = 1
+	star_array[,, 1:3] = star_rgb
+	star_array[,, 4] = 1
+	star_array = rayimage::ray_read_image(
+		star_array,
+		assume_white = "D65",
+		assume_colorspace = rayimage::CS_SRGB
+	)
 	if (!is.na(filename)) {
 		warn_precision_loss(filename)
 		rayimage::ray_write_image(star_array, filename)

@@ -16,11 +16,12 @@
 #'   0 to 15000 (*Prague only*).
 #' @param resolution         Default `2048`. Image height in pixels (width = 2 × height).
 #' @param numbercores        Default `1`. CPU threads to use.
-#' @param atmospheric_scattering Default `FALSE`. If `TRUE`, render atmospheric scattering for the moon via [generate_sky()].
+#' @param moon_atmosphere    Default `FALSE`. If `TRUE`, this generates atmospheric scattering from light from the moon.
+#' @param earthshine         Default `TRUE`. If `FALSE`, disable earthshine contribution on the moon.
 #' @param hosek              Default `TRUE`. `FALSE` selects the Prague model.
 #' @param wide_spectrum      Default `FALSE`. 55-channel Prague coefficients (altitude = 0m only).
 #' @param visibility         Default `50`. Meteorological range (km); *Prague only*.
-#' @param lambda_nm          Default `"low"`. Spectral sampling forwarded to [generate_sky()] when `atmospheric_scattering = TRUE`; accepts `"low"`, `"high"`, or numeric wavelengths (360–830 nm).
+#' @param lambda_nm          Default `"low"`. Spectral sampling forwarded to [generate_sky()] when `moon_atmosphere = TRUE`; accepts `"low"`, `"high"`, or numeric wavelengths (360–830 nm).
 #' @param verbose            Default `FALSE`. Whether to print progress bars/diagnostic info.
 #' @param ...                Additional arguments passed to [generate_stars()]
 #'
@@ -55,7 +56,8 @@ generate_moon_latlong = function(
 	altitude = 0,
 	resolution = 2048,
 	numbercores = 1,
-	atmospheric_scattering = FALSE,
+	moon_atmosphere = FALSE,
+	earthshine = TRUE,
 	hosek = TRUE,
 	wide_spectrum = FALSE,
 	visibility = 50,
@@ -119,7 +121,8 @@ generate_moon_latlong = function(
 		lon,
 		altitude,
 		width = 401,
-		height = 401
+		height = 401,
+		earthshine = earthshine
 	)
 	moon_luminance_array = moon_info_list$moon_luminance_array
 	moon_angular_diameter_deg = moon_info_list$moon_angular_diameter_deg
@@ -142,7 +145,7 @@ generate_moon_latlong = function(
 			moon_lux
 		))
 	}
-	if (atmospheric_scattering) {
+	if (moon_atmosphere) {
 		moon_array = generate_sky(
 			albedo = albedo,
 			turbidity = turbidity,
@@ -197,7 +200,10 @@ generate_moon_latlong = function(
 
 	phi_c = moon_elevation * pi / 180
 	j_min = max(1, floor(((pi / 2) - (phi_c + r)) / pi * (nTheta - 1)) + 1)
-	j_max = min(nTheta, ceiling(((pi / 2) - (phi_c - r)) / pi * (nTheta - 1)) + 1)
+	j_max = min(
+		nTheta,
+		ceiling(((pi / 2) - (phi_c - r)) / pi * (nTheta - 1)) + 1
+	)
 
 	thetas = seq(pi / 2, -pi / 2, length.out = nTheta)
 	phis = seq(0, 2 * pi, length.out = nPhi)
@@ -228,6 +234,9 @@ generate_moon_latlong = function(
 				sin_theta[j],
 				sin_phi[i] * cos_theta[j]
 			)
+			if (sample_dir_vec[2] < 0) {
+				next
+			}
 			dot = sum(moon_dir_vec * sample_dir_vec)
 			if (dot < cos_r) {
 				next
@@ -250,11 +259,11 @@ generate_moon_latlong = function(
 			moon_array[j, i, 3] = moon_luminance_array[v_i, u_i, 3]
 		}
 	}
-	# moon_array_img = rayimage::ray_read_image(
-	# 	moon_array,
-	# 	assume_colorspace = rayimage::CS_SRGB,
-	# 	assume_white = "D65"
-	# )
+	moon_array = rayimage::ray_read_image(
+		moon_array,
+		assume_white = "D65",
+		assume_colorspace = rayimage::CS_SRGB
+	)
 	if (!is.na(filename)) {
 		warn_precision_loss(filename)
 		rayimage::ray_write_image(moon_array, filename, clamp = FALSE)

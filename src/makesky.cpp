@@ -273,14 +273,15 @@ Rcpp::NumericVector makesky_rcpp(
                        std::sin(phi) * std::sin(theta));
 
 		double X = 0.0, Y = 0.0, Z = 0.0;
+        const bool view_above_horizon = theta <= M_PI_2;
 
         if (model == "hosek") {
           double gamma = std::acos(
             clamp_double(v.dot(sun_dir), -1.0, 1.0));
           for (size_t c = 0; c < N_LAMBDA; ++c) {
 				const double lam = lambda_values[c];
-				double L = render_solar_disk ? 
-				  arhosekskymodel_solar_radiance(hosek, theta, gamma, lam) : 
+				double L = (render_solar_disk && view_above_horizon) ?
+				  arhosekskymodel_solar_radiance(hosek, theta, gamma, lam) :
 				  arhosekskymodel_radiance      (hosek, theta, gamma, lam);
 			// Accumulate XYZ
             double Li = static_cast<double>(L);
@@ -304,7 +305,7 @@ Rcpp::NumericVector makesky_rcpp(
 
           for (size_t i = 0; i < N_LAMBDA; ++i) {
             double Li = prague_model.skyRadiance(P, lambda_values[i]);
-            if (render_solar_disk) Li += prague_model.sunRadiance(P, lambda_values[i]);
+            if (render_solar_disk && view_above_horizon) Li += prague_model.sunRadiance(P, lambda_values[i]);
             X += Li * cie_samples[i].x * lambda_weights[i];
             Y += Li * cie_samples[i].y * lambda_weights[i];
             Z += Li * cie_samples[i].z * lambda_weights[i];
@@ -430,10 +431,11 @@ Rcpp::NumericMatrix calculate_raw_prague(Rcpp::NumericVector phi,
         /*visibility*/  visibility[t],
         /*albedo   */   albedo[t]);
         double X = 0.0, Y = 0.0, Z = 0.0;
+        const bool view_above_horizon = theta_rad <= M_PI_2;
         for (size_t c = 0; c < N_LAMBDA; ++c) {
           const double lam = lambda_values[c];
           double Li = prague_model.skyRadiance(P, lam);
-          if (render_solar_disk) Li += prague_model.sunRadiance(P, lam);
+          if (render_solar_disk && view_above_horizon) Li += prague_model.sunRadiance(P, lam);
           X += Li * cie_samples[c].x * lambda_weights[c];
           Y += Li * cie_samples[c].y * lambda_weights[c];
           Z += Li * cie_samples[c].z * lambda_weights[c];

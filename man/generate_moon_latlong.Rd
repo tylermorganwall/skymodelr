@@ -14,7 +14,8 @@ generate_moon_latlong(
   altitude = 0,
   resolution = 2048,
   numbercores = 1,
-  atmospheric_scattering = FALSE,
+  moon_atmosphere = FALSE,
+  earthshine = TRUE,
   hosek = TRUE,
   wide_spectrum = FALSE,
   visibility = 50,
@@ -45,7 +46,9 @@ date-time; if missing a time-zone it is assumed to be local.}
 
 \item{numbercores}{Default \code{1}. CPU threads to use.}
 
-\item{atmospheric_scattering}{Default \code{FALSE}. If \code{TRUE}, render atmospheric scattering for the moon via \code{\link[=generate_sky]{generate_sky()}}.}
+\item{moon_atmosphere}{Default \code{FALSE}. If \code{TRUE}, this generates atmospheric scattering from light from the moon.}
+
+\item{earthshine}{Default \code{TRUE}. If \code{FALSE}, disable earthshine contribution on the moon.}
 
 \item{hosek}{Default \code{TRUE}. \code{FALSE} selects the Prague model.}
 
@@ -53,7 +56,7 @@ date-time; if missing a time-zone it is assumed to be local.}
 
 \item{visibility}{Default \code{50}. Meteorological range (km); \emph{Prague only}.}
 
-\item{lambda_nm}{Default \code{"low"}. Spectral sampling forwarded to \code{\link[=generate_sky]{generate_sky()}} when \code{atmospheric_scattering = TRUE}; accepts \code{"low"}, \code{"high"}, or numeric wavelengths (360–830 nm).}
+\item{lambda_nm}{Default \code{"low"}. Spectral sampling forwarded to \code{\link[=generate_sky]{generate_sky()}} when \code{moon_atmosphere = TRUE}; accepts \code{"low"}, \code{"high"}, or numeric wavelengths (360–830 nm).}
 
 \item{verbose}{Default \code{FALSE}. Whether to print progress bars/diagnostic info.}
 

@@ -87,6 +87,11 @@ generate_planets = function(
 	planet_array = array(0, dim = c(resolution, resolution * 2, 4))
 	planet_array[,, 1:3] = planet_rgb
 	planet_array[,, 4] = 1
+	planet_array = rayimage::ray_read_image(
+		planet_array,
+		assume_white = "D65",
+		assume_colorspace = rayimage::CS_SRGB
+	)
 	if (!is.na(filename)) {
 		warn_precision_loss(filename)
 		rayimage::ray_write_image(planet_array, filename)

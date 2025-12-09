@@ -10,7 +10,9 @@ generate_moon_image_latlong(
   lon,
   elev_m = 0,
   width = 400,
-  height = 400
+  height = 400,
+  earthshine = TRUE,
+  verbose = FALSE
 )
 }
 \arguments{
@@ -25,9 +27,14 @@ generate_moon_image_latlong(
 \item{width}{Output width in pixels.}
 
 \item{height}{Output height in pixels.}
+
+\item{earthshine}{Default \code{TRUE}. If \code{FALSE}, skip the earthshine emissive term.}
+
+\item{verbose}{Default \code{FALSE}. If \code{TRUE}, print earthshine diagnostics.}
 }
 \description{
 Produce a rasterised moon texture aligned for composition into
-the sky dome.
+the sky dome. The Earth phase is inferred from the Sun-Moon geometry, and earthshine is
+implemented as an emissive term scaled relative to solar irradiance.
 }
 \keyword{internal}

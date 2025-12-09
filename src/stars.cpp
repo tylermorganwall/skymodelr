@@ -52,6 +52,15 @@ Rcpp::NumericVector make_starfield_rcpp(Rcpp::DataFrame stars,
   const int nTheta = resolution;        // rows (latitude)
   const int nPhi   = 2 * resolution;    // cols (longitude)
   const int nPix   = nTheta * nPhi;
+  const double dtheta = M_PI / double(nTheta);
+  const double dphi   = 2.0 * M_PI / double(nPhi);
+
+  auto omega_row = [&](int t) {
+    double theta_c = (double(t) + 0.5) * dtheta;
+    double s = std::sin(theta_c);
+    if (s < 1e-8) s = 1e-8;
+    return dtheta * dphi * s;
+  };
 
   std::vector<double> img(3 * nPix, 0.0);
 
@@ -169,24 +178,32 @@ Rcpp::NumericVector make_starfield_rcpp(Rcpp::DataFrame stars,
 
   		// Pre-compute 1D weights using distance from the pixel center (p + 0.5, t + 0.5)
   		std::vector<double> wx(2*rad + 1), wy(2*rad + 1);
-  		double sumx = 0.0, sumy = 0.0;
 
   		for (int dx = -rad; dx <= rad; ++dx) {
-  		  double px_center = (p0 + dx) + 0.5;
-  		  double ddx = px_center - u;                   // subpixel offset in x
-  		  double w   = std::exp(-ddx*ddx * inv_2s2);
-  		  wx[dx + rad] = w; sumx += w;
+ 		  double px_center = (p0 + dx) + 0.5;
+ 		  double ddx = px_center - u;                   // subpixel offset in x
+ 		  double w   = std::exp(-ddx*ddx * inv_2s2);
+		  wx[dx + rad] = w;
   		}
   		for (int dy = -rad; dy <= rad; ++dy) {
-  		  int ty = std::clamp(t0 + dy, 0, nTheta - 1);
-  		  double py_center = ty + 0.5;
-  		  double ddy = py_center - v;                   // subpixel offset in y
-  		  double w   = std::exp(-ddy*ddy * inv_2s2);
-  		  wy[dy + rad] = w; sumy += w;
+ 		  int ty = std::clamp(t0 + dy, 0, nTheta - 1);
+ 		  double py_center = ty + 0.5;
+ 		  double ddy = py_center - v;                   // subpixel offset in y
+ 		  double w   = std::exp(-ddy*ddy * inv_2s2);
+		  wy[dy + rad] = w;
   		}
 
-  		// Normalize so total deposited energy equals L (energy conservation)
-  		double norm = sumx * sumy;
+  		// Previous norm was image-space only; now include solid angle for env-map consistency
+  		double norm = 0.0;
+  		for (int dy = -rad; dy <= rad; ++dy) {
+  		  int t = std::clamp(t0 + dy, 0, nTheta - 1);
+  		  double wyj = wy[dy + rad];
+  		  double omega = omega_row(t);
+  		  for (int dx = -rad; dx <= rad; ++dx) {
+  		    double w = wyj * wx[dx + rad];
+  		    norm += w * omega;
+  		  }
+  		}
   		if (norm <= 0.0) return;
 
   		// Star radiance in channels

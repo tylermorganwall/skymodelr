@@ -21,6 +21,8 @@ generate_sky_latlong(
   star_width = 1,
   planets = FALSE,
   moon = FALSE,
+  moon_atmosphere = FALSE,
+  moon_hosek = TRUE,
   render_solar_disk = TRUE,
   lambda_nm = "low",
   below_horizon = TRUE,
@@ -66,9 +68,14 @@ when the black-sky condition is met (see \emph{Details}).}
 
 \item{moon}{Default \code{FALSE}. If \code{TRUE}, overlay a moon render from \code{\link[=generate_moon_latlong]{generate_moon_latlong()}}.}
 
+\item{moon_atmosphere}{Default \code{FALSE}. If \code{TRUE}, this generates atmospheric scattering from light from the moon.}
+
+\item{moon_hosek}{Default \code{TRUE}. Whether to use the faster (but less accurate) Hosek model for atmospheric scattering from the moon. Note
+that the light scattered from the moon is much less intense than the sun, and thus small inaccuracies are much less likely to be noticable.}
+
 \item{render_solar_disk}{Default \code{TRUE}. Whether to render the solar disk in addition to the atmosphere.}
 
-\item{lambda_nm}{Default \code{"low"}. Spectral sampling resolution forwarded to \code{\link[=generate_sky]{generate_sky()}}; accepts \code{"low"}, \code{"high"}, or a numeric vector of wavelengths (360–830 nm).}
+\item{lambda_nm}{Default \code{"low"}. Only used for the Hosek model. Spectral sampling resolution forwarded to \code{\link[=generate_sky]{generate_sky()}}; accepts \code{"low"}, \code{"high"}, or a numeric vector of wavelengths (360–830 nm).}
 
 \item{below_horizon}{Default \code{TRUE}. Whether to sample atmospheric scattering below the horizon, which is non-zero when altitude > 0.}
 

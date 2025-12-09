@@ -17,7 +17,7 @@
 #' @param visibility         Default `50`. Meteorological range in kilometres for Prague model.
 #' @param verbose            Default `FALSE`. Whether to print progress bars/diagnostic info.
 #' @param render_solar_disk  Default `TRUE`. Whether to render the solar disk in addition to the atmosphere.
-#' @param lambda_nm          Default `"low"`. Spectral sampling resolution: `"low"` uses 20 nm increments from 380–700 nm, `"high"` uses 10 nm increments, or provide a numeric vector of wavelengths (360–830 nm).
+#' @param lambda_nm          Default `"low"`. Only used for the Hosek model. Spectral sampling resolution: `"low"` uses 20 nm increments from 380–700 nm, `"high"` uses 10 nm increments, or provide a numeric vector of wavelengths (360–830 nm).
 #' @param below_horizon      Default `TRUE`. Whether to sample atmospheric scattering below the horizon, which is non-zero when altitude > 0.
 #'
 #' @return Either the image array, or the array is invisibly returned if a file
@@ -208,7 +208,7 @@ generate_sky = function(
 		rayimage::ray_write_image(generated_sky, filename)
 		return(invisible(generated_sky))
 	} else {
-		return(ray_read_image(
+		return(rayimage::ray_read_image(
 			generated_sky,
 			assume_white = "D65",
 			assume_colorspace = rayimage::CS_SRGB
@@ -245,8 +245,11 @@ generate_sky = function(
 #' @param star_width         Default `1`. Passed to [generate_stars()] to control stellar point-spread size.
 #' @param planets            Default `FALSE`. If `TRUE`, composite bright planets via [generate_planets()].
 #' @param moon               Default `FALSE`. If `TRUE`, overlay a moon render from [generate_moon_latlong()].
+#' @param moon_atmosphere    Default `FALSE`. If `TRUE`, this generates atmospheric scattering from light from the moon.
+#' @param moon_hosek         Default `TRUE`. Whether to use the faster (but less accurate) Hosek model for atmospheric scattering from the moon. Note
+#' that the light scattered from the moon is much less intense than the sun, and thus small inaccuracies are much less likely to be noticable.
 #' @param render_solar_disk  Default `TRUE`. Whether to render the solar disk in addition to the atmosphere.
-#' @param lambda_nm          Default `"low"`. Spectral sampling resolution forwarded to [generate_sky()]; accepts `"low"`, `"high"`, or a numeric vector of wavelengths (360–830 nm).
+#' @param lambda_nm          Default `"low"`. Only used for the Hosek model. Spectral sampling resolution forwarded to [generate_sky()]; accepts `"low"`, `"high"`, or a numeric vector of wavelengths (360–830 nm).
 #' @param below_horizon      Default `TRUE`. Whether to sample atmospheric scattering below the horizon, which is non-zero when altitude > 0.
 #' @param verbose            Default `FALSE`. Whether to print progress bars/diagnostic info.
 #' @param ...                Additional arguments passed to [generate_stars()] and, when enabled, [generate_planets()].
@@ -322,6 +325,8 @@ generate_sky_latlong = function(
 	star_width = 1.0,
 	planets = FALSE,
 	moon = FALSE,
+	moon_atmosphere = FALSE,
+	moon_hosek = TRUE,
 	render_solar_disk = TRUE,
 	lambda_nm = "low",
 	below_horizon = TRUE,
@@ -371,7 +376,8 @@ generate_sky_latlong = function(
 			altitude = altitude,
 			resolution = resolution,
 			numbercores = numbercores,
-			hosek = hosek,
+			moon_hosek = hosek,
+			moon_atmosphere = moon_atmosphere,
 			wide_spectrum = wide_spectrum,
 			visibility = visibility,
 			lambda_nm = lambda_nm,

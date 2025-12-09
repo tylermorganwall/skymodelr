@@ -51,7 +51,7 @@ generate_sky(
 
 \item{below_horizon}{Default \code{TRUE}. Whether to sample atmospheric scattering below the horizon, which is non-zero when altitude > 0.}
 
-\item{lambda_nm}{Default \code{"low"}. Spectral sampling resolution: \code{"low"} uses 20 nm increments from 380–700 nm, \code{"high"} uses 10 nm increments, or provide a numeric vector of wavelengths (360–830 nm).}
+\item{lambda_nm}{Default \code{"low"}. Only used for the Hosek model. Spectral sampling resolution: \code{"low"} uses 20 nm increments from 380–700 nm, \code{"high"} uses 10 nm increments, or provide a numeric vector of wavelengths (360–830 nm).}
 }
 \value{
 Either the image array, or the array is invisibly returned if a file
