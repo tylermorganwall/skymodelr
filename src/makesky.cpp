@@ -184,8 +184,8 @@ Rcpp::NumericVector makesky_rcpp(
     if (lambda_values.empty()) {
       Rcpp::stop("No Prague spectral channels fall within [380, 740] nm.");
     }
-    // Prague channels are discrete bands; integrate with unit weights to avoid double-counting width.
-    lambda_weights.assign(lambda_values.size(), 1.0);
+    // Prague channels are evenly spaced bands.
+    lambda_weights.assign(lambda_values.size(), avail.channelWidth);
     cie_samples.reserve(lambda_values.size());
     for (double lam : lambda_values) {
       cie_samples.push_back(interpolate_cie_xyz(lam));
@@ -396,8 +396,7 @@ Rcpp::NumericMatrix calculate_raw_prague(Rcpp::NumericVector phi,
   }
   const size_t N_LAMBDA = lambda_values.size();
   // Constant band weights equal to channel width for rectangular integration.
-  // Use unit weights: Prague channels are discrete bands and already represent the band value.
-  std::vector<double> lambda_weights(N_LAMBDA, 1.0);
+  std::vector<double> lambda_weights(N_LAMBDA, avail.channelWidth);
   std::vector<CIETristimulus> cie_samples;
   cie_samples.reserve(N_LAMBDA);
   for (double lam : lambda_values) {
