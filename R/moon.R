@@ -21,7 +21,6 @@
 #' @param hosek              Default `TRUE`. `FALSE` selects the Prague model.
 #' @param wide_spectrum      Default `FALSE`. 55-channel Prague coefficients (altitude = 0m only).
 #' @param visibility         Default `50`. Meteorological range (km); *Prague only*.
-#' @param lambda_nm          Default `"low"`. Spectral sampling forwarded to [generate_sky()] when `moon_atmosphere = TRUE`; accepts `"low"`, `"high"`, or numeric wavelengths (360–830 nm).
 #' @param verbose            Default `FALSE`. Whether to print progress bars/diagnostic info.
 #' @param ...                Additional arguments passed to [generate_stars()]
 #'
@@ -61,7 +60,6 @@ generate_moon_latlong = function(
 	hosek = TRUE,
 	wide_spectrum = FALSE,
 	visibility = 50,
-	lambda_nm = "low",
 	verbose = FALSE,
 	...
 ) {
@@ -158,8 +156,7 @@ generate_moon_latlong = function(
 			wide_spectrum = wide_spectrum,
 			visibility = visibility,
 			verbose = verbose,
-			render_solar_disk = FALSE,
-			lambda_nm = lambda_nm
+			render_solar_disk = FALSE
 		)
 	} else {
 		moon_array = array(
