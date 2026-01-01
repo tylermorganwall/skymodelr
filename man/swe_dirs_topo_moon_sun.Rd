@@ -4,7 +4,17 @@
 \alias{swe_dirs_topo_moon_sun}
 \title{Compute topocentric moon/sun directions}
 \usage{
-swe_dirs_topo_moon_sun(datetime, lat, lon, elev_m = 0)
+swe_dirs_topo_moon_sun(
+  datetime,
+  lat,
+  lon,
+  elev_m = 0,
+  albedo = 0.5,
+  turbidity = 3,
+  visibility = 50,
+  hosek = TRUE,
+  wide_spectrum = FALSE
+)
 }
 \arguments{
 \item{datetime}{POSIXct observation time (UTC).}
@@ -14,6 +24,18 @@ swe_dirs_topo_moon_sun(datetime, lat, lon, elev_m = 0)
 \item{lon}{Longitude in degrees.}
 
 \item{elev_m}{Observer elevation above sea level in metres.}
+
+\item{albedo}{Default \code{0.5}. Ground albedo, range 0 to 1.}
+
+\item{turbidity}{Default \code{3}. Atmospheric turbidity, range 1.7 to 10
+(\emph{Hosek only}).}
+
+\item{visibility}{Default \code{50}. Meteorological range (km); \emph{Prague only}.}
+
+\item{hosek}{Default \code{TRUE}. \code{FALSE} selects the Prague model.}
+
+\item{wide_spectrum}{Default \code{FALSE}. Use wide-spectrum (55-channel)
+coefficients for Prague at sea level only.}
 }
 \description{
 Query Swiss Ephemeris for topocentric sun and moon direction

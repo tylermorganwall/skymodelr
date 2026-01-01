@@ -24,9 +24,6 @@ generate_sky_latlong(
   moon_atmosphere = FALSE,
   moon_hosek = TRUE,
   render_solar_disk = TRUE,
-  mesopic = FALSE,
-  mesopic_low_cd = 0.01,
-  mesopic_high_cd = 3,
   below_horizon = TRUE,
   verbose = FALSE,
   ...
@@ -76,12 +73,6 @@ when the black-sky condition is met (see \emph{Details}).}
 that the light scattered from the moon is much less intense than the sun, and thus small inaccuracies are much less likely to be noticable.}
 
 \item{render_solar_disk}{Default \code{TRUE}. Whether to render the solar disk in addition to the atmosphere.}
-
-\item{mesopic}{Default \code{FALSE}. If \code{TRUE}, blend a mesopic approximation based on luminance.}
-
-\item{mesopic_low_cd}{Default \code{0.01}. Luminance (cd/m^2) below which the blend is fully mesopic.}
-
-\item{mesopic_high_cd}{Default \code{3}. Luminance (cd/m^2) above which the blend is fully photopic.}
 
 \item{below_horizon}{Default \code{TRUE}. Whether to sample atmospheric scattering below the horizon, which is non-zero when altitude > 0.}
 
