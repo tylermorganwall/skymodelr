@@ -39,6 +39,33 @@ altaz_to_enu = function(alt_rad, azN_rad) {
 	normalize(c(east, north, up)) # (E, N, U) matches engine XYZ
 }
 
+
+#' Moon V-band magnitude from phase angle
+#'
+#' @param phase_deg Phase angle ψ in degrees (0 = full Moon, 180 = new).
+#' @param dist_km   Default `384400`. Current geocentric distance (km).
+#' @param mean_km   Default `384400`. Mean distance (km).
+#'
+#' @return Apparent V magnitude `m`.
+moon_mag = function(
+	phase_deg,
+	dist_km = 384400,
+	mean_km = 384400
+) {
+	# Allen-1976 magnitude for a disc at mean distance, no surge (phase_deg in degrees):
+	m0 = -12.73 + 0.026 * abs(phase_deg) + 4e-9 * phase_deg^4
+
+	# Geometry: inverse-square scaling with distance
+	geom = 5 * log10(dist_km / mean_km)
+
+	# Opposition surge term (Allen’s “extra” brightness near full Moon)
+	S = max(1, 1.35 - 0.05 * abs(phase_deg)) # Allen’s empirical fit
+	surge_corr = -2.5 * log10(S)
+
+	m = m0 + geom + surge_corr
+	return(m)
+}
+
 #' Compute topocentric moon/sun directions
 #'
 #' @description Query Swiss Ephemeris for topocentric sun and moon direction
@@ -47,8 +74,25 @@ altaz_to_enu = function(alt_rad, azN_rad) {
 #' @param lat Latitude in degrees.
 #' @param lon Longitude in degrees.
 #' @param elev_m Observer elevation above sea level in metres.
+#' @param albedo Default `0.5`. Ground albedo, range 0 to 1.
+#' @param turbidity Default `3`. Atmospheric turbidity, range 1.7 to 10
+#'   (*Hosek only*).
+#' @param visibility Default `50`. Meteorological range (km); *Prague only*.
+#' @param hosek Default `TRUE`. `FALSE` selects the Prague model.
+#' @param wide_spectrum Default `FALSE`. Use wide-spectrum (55-channel)
+#'   coefficients for Prague at sea level only.
 #' @keywords internal
-swe_dirs_topo_moon_sun = function(datetime, lat, lon, elev_m = 0) {
+swe_dirs_topo_moon_sun = function(
+	datetime,
+	lat,
+	lon,
+	elev_m = 0,
+	albedo = 0.5,
+	turbidity = 3,
+	visibility = 50,
+	hosek = TRUE,
+	wide_spectrum = FALSE
+) {
 	swephR::swe_set_topo(lon, lat, elev_m)
 	attr(datetime, "tzone") = "UTC"
 	ts = as.POSIXlt(datetime, tz = "UTC")
@@ -90,11 +134,26 @@ swe_dirs_topo_moon_sun = function(datetime, lat, lon, elev_m = 0) {
 	moon_size = swephR::swe_pheno_ut(jd_ut, swephR::SE$MOON, flg_eq_topo)$attr
 	sun_size = swephR::swe_pheno_ut(jd_ut, swephR::SE$SUN, flg_eq_topo)$attr
 
+	dist_au = moon_t[3]
+	moon_distance_km = dist_au * 149597870.7
+
+	moon_phase = moon_size[1]
 	moon_diameter_degrees = moon_size[4]
 	moon_brightness_magnitude = moon_size[5]
 
+	m = moon_mag(
+		moon_phase,
+		dist_km = moon_distance_km,
+		mean_km = 384400
+	)
+
+	ftcnds_to_lux = 10.76
+	moon_brightness_lux = ftcnds_to_lux * 10^(-0.4 * (m + 16.57))
+
 	sun_diameter_degrees = sun_size[4]
 	sun_brightness_magnitude = sun_size[5]
+	sun_brightness_lux = ftcnds_to_lux *
+		10^(-0.4 * (sun_brightness_magnitude + 16.57))
 
 	to_local_horizontal_coordinates = function(ra_dec) {
 		aa = swephR::swe_azalt(
@@ -105,7 +164,6 @@ swe_dirs_topo_moon_sun = function(datetime, lat, lon, elev_m = 0) {
 			0,
 			xin = c(ra_dec[1], ra_dec[2], 1)
 		)$xaz
-		# aa[1] = (aa[1] + 180) %% 360 # south-based → north-based
 		aa
 	}
 	to_rad = pi / 180
@@ -118,6 +176,44 @@ swe_dirs_topo_moon_sun = function(datetime, lat, lon, elev_m = 0) {
 	azN_mt = local_horizon_moon[1]
 	alt_mt = local_horizon_moon[2]
 
+	moon_elev_deg = alt_mt * 180 / pi
+	moon_azimuth_deg = (azN_mt * 180 / pi + 180) %% 360
+	atten_elev_deg = moon_elev_deg
+	if (hosek) {
+		atten_elev_deg = max(min(atten_elev_deg, 90), 0)
+	} else {
+		atten_elev_deg = max(min(atten_elev_deg, 90), -4.2)
+	}
+
+	sun_center_zenith = calculate_sun_brightness(
+		elevation = 90,
+		azimuth = moon_azimuth_deg,
+		albedo = albedo,
+		turbidity = turbidity,
+		altitude = elev_m,
+		visibility = visibility,
+		hosek = hosek,
+		wide_spectrum = wide_spectrum
+	)
+	sun_center_theta = calculate_sun_brightness(
+		elevation = atten_elev_deg,
+		azimuth = moon_azimuth_deg,
+		albedo = albedo,
+		turbidity = turbidity,
+		altitude = elev_m,
+		visibility = visibility,
+		hosek = hosek,
+		wide_spectrum = wide_spectrum
+	)
+	if (is.finite(sun_center_theta) &&
+		is.finite(sun_center_zenith) &&
+		sun_center_zenith > 0) {
+		sun_brightness_ratio = sun_center_theta / sun_center_zenith
+		if (is.finite(sun_brightness_ratio) && sun_brightness_ratio > 0) {
+			moon_brightness_lux = moon_brightness_lux * sun_brightness_ratio
+		}
+	}
+
 	list(
 		sun_dir_topo = altaz_to_enu(alt_s, azN_s),
 		sun_ecef_geo = enu_to_ecef %*% altaz_to_enu(alt_s, azN_s),
@@ -126,8 +222,11 @@ swe_dirs_topo_moon_sun = function(datetime, lat, lon, elev_m = 0) {
 		local_up_geo = enu_to_ecef %*% c(0, 0, 1),
 		moon_diameter_degrees = moon_diameter_degrees,
 		moon_brightness_magnitude = moon_brightness_magnitude,
+		moon_brightness_lux = moon_brightness_lux, #lux
+		moon_phase = moon_phase,
 		sun_diameter_degrees = sun_diameter_degrees,
-		sun_brightness_magnitude = sun_brightness_magnitude
+		sun_brightness_magnitude = sun_brightness_magnitude,
+		sun_brightness_lux = sun_brightness_lux #lux
 	) |>
 		lapply(as.numeric)
 }

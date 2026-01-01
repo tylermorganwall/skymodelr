@@ -74,7 +74,17 @@ generate_moon_latlong = function(
 	if (moon_azimuth < 0) {
 		moon_azimuth = moon_azimuth + 360
 	}
-	moon_sun_data = swe_dirs_topo_moon_sun(datetime, lat, lon, altitude)
+	moon_sun_data = swe_dirs_topo_moon_sun(
+		datetime,
+		lat,
+		lon,
+		altitude,
+		albedo = albedo,
+		turbidity = turbidity,
+		visibility = visibility,
+		hosek = hosek,
+		wide_spectrum = wide_spectrum
+	)
 
 	# Sample sun colour so the moon inherits the same atmospheric tint.
 	sun_rgb_ratio = c(1, 1, 1)
@@ -107,11 +117,9 @@ generate_moon_latlong = function(
 		}
 	}
 
-	mag_to_lux = function(m) {
-		10^((-14.18 - m) / 2.5)
-	}
-	moon_lux = mag_to_lux(moon_sun_data$moon_brightness_magnitude)
-	sun_lux = mag_to_lux(moon_sun_data$sun_brightness_magnitude)
+	moon_lux = moon_sun_data$moon_brightness_lux
+	sun_lux = moon_sun_data$sun_brightness_lux
+	moon_phase = moon_sun_data$moon_phase
 
 	moon_info_list = generate_moon_image_latlong(
 		datetime,
@@ -135,11 +143,10 @@ generate_moon_latlong = function(
 	scale_sun_to_moon = moon_lux / sun_lux
 	if (verbose) {
 		message(sprintf(
-			"Moon: %0.1f° elevation, %0.1f° azimuth, %0.1f phase, %f lux",
+			"Moon: %0.1f° elevation, %0.1f° azimuth, %0.3f phase, %f lux",
 			moon_elevation,
 			moon_azimuth,
-			0,
-			# moon_phase,
+			moon_phase,
 			moon_lux
 		))
 	}

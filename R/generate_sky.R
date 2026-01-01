@@ -543,3 +543,111 @@ calculate_sky_values = function(
 	colnames(vals) = c("r", "g", "b")
 	return(as.data.frame(vals))
 }
+
+#' Sample sun luminance at the disk center.
+#'
+#' @description Evaluate the Prague or Hosek sky model at the sun center and
+#' integrate against the CIE Y curve to return a luminance value. This is
+#' useful for relative attenuation (e.g., comparing zenith sun to a low sun).
+#'
+#' @param elevation          Default `10`. Solar elevation angle above/below
+#'   the horizon (degrees). Range `[-4.2, 90]` for Prague, `[0, 90]` for Hosek.
+#' @param azimuth            Default `90`. Solar azimuth (degrees).
+#' @param albedo             Default `0.5`. Ground albedo, range 0 to 1.
+#' @param turbidity          Default `3`. Atmospheric turbidity, range 1.7 to 10
+#'   (*Hosek only*).
+#' @param altitude           Default `0`. Observer altitude (m), range 0 to 15000
+#'   (*Prague only*).
+#' @param visibility         Default `50`. Meteorological range (km); *Prague only*.
+#' @param hosek              Default `TRUE`. `FALSE` selects the Prague model.
+#' @param wide_spectrum      Default `FALSE`. Use wide-spectrum (55-channel)
+#'   coefficients for Prague at sea level only.
+#' @param lambda_nm          Optional vector of wavelengths for Hosek sampling.
+#'
+#' @return Numeric scalar of sun luminance (CIE Y, relative scale).
+#' @export
+#' @examples
+#' if(run_documentation()) {
+#'   calculate_sun_brightness(elevation = 45, hosek = TRUE)
+#' }
+calculate_sun_brightness = function(
+	elevation = 10,
+	azimuth = 90,
+	albedo = 0.5,
+	turbidity = 3,
+	altitude = 0,
+	visibility = 50,
+	hosek = TRUE,
+	wide_spectrum = FALSE,
+	lambda_nm = NULL
+) {
+	stopifnot(length(elevation) == 1)
+	stopifnot(length(azimuth) == 1)
+	stopifnot(length(albedo) == 1)
+	stopifnot(length(turbidity) == 1)
+	stopifnot(length(altitude) == 1)
+	stopifnot(length(visibility) == 1)
+	stopifnot(altitude >= 0)
+
+	model = if (hosek) "hosek" else "prague"
+	coef_file = ""
+
+	if (!hosek) {
+		sea_level = altitude == 0
+		filesize = ""
+		if (sea_level & !wide_spectrum) {
+			filesize = "107MB"
+		} else if (sea_level & wide_spectrum) {
+			filesize = "574MB"
+		} else if (!sea_level & !wide_spectrum) {
+			filesize = "2.4GB"
+		}
+		check_coef_file = function(filename) {
+			coef_file = file.path(tools::R_user_dir("skymodelr", "data"), filename)
+			if (!file.exists(coef_file)) {
+				response = readline(
+					prompt = sprintf(
+						" Coefficient file for this setting not yet present: this is a large file (%s), download? [y/n] ",
+						filesize
+					)
+				)
+				if (response == "y") {
+					download_sky_data(sea_level, wide_spectrum)
+				} else if (response == "n") {
+					return("")
+				} else {
+					stop("Input not recognized.")
+				}
+			}
+			return(coef_file)
+		}
+		if (!wide_spectrum) {
+			if (sea_level) {
+				coef_file = check_coef_file("SkyModelDatasetGround.dat")
+			} else {
+				coef_file = check_coef_file("SkyModelDataset.dat")
+			}
+		} else {
+			if (sea_level) {
+				coef_file = check_coef_file("PragueSkyModelDatasetGroundInfra.dat")
+			} else {
+				stop("`wide_spectrum = TRUE` is only valid when `altitude == 0`.")
+			}
+		}
+		if (coef_file == "") {
+			stop("No coefficient file downloaded for this set of inputs.")
+		}
+	}
+
+	calculate_sun_brightness_rcpp(
+		albedo = albedo,
+		turbidity = turbidity,
+		elevation = elevation,
+		azimuth_deg = azimuth,
+		model = model,
+		prg_dataset = coef_file,
+		altitude = altitude,
+		visibility = visibility,
+		lambda_nm = if (hosek) lambda_nm else NULL
+	)
+}

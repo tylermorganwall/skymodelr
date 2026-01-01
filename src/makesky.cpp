@@ -359,6 +359,156 @@ Rcpp::NumericVector makesky_rcpp(
 }
 
 // [[Rcpp::export]]
+double calculate_sun_brightness_rcpp(
+    double      albedo       = 0.5,
+    double      turbidity    = 3.0,
+    double      elevation    = 10.0,
+    double      azimuth_deg  = 90.0,
+    std::string model        = "hosek",
+    std::string prg_dataset  = "",
+    double      altitude     = 0.0,
+    double      visibility   = 50.0,
+    Rcpp::Nullable<Rcpp::NumericVector> lambda_nm = R_NilValue
+) {
+  if (albedo < 0.0 || albedo > 1.0) {
+    Rcpp::stop("albedo must be in [0,1]");
+  }
+
+  const double elev_rad = elevation * M_PI / 180.0;
+  const double az_rad = azimuth_deg * M_PI / 180.0;
+
+  // Prague model initialisation
+  PragueSkyModel::AvailableData avail{};
+  if (model == "prague") {
+    if (prg_dataset.empty()) {
+      Rcpp::stop("prg_dataset must be supplied when model=\"prague\"");
+    }
+
+    if (prague_loaded_file != prg_dataset) {
+      prague_model.initialize(prg_dataset);
+      prague_loaded_file = prg_dataset;
+    }
+    avail = prague_model.getAvailableData();
+    if (albedo < avail.albedoMin || albedo > avail.albedoMax ||
+        visibility < avail.visibilityMin || visibility > avail.visibilityMax) {
+      Rcpp::stop("albedo or visibility outside dataset range");
+    }
+  } else if (model != "hosek") {
+    Rcpp::stop("unknown model \"%s\"", model.c_str());
+  }
+
+  // Spectral sampling setup
+  std::vector<double> lambda_values;
+  std::vector<double> lambda_weights;
+  std::vector<double> cie_y_samples;
+
+  if (model == "prague") {
+    // Prague sampling is locked to dataset channel centers within CIE bounds (380–740 nm).
+    lambda_values.reserve(avail.channels);
+    for (int i = 0; i < avail.channels; ++i) {
+      const double lam = avail.channelStart + (i + 0.5) * avail.channelWidth;
+      if (lam >= 380.0 && lam <= 740.0) {
+        lambda_values.push_back(lam);
+      }
+    }
+    if (lambda_values.empty()) {
+      Rcpp::stop("No Prague spectral channels fall within [380, 740] nm.");
+    }
+    // Prague channels are evenly spaced bands.
+    lambda_weights.assign(lambda_values.size(), avail.channelWidth);
+    cie_y_samples.reserve(lambda_values.size());
+    for (double lam : lambda_values) {
+      cie_y_samples.push_back(interpolate_cie_xyz(lam).y);
+    }
+  } else {
+    // Hosek path (unchanged behavior)
+    const auto &default_values = default_lambda_low();
+
+    if (lambda_nm.isNull()) {
+      lambda_values.assign(default_values.begin(), default_values.end());
+    } else {
+      Rcpp::NumericVector lambda_vec(lambda_nm.get());
+      if (lambda_vec.size() == 0) {
+        lambda_values.assign(default_values.begin(), default_values.end());
+      } else {
+        lambda_values.assign(lambda_vec.begin(), lambda_vec.end());
+      }
+    }
+
+    if (lambda_values.size() < 2) {
+      Rcpp::stop("lambda_nm must contain at least two wavelengths");
+    }
+    for (size_t i = 1; i < lambda_values.size(); ++i) {
+      if (!(lambda_values[i] > lambda_values[i - 1])) {
+        Rcpp::stop("lambda_nm must be strictly increasing");
+      }
+    }
+
+    lambda_weights = trapezoid_weights(lambda_values);
+
+    cie_y_samples.reserve(lambda_values.size());
+    for (double lam : lambda_values) {
+      cie_y_samples.push_back(interpolate_cie_xyz(lam).y);
+    }
+  }
+
+  const size_t N_LAMBDA = lambda_values.size();
+  double Y = 0.0;
+
+  if (model == "hosek") {
+    if (elevation < 0.0 || elevation > 90.0) {
+      Rcpp::stop("elevation must be in [0,90]");
+    }
+    if (turbidity < 1.7 || turbidity > 10.0) {
+      Rcpp::stop("turbidity must be in [1.7,10]");
+    }
+
+    ArHosekSkyModelState *hosek = arhosekskymodelstate_alloc_init(
+      elev_rad, turbidity, albedo);
+    if (!hosek) {
+      Rcpp::stop("Hosek–Wilkie initialisation failed");
+    }
+
+    const double theta = M_PI_2 - elev_rad;
+    const double gamma = 0.0;
+    for (size_t c = 0; c < N_LAMBDA; ++c) {
+      const double lam = lambda_values[c];
+      const double L = arhosekskymodel_solar_radiance(hosek, theta, gamma, lam);
+      Y += L * cie_y_samples[c] * lambda_weights[c];
+    }
+    arhosekskymodelstate_free(hosek);
+  } else {
+    if (elevation < -4.2 || elevation > 90.0) {
+      Rcpp::stop("elevation must be in [-4.2, 90]");
+    }
+
+    // Sample sun radiance along the sun direction.
+    Vec3<double> sun_dir(std::cos(az_rad) * std::cos(elev_rad),
+                         std::sin(az_rad) * std::cos(elev_rad),
+                         std::sin(elev_rad));
+    auto P = prague_model.computeParameters(
+      { 0.0, 0.0, altitude },
+      toPrague(sun_dir),
+      elev_rad,
+      az_rad,
+      visibility,
+      albedo
+    );
+
+    for (size_t i = 0; i < N_LAMBDA; ++i) {
+      const double Li = prague_model.sunRadiance(P, lambda_values[i]);
+      Y += Li * cie_y_samples[i] * lambda_weights[i];
+    }
+  }
+
+  if (!std::isfinite(Y)) {
+    Y = 0.0;
+  }
+
+  return Y;
+}
+
+// [[Rcpp::export]]
 Rcpp::NumericMatrix calculate_raw_prague(Rcpp::NumericVector phi,
                            Rcpp::NumericVector theta,
                            Rcpp::NumericVector elevation,
