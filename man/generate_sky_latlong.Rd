@@ -24,7 +24,9 @@ generate_sky_latlong(
   moon_atmosphere = FALSE,
   moon_hosek = TRUE,
   render_solar_disk = TRUE,
-  lambda_nm = "low",
+  mesopic = FALSE,
+  mesopic_low_cd = 0.01,
+  mesopic_high_cd = 3,
   below_horizon = TRUE,
   verbose = FALSE,
   ...
@@ -75,7 +77,11 @@ that the light scattered from the moon is much less intense than the sun, and th
 
 \item{render_solar_disk}{Default \code{TRUE}. Whether to render the solar disk in addition to the atmosphere.}
 
-\item{lambda_nm}{Default \code{"low"}. Only used for the Hosek model. Spectral sampling resolution forwarded to \code{\link[=generate_sky]{generate_sky()}}; accepts \code{"low"}, \code{"high"}, or a numeric vector of wavelengths (360–830 nm).}
+\item{mesopic}{Default \code{FALSE}. If \code{TRUE}, blend a mesopic approximation based on luminance.}
+
+\item{mesopic_low_cd}{Default \code{0.01}. Luminance (cd/m^2) below which the blend is fully mesopic.}
+
+\item{mesopic_high_cd}{Default \code{3}. Luminance (cd/m^2) above which the blend is fully photopic.}
 
 \item{below_horizon}{Default \code{TRUE}. Whether to sample atmospheric scattering below the horizon, which is non-zero when altitude > 0.}
 
