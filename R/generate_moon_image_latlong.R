@@ -66,6 +66,30 @@ moon_mag = function(
 	return(m)
 }
 
+
+# Krisciunas & Schaefer (1991) / Rozenberg (1966) airmass approximation:
+# X(Z) = [cos(Z) + 0.025 * exp(-11 * cos(Z))]^(-1)
+# where Z is zenith distance in radians; bounded to ~40 at the horizon.
+airmass_rozenberg1966 = function(zenith_deg) {
+	z = zenith_deg * pi / 180
+	c = cos(z)
+	1 / (c + 0.025 * exp(-11 * c))
+}
+
+apply_airmass_extinction = function(lux_top_atm, alt_deg, kV = 0.172) {
+	# No direct-beam moonlight below (or at) the horizon
+	if (!is.finite(lux_top_atm) || !is.finite(alt_deg) || alt_deg <= 0) {
+		return(0)
+	}
+
+	# Rozenberg is for 0 <= Z <= 90 deg; clamp tiny numerical overshoots
+	alt_deg = min(alt_deg, 90)
+	zenith_deg = 90 - alt_deg
+
+	X = airmass_rozenberg1966(zenith_deg)
+	lux_top_atm * 10^(-0.4 * kV * X)
+}
+
 #' Compute topocentric moon/sun directions
 #'
 #' @description Query Swiss Ephemeris for topocentric sun and moon direction
@@ -148,7 +172,7 @@ swe_dirs_topo_moon_sun = function(
 	)
 
 	ftcnds_to_lux = 10.76
-	moon_brightness_lux = ftcnds_to_lux * 10^(-0.4 * (m + 16.57))
+	moon_brightness_lux_raw = ftcnds_to_lux * 10^(-0.4 * (m + 16.57))
 
 	sun_diameter_degrees = sun_size[4]
 	sun_brightness_magnitude = sun_size[5]
@@ -185,34 +209,12 @@ swe_dirs_topo_moon_sun = function(
 		atten_elev_deg = max(min(atten_elev_deg, 90), -4.2)
 	}
 
-	sun_center_zenith = calculate_sun_brightness(
-		elevation = 90,
-		azimuth = moon_azimuth_deg,
-		albedo = albedo,
-		turbidity = turbidity,
-		altitude = elev_m,
-		visibility = visibility,
-		hosek = hosek,
-		wide_spectrum = wide_spectrum
+	# Then, after you compute moon_elev_deg:
+	moon_brightness_lux = apply_airmass_extinction(
+		lux_top_atm = moon_brightness_lux_raw,
+		alt_deg = moon_elev_deg,
+		kV = 0.172
 	)
-	sun_center_theta = calculate_sun_brightness(
-		elevation = atten_elev_deg,
-		azimuth = moon_azimuth_deg,
-		albedo = albedo,
-		turbidity = turbidity,
-		altitude = elev_m,
-		visibility = visibility,
-		hosek = hosek,
-		wide_spectrum = wide_spectrum
-	)
-	if (is.finite(sun_center_theta) &&
-		is.finite(sun_center_zenith) &&
-		sun_center_zenith > 0) {
-		sun_brightness_ratio = sun_center_theta / sun_center_zenith
-		if (is.finite(sun_brightness_ratio) && sun_brightness_ratio > 0) {
-			moon_brightness_lux = moon_brightness_lux * sun_brightness_ratio
-		}
-	}
 
 	list(
 		sun_dir_topo = altaz_to_enu(alt_s, azN_s),
@@ -348,6 +350,35 @@ build_from_z = function(x) {
 	return(matrix(c(xx, yy, zz), ncol = 3, byrow = FALSE))
 }
 
+sun_solid_angle_sr = function(diameter_deg = 0.533) {
+	r = (diameter_deg * 0.5) * pi / 180
+	2 * pi * (1 - cos(r))
+}
+
+# Prague direct-beam illuminance (lux) corresponding to 1 "unit" of Prague sun radiance
+prague_unit_direct_lux = function(
+	elevation_deg,
+	azimuth_deg,
+	albedo,
+	visibility,
+	altitude,
+	prg_dataset,
+	sun_diameter_deg = 0.533
+) {
+	# returns Y accumulated from prague_model.sunRadiance(...) over channels :contentReference[oaicite:4]{index=4}
+	Y_unit = calculate_sun_brightness_rcpp(
+		albedo = albedo,
+		elevation = elevation_deg,
+		azimuth_deg = azimuth_deg,
+		model = "prague",
+		prg_dataset = prg_dataset,
+		altitude = altitude,
+		visibility = visibility
+	)
+	683 * Y_unit * sun_solid_angle_sr(sun_diameter_deg)
+}
+
+
 #' Generate the moon into a lat-long image array patch
 #'
 #' @description Produce a rasterised moon texture aligned for composition into
@@ -377,6 +408,7 @@ generate_moon_image_latlong = function(
 	dir_moon = normalize(moon_sun_data$moon_ecef_geo)
 	dir_sun = -normalize(moon_sun_data$sun_ecef_geo)
 	local_up = normalize(moon_sun_data$local_up_geo)
+	moon_brightness_lux = moon_sun_data$moon_brightness_lux
 
 	tex = system.file(
 		"textures",
@@ -461,19 +493,6 @@ generate_moon_image_latlong = function(
 		height = height
 	)
 
-	mag_to_lux = function(m) {
-		10^((-14.18 - m) / 2.5)
-	}
-
-	moon_mean_sun = mean(rayimage::render_bw(moon_image_sun)[,, 1])
-	if (!is.finite(moon_mean_sun) || moon_mean_sun <= 0) {
-		moon_mean_sun = 1
-	}
-
-	moon_multiplier = 1 /
-		moon_mean_sun *
-		mag_to_lux(moon_sun_data$moon_brightness_magnitude)
-
 	# Pass 2: combined sun + earthshine using emissive intensity
 	moon_material = rayvertex::material_list(
 		texture_location = tex,
@@ -513,9 +532,7 @@ generate_moon_image_latlong = function(
 		))
 	}
 
-	moon_image[,, 1] = moon_image[,, 1] * moon_multiplier
-	moon_image[,, 2] = moon_image[,, 2] * moon_multiplier
-	moon_image[,, 3] = moon_image[,, 3] * moon_multiplier
+	moon_image[,, 4][moon_image[,, 4] > 1] = 1
 
 	list(
 		moon_luminance_array = moon_image,

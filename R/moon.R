@@ -1,3 +1,32 @@
+sun_solid_angle_sr = function(diameter_deg = 0.533) {
+	r = (diameter_deg * 0.5) * pi / 180
+	2 * pi * (1 - cos(r))
+}
+
+# Prague direct-beam illuminance (lux) corresponding to 1 "unit" of Prague sun radiance
+prague_unit_direct_lux = function(
+	elevation_deg,
+	azimuth_deg,
+	albedo,
+	visibility,
+	altitude,
+	prg_dataset,
+	sun_diameter_deg = 0.533
+) {
+	# returns Y accumulated from prague_model.sunRadiance(...) over channels :contentReference[oaicite:4]{index=4}
+	Y_unit = calculate_sun_brightness_rcpp(
+		albedo = albedo,
+		elevation = elevation_deg,
+		azimuth_deg = azimuth_deg,
+		model = "prague",
+		prg_dataset = prg_dataset,
+		altitude = altitude,
+		visibility = visibility
+	)
+	683 * Y_unit * sun_solid_angle_sr(sun_diameter_deg)
+}
+
+
 #' Generate the atmosphere with the moon
 #'
 #' @description Note that this is just a scaled version of `generate_sky()`, scaled down by the luminance
@@ -133,14 +162,14 @@ generate_moon_latlong = function(
 	moon_luminance_array = moon_info_list$moon_luminance_array
 	moon_angular_diameter_deg = moon_info_list$moon_angular_diameter_deg
 	moon_angular_diameter_rad = moon_angular_diameter_deg * pi / 180
+
+	# Apply atmospheric tint first
 	moon_luminance_array[,, 1:3] = sweep(
 		moon_luminance_array[,, 1:3],
 		3,
 		sun_rgb_ratio,
 		"*"
 	)
-
-	scale_sun_to_moon = moon_lux / sun_lux
 	if (verbose) {
 		message(sprintf(
 			"Moon: %0.1f° elevation, %0.1f° azimuth, %0.3f phase, %f lux",
@@ -151,6 +180,53 @@ generate_moon_latlong = function(
 		))
 	}
 	if (moon_atmosphere) {
+		sea_level = altitude == 0
+		filesize = ""
+		if (sea_level & !wide_spectrum) {
+			filesize = "107MB"
+		} else if (sea_level & wide_spectrum) {
+			filesize = "574MB"
+		} else if (!sea_level & !wide_spectrum) {
+			filesize = "2.4GB"
+		}
+		check_coef_file = function(filename) {
+			coef_file = file.path(tools::R_user_dir("skymodelr", "data"), filename)
+			if (!file.exists(coef_file)) {
+				response = readline(
+					prompt = sprintf(
+						" Coefficient file for this setting not yet present: this is a large file (%s), download? [y/n] ",
+						filesize
+					)
+				)
+				if (response == "y") {
+					download_sky_data(sea_level, wide_spectrum)
+				} else if (response == "n") {
+					return("")
+				} else {
+					stop("Input not recognized.")
+				}
+			}
+			return(coef_file)
+		}
+		coef_file = ""
+		stopifnot(all(altitude >= 0 & altitude <= 15000))
+		model = "prague"
+		if (!wide_spectrum) {
+			if (sea_level) {
+				coef_file = check_coef_file("SkyModelDatasetGround.dat")
+			} else {
+				coef_file = check_coef_file("SkyModelDataset.dat")
+			}
+		} else {
+			if (sea_level) {
+				coef_file = check_coef_file("PragueSkyModelDatasetGroundInfra.dat")
+			} else {
+				stop("`wide_spectrum = TRUE` is only valid when `altitude == 0`.")
+			}
+		}
+		if (coef_file == "") {
+			stop("No coefficient file downloaded for this set of inputs.")
+		}
 		moon_array = generate_sky(
 			albedo = albedo,
 			turbidity = turbidity,
@@ -165,6 +241,27 @@ generate_moon_latlong = function(
 			verbose = verbose,
 			render_solar_disk = FALSE
 		)
+		E_unit = prague_unit_direct_lux(
+			elevation_deg = moon_elevation,
+			azimuth_deg = moon_azimuth,
+			albedo = albedo,
+			visibility = visibility,
+			altitude = altitude,
+			prg_dataset = coef_file,
+			sun_diameter_deg = 0.533
+		)
+		scale_prague_to_moon = if (is.finite(E_unit) && E_unit > 0) {
+			moon_lux / E_unit
+		} else {
+			0
+		}
+		# 3) apply photometric conversion + scaling + your spectral tint
+		moon_array[,, 1:3] = sweep(
+			moon_array[,, 1:3] * (683 * scale_prague_to_moon),
+			3,
+			sun_rgb_ratio,
+			"*"
+		)
 	} else {
 		moon_array = array(
 			0,
@@ -172,12 +269,6 @@ generate_moon_latlong = function(
 		)
 		moon_array[,, 4] = 1
 	}
-	moon_array[,, 1:3] = sweep(
-		moon_array[,, 1:3] * scale_sun_to_moon,
-		3,
-		sun_rgb_ratio,
-		"*"
-	)
 
 	moon_dir_vec = c(
 		cospi(moon_azimuth / 180) * cospi(moon_elevation / 180),
@@ -198,6 +289,7 @@ generate_moon_latlong = function(
 
 	nTheta = resolution
 	nPhi = 2 * resolution
+	disk_mask = matrix(FALSE, nrow = nTheta, ncol = nPhi)
 
 	r = moon_angular_diameter_rad / 2
 	cos_r = cos(r)
@@ -246,6 +338,8 @@ generate_moon_latlong = function(
 				next
 			}
 
+			disk_mask[j, i] = TRUE
+
 			# Camera (tangent) components of the sample direction
 			vx = sum(sample_dir_vec * e_hat)
 			vy = sum(sample_dir_vec * n_hat)
@@ -262,6 +356,31 @@ generate_moon_latlong = function(
 			moon_array[j, i, 2] = moon_luminance_array[v_i, u_i, 2]
 			moon_array[j, i, 3] = moon_luminance_array[v_i, u_i, 3]
 		}
+	}
+
+	dphi = 2 * pi / nPhi
+	dtheta = pi / nTheta
+	thetas = seq(pi / 2, -pi / 2, length.out = nTheta) # you already have this
+	domega_row = dphi * dtheta * cos(thetas) # cos(latitude) = sin(colatitude)
+	domega = matrix(domega_row, nrow = nTheta, ncol = nPhi, byrow = FALSE)
+
+	# Photopic luminance (same weights as rayimage::render_bw default):
+	Y_env = 0.2126 *
+		moon_array[,, 1] +
+		0.7152 * moon_array[,, 2] +
+		0.0722 * moon_array[,, 3]
+
+	E_current = sum(Y_env[disk_mask] * domega[disk_mask])
+
+	scale_disk = if (is.finite(E_current) && E_current > 0) {
+		moon_lux / E_current
+	} else {
+		0
+	}
+	if (scale_disk > 0) {
+		moon_array[,, 1][disk_mask] = moon_array[,, 1][disk_mask] * scale_disk
+		moon_array[,, 2][disk_mask] = moon_array[,, 2][disk_mask] * scale_disk
+		moon_array[,, 3][disk_mask] = moon_array[,, 3][disk_mask] * scale_disk
 	}
 	moon_array = rayimage::ray_read_image(
 		moon_array,
