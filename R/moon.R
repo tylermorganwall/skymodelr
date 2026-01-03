@@ -3,8 +3,7 @@ sun_solid_angle_sr = function(diameter_deg = 0.533) {
 	2 * pi * (1 - cos(r))
 }
 
-# Prague direct-beam illuminance (lux) corresponding to 1 "unit" of Prague sun radiance
-prague_unit_direct_lux = function(
+prague_unit_direct_irradiance = function(
 	elevation_deg,
 	azimuth_deg,
 	albedo,
@@ -13,8 +12,7 @@ prague_unit_direct_lux = function(
 	prg_dataset,
 	sun_diameter_deg = 0.533
 ) {
-	# returns Y accumulated from prague_model.sunRadiance(...) over channels :contentReference[oaicite:4]{index=4}
-	Y_unit = calculate_sun_brightness_rcpp(
+	L_unit = calculate_sun_radiance_band_rcpp(
 		albedo = albedo,
 		elevation = elevation_deg,
 		azimuth_deg = azimuth_deg,
@@ -23,7 +21,7 @@ prague_unit_direct_lux = function(
 		altitude = altitude,
 		visibility = visibility
 	)
-	683 * Y_unit * sun_solid_angle_sr(sun_diameter_deg)
+	L_unit * sun_solid_angle_sr(sun_diameter_deg)
 }
 
 
@@ -149,6 +147,13 @@ generate_moon_latlong = function(
 	moon_lux = moon_sun_data$moon_brightness_lux
 	sun_lux = moon_sun_data$sun_brightness_lux
 	moon_phase = moon_sun_data$moon_phase
+	spd_type = "BB5778"
+	rgb_unit = compute_spd_rgb_unit(spd_type)
+	K_eff = compute_K_eff(spd_type)
+	moon_irradiance = lux_to_radiometric_irradiance(moon_lux, K_eff)
+	if (!is.finite(moon_irradiance)) {
+		moon_irradiance = 0
+	}
 
 	moon_info_list = generate_moon_image_latlong(
 		datetime,
@@ -163,13 +168,6 @@ generate_moon_latlong = function(
 	moon_angular_diameter_deg = moon_info_list$moon_angular_diameter_deg
 	moon_angular_diameter_rad = moon_angular_diameter_deg * pi / 180
 
-	# Apply atmospheric tint first
-	moon_luminance_array[,, 1:3] = sweep(
-		moon_luminance_array[,, 1:3],
-		3,
-		sun_rgb_ratio,
-		"*"
-	)
 	if (verbose) {
 		message(sprintf(
 			"Moon: %0.1f° elevation, %0.1f° azimuth, %0.3f phase, %f lux",
@@ -210,22 +208,23 @@ generate_moon_latlong = function(
 		}
 		coef_file = ""
 		stopifnot(all(altitude >= 0 & altitude <= 15000))
-		model = "prague"
-		if (!wide_spectrum) {
-			if (sea_level) {
-				coef_file = check_coef_file("SkyModelDatasetGround.dat")
+		if (!hosek) {
+			if (!wide_spectrum) {
+				if (sea_level) {
+					coef_file = check_coef_file("SkyModelDatasetGround.dat")
+				} else {
+					coef_file = check_coef_file("SkyModelDataset.dat")
+				}
 			} else {
-				coef_file = check_coef_file("SkyModelDataset.dat")
+				if (sea_level) {
+					coef_file = check_coef_file("PragueSkyModelDatasetGroundInfra.dat")
+				} else {
+					stop("`wide_spectrum = TRUE` is only valid when `altitude == 0`.")
+				}
 			}
-		} else {
-			if (sea_level) {
-				coef_file = check_coef_file("PragueSkyModelDatasetGroundInfra.dat")
-			} else {
-				stop("`wide_spectrum = TRUE` is only valid when `altitude == 0`.")
+			if (coef_file == "") {
+				stop("No coefficient file downloaded for this set of inputs.")
 			}
-		}
-		if (coef_file == "") {
-			stop("No coefficient file downloaded for this set of inputs.")
 		}
 		moon_array = generate_sky(
 			albedo = albedo,
@@ -241,23 +240,27 @@ generate_moon_latlong = function(
 			verbose = verbose,
 			render_solar_disk = FALSE
 		)
-		E_unit = prague_unit_direct_lux(
-			elevation_deg = moon_elevation,
-			azimuth_deg = moon_azimuth,
+		lambda_values = seq(360, 720, by = 40)
+		model = if (hosek) "hosek" else "prague"
+		E_unit = calculate_sun_radiance_band_rcpp(
 			albedo = albedo,
-			visibility = visibility,
-			altitude = altitude,
+			turbidity = turbidity,
+			elevation = moon_elevation,
+			azimuth_deg = moon_azimuth,
+			model = model,
 			prg_dataset = coef_file,
-			sun_diameter_deg = 0.533
-		)
+			altitude = altitude,
+			visibility = visibility,
+			lambda_nm = if (hosek) lambda_values else NULL
+		) * sun_solid_angle_sr(0.533)
 		scale_prague_to_moon = if (is.finite(E_unit) && E_unit > 0) {
-			moon_lux / E_unit
+			moon_irradiance / E_unit
 		} else {
 			0
 		}
-		# 3) apply photometric conversion + scaling + your spectral tint
+		# Apply radiometric scaling and atmospheric tint
 		moon_array[,, 1:3] = sweep(
-			moon_array[,, 1:3] * (683 * scale_prague_to_moon),
+			moon_array[,, 1:3] * scale_prague_to_moon,
 			3,
 			sun_rgb_ratio,
 			"*"
@@ -286,6 +289,37 @@ generate_moon_latlong = function(
 		moon_luminance_array,
 		dims = c(resize_moon_dim, resize_moon_dim)
 	)
+	patch_mask = resized_moon_luminance_array[,, 4] > 0
+	if (!any(patch_mask)) {
+		patch_mask[,] = TRUE
+	}
+	rgb_target = rgb_unit * sun_rgb_ratio
+	if (sum(rgb_target) > 0) {
+		rgb_target = rgb_target / sum(rgb_target)
+	} else {
+		rgb_target = rgb_unit
+	}
+	mean_rgb = c(
+		mean(resized_moon_luminance_array[,, 1][patch_mask], na.rm = TRUE),
+		mean(resized_moon_luminance_array[,, 2][patch_mask], na.rm = TRUE),
+		mean(resized_moon_luminance_array[,, 3][patch_mask], na.rm = TRUE)
+	)
+	mean_rgb[!is.finite(mean_rgb)] = 0
+	rgb_scale = ifelse(mean_rgb > 0, rgb_target / mean_rgb, 0)
+	resized_moon_luminance_array[,, 1:3] = sweep(
+		resized_moon_luminance_array[,, 1:3],
+		3,
+		rgb_scale,
+		"*"
+	)
+	mean_sum = mean(
+		rowSums(resized_moon_luminance_array[,, 1:3])[patch_mask],
+		na.rm = TRUE
+	)
+	if (is.finite(mean_sum) && mean_sum > 0) {
+		resized_moon_luminance_array[,, 1:3] =
+			resized_moon_luminance_array[,, 1:3] / mean_sum
+	}
 
 	nTheta = resolution
 	nPhi = 2 * resolution
@@ -322,6 +356,8 @@ generate_moon_latlong = function(
 	n_hat = n_hat / sqrt(sum(n_hat * n_hat)) # local north
 
 	tan_r = tan(r) # r = moon_angular_diameter_rad/2
+	half_dim = (resize_moon_dim - 1) / 2
+	center_dim = half_dim + 1
 
 	for (j in seq(j_min, j_max)) {
 		for (i in seq_len(nPhi)) {
@@ -346,15 +382,15 @@ generate_moon_latlong = function(
 			vz = sum(sample_dir_vec * z_hat) # == dot
 
 			# Inverse rectilinear mapping (square FOV 2*r):
-			u_px = 201 + 200 * (vx / (tan_r * vz))
-			v_px = 201 + 200 * (vy / (tan_r * vz))
+			u_px = center_dim + half_dim * (vx / (tan_r * vz))
+			v_px = center_dim + half_dim * (vy / (tan_r * vz))
 
-			u_i = rayrender:::clamp(round(u_px), 1, 401)
-			v_i = rayrender:::clamp(round(v_px), 1, 401)
+			u_i = rayrender:::clamp(round(u_px), 1, resize_moon_dim)
+			v_i = rayrender:::clamp(round(v_px), 1, resize_moon_dim)
 
-			moon_array[j, i, 1] = moon_luminance_array[v_i, u_i, 1]
-			moon_array[j, i, 2] = moon_luminance_array[v_i, u_i, 2]
-			moon_array[j, i, 3] = moon_luminance_array[v_i, u_i, 3]
+			moon_array[j, i, 1] = resized_moon_luminance_array[v_i, u_i, 1]
+			moon_array[j, i, 2] = resized_moon_luminance_array[v_i, u_i, 2]
+			moon_array[j, i, 3] = resized_moon_luminance_array[v_i, u_i, 3]
 		}
 	}
 
@@ -363,30 +399,53 @@ generate_moon_latlong = function(
 	thetas = seq(pi / 2, -pi / 2, length.out = nTheta) # you already have this
 	domega_row = dphi * dtheta * cos(thetas) # cos(latitude) = sin(colatitude)
 	domega = matrix(domega_row, nrow = nTheta, ncol = nPhi, byrow = FALSE)
-
-	# Photopic luminance (same weights as rayimage::render_bw default):
-	Y_env = 0.2126 *
-		moon_array[,, 1] +
-		0.7152 * moon_array[,, 2] +
-		0.0722 * moon_array[,, 3]
-
-	E_current = sum(Y_env[disk_mask] * domega[disk_mask])
-
-	scale_disk = if (is.finite(E_current) && E_current > 0) {
-		moon_lux / E_current
+	omega_disk = sum(domega[disk_mask])
+	if (is.finite(omega_disk) && omega_disk > 0) {
+		texture_sum = moon_array[,, 1] + moon_array[,, 2] + moon_array[,, 3]
+		texture_mean_env = sum(
+			texture_sum[disk_mask] * domega[disk_mask],
+			na.rm = TRUE
+		) /
+			omega_disk
+		if (is.finite(texture_mean_env) && texture_mean_env > 0) {
+			moon_array[,, 1][disk_mask] = moon_array[,, 1][disk_mask] /
+				texture_mean_env
+			moon_array[,, 2][disk_mask] = moon_array[,, 2][disk_mask] /
+				texture_mean_env
+			moon_array[,, 3][disk_mask] = moon_array[,, 3][disk_mask] /
+				texture_mean_env
+		}
+	}
+	omega_moon = moon_solid_angle_sr(moon_angular_diameter_deg)
+	omega_used = if (is.finite(omega_disk) && omega_disk > 0) {
+		omega_disk
+	} else {
+		omega_moon
+	}
+	L_e = if (is.finite(omega_used) && omega_used > 0) {
+		moon_irradiance / omega_used
 	} else {
 		0
 	}
-	if (scale_disk > 0) {
-		moon_array[,, 1][disk_mask] = moon_array[,, 1][disk_mask] * scale_disk
-		moon_array[,, 2][disk_mask] = moon_array[,, 2][disk_mask] * scale_disk
-		moon_array[,, 3][disk_mask] = moon_array[,, 3][disk_mask] * scale_disk
+	if (L_e > 0) {
+		moon_array[,, 1][disk_mask] = moon_array[,, 1][disk_mask] * L_e
+		moon_array[,, 2][disk_mask] = moon_array[,, 2][disk_mask] * L_e
+		moon_array[,, 3][disk_mask] = moon_array[,, 3][disk_mask] * L_e
+	}
+	moon_band = attr(moon_array, "L_band")
+	if (is.null(moon_band)) {
+		moon_band = moon_array[,, 1] + moon_array[,, 2] + moon_array[,, 3]
+	} else if (any(disk_mask)) {
+		moon_band[disk_mask] = moon_array[,, 1][disk_mask] +
+			moon_array[,, 2][disk_mask] +
+			moon_array[,, 3][disk_mask]
 	}
 	moon_array = rayimage::ray_read_image(
 		moon_array,
 		assume_white = "D65",
 		assume_colorspace = rayimage::CS_SRGB
 	)
+	attr(moon_array, "L_band") = moon_band
 	if (!is.na(filename)) {
 		warn_precision_loss(filename)
 		rayimage::ray_write_image(moon_array, filename, clamp = FALSE)

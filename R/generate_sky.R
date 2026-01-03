@@ -197,21 +197,29 @@ generate_sky = function(
 		lambda_nm = lambda_values,
 		below_horizon = below_horizon
 	)
+	band = attr(generated_rgb, "L_band")
 
 	generated_sky = array(0, dim = c(resolution, resolution * 2, 4))
 	generated_sky[,, 1:3] = generated_rgb
 	generated_sky[,, 4] = 1
+	if (!is.null(band)) {
+		attr(generated_sky, "L_band") = band
+	}
 
 	if (!is.na(filename)) {
 		warn_precision_loss(filename)
 		rayimage::ray_write_image(generated_sky, filename)
 		return(invisible(generated_sky))
 	} else {
-		return(rayimage::ray_read_image(
+		converted = rayimage::ray_read_image(
 			generated_sky,
 			assume_white = "D65",
 			assume_colorspace = rayimage::CS_SRGB
-		))
+		)
+		if (!is.null(band)) {
+			attr(converted, "L_band") = band
+		}
+		return(converted)
 	}
 }
 
@@ -379,7 +387,12 @@ generate_sky_latlong = function(
 			verbose = verbose,
 			...
 		)
+		sky_band = attr(sky_array, "L_band")
+		moon_band = attr(moon_array, "L_band")
 		sky_array = sky_array + moon_array
+		if (!is.null(sky_band) && !is.null(moon_band)) {
+			attr(sky_array, "L_band") = sky_band + moon_band
+		}
 	}
 	if (stars) {
 		stars_array = generate_stars(

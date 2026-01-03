@@ -4,7 +4,7 @@ PKG_CPPFLAGS = -I@OPENEXR_INCLUDE_DIR@ -I@IMATH_INCLUDE_DIR@ -I@DEFLATE_INCLUDE_
 AR_SOURCES=ArHosekSkyModel/ArHosekSkyModel.cpp 
 HOSEK_SOURCES=hosek/hosek.cpp hosek/cie.cpp hosek/atmosphere.cpp 
 PRAGUE_SOURCES=PragueSkyModel/PragueSkyModel.cpp
-SRC_SOURCES=makesky.cpp stars.cpp RcppExports.cpp
+SRC_SOURCES=makesky.cpp radiometry.cpp stars.cpp RcppExports.cpp
 
 AR_OBJECTS=$(AR_SOURCES:.cpp=.o)
 HOSEK_OBJECTS=$(HOSEK_SOURCES:.cpp=.o)
@@ -16,4 +16,3 @@ OBJECTS= $(SRC_OBJECTS) $(AR_OBJECTS) $(HOSEK_OBJECTS) $(PRAGUE_OBJECTS)
 # Static libraries we need to link against
 # Note that we're using the version suffix pattern that OpenEXR actually creates
 PKG_LIBS = -L@OPENEXR_LIB_ARCH@  -lOpenEXRUtil-3_4 -lOpenEXR-3_4 -lOpenEXRCore-3_4 -lIlmThread-3_4 -lIex-3_4 -L@IMATH_LIB_ARCH@  -lImath-3_2 -L@DEFLATE_LIB_ARCH@ -ldeflate
-

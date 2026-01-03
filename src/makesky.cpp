@@ -248,6 +248,7 @@ Rcpp::NumericVector makesky_rcpp(
   const int nTheta = resolution;          // rows  (latitude)
   const int nPhi   = 2 * resolution;      // cols  (longitude)
   std::vector<double> img(3 * nTheta * nPhi, 0.0);
+  std::vector<double> img_band(nTheta * nPhi, 0.0);
 
   //   Vec3<double> sun_dir(0.0, std::sin(elev_rad), std::cos(elev_rad));
   Vec3<double> sun_dir(std::cos(az_rad) * std::cos(elev_rad),  // +X (South)
@@ -273,6 +274,7 @@ Rcpp::NumericVector makesky_rcpp(
                        std::sin(phi) * std::sin(theta));
 
 		double X = 0.0, Y = 0.0, Z = 0.0;
+        double L_band = 0.0;
         const bool view_above_horizon = theta <= M_PI_2;
 
         if (model == "hosek") {
@@ -285,9 +287,11 @@ Rcpp::NumericVector makesky_rcpp(
 				  arhosekskymodel_radiance      (hosek, theta, gamma, lam);
 			// Accumulate XYZ
             double Li = static_cast<double>(L);
-            X += Li * cie_samples[c].x * lambda_weights[c];
-            Y += Li * cie_samples[c].y * lambda_weights[c];
-            Z += Li * cie_samples[c].z * lambda_weights[c];
+            const double d_lambda = lambda_weights[c];
+            X += Li * cie_samples[c].x * d_lambda;
+            Y += Li * cie_samples[c].y * d_lambda;
+            Z += Li * cie_samples[c].z * d_lambda;
+            L_band += Li * d_lambda;
           }
         } else {
         // Prague uses Z-up vector
@@ -306,9 +310,11 @@ Rcpp::NumericVector makesky_rcpp(
           for (size_t i = 0; i < N_LAMBDA; ++i) {
             double Li = prague_model.skyRadiance(P, lambda_values[i]);
             if (render_solar_disk && view_above_horizon) Li += prague_model.sunRadiance(P, lambda_values[i]);
-            X += Li * cie_samples[i].x * lambda_weights[i];
-            Y += Li * cie_samples[i].y * lambda_weights[i];
-            Z += Li * cie_samples[i].z * lambda_weights[i];
+            const double d_lambda = lambda_weights[i];
+            X += Li * cie_samples[i].x * d_lambda;
+            Y += Li * cie_samples[i].y * d_lambda;
+            Z += Li * cie_samples[i].z * d_lambda;
+            L_band += Li * d_lambda;
           }
         }
 		if (!std::isfinite(X) || !std::isfinite(Y) || !std::isfinite(Z)) {
@@ -330,6 +336,7 @@ Rcpp::NumericVector makesky_rcpp(
         img[idx + 0] = R;
         img[idx + 1] = G;
         img[idx + 2] = B;
+        img_band[int(t) * nPhi + p] = L_band;
       }
     },
     numbercores);
@@ -354,6 +361,16 @@ Rcpp::NumericVector makesky_rcpp(
         }
       }
     }
+
+  Rcpp::NumericVector band(nPix);
+  band.attr("dim") = Rcpp::IntegerVector::create(height, width);
+  for (int t = 0; t < height; ++t) {
+    for (int p = 0; p < width; ++p) {
+      const int pix_index = t * width + p;
+      band[pix_index] = img_band[pix_index];
+    }
+  }
+  result.attr("L_band") = band;
 
   return result;
 }
@@ -474,7 +491,8 @@ double calculate_sun_brightness_rcpp(
     for (size_t c = 0; c < N_LAMBDA; ++c) {
       const double lam = lambda_values[c];
       const double L = arhosekskymodel_solar_radiance(hosek, theta, gamma, lam);
-      Y += L * cie_y_samples[c] * lambda_weights[c];
+      const double d_lambda = lambda_weights[c];
+      Y += L * cie_y_samples[c] * d_lambda;
     }
     arhosekskymodelstate_free(hosek);
   } else {
@@ -497,7 +515,8 @@ double calculate_sun_brightness_rcpp(
 
     for (size_t i = 0; i < N_LAMBDA; ++i) {
       const double Li = prague_model.sunRadiance(P, lambda_values[i]);
-      Y += Li * cie_y_samples[i] * lambda_weights[i];
+      const double d_lambda = lambda_weights[i];
+      Y += Li * cie_y_samples[i] * d_lambda;
     }
   }
 
@@ -506,6 +525,144 @@ double calculate_sun_brightness_rcpp(
   }
 
   return Y;
+}
+
+// [[Rcpp::export]]
+double calculate_sun_radiance_band_rcpp(
+    double      albedo       = 0.5,
+    double      turbidity    = 3.0,
+    double      elevation    = 10.0,
+    double      azimuth_deg  = 90.0,
+    std::string model        = "hosek",
+    std::string prg_dataset  = "",
+    double      altitude     = 0.0,
+    double      visibility   = 50.0,
+    Rcpp::Nullable<Rcpp::NumericVector> lambda_nm = R_NilValue
+) {
+  if (albedo < 0.0 || albedo > 1.0) {
+    Rcpp::stop("albedo must be in [0,1]");
+  }
+
+  const double elev_rad = elevation * M_PI / 180.0;
+  const double az_rad = azimuth_deg * M_PI / 180.0;
+
+  // Prague model initialisation
+  PragueSkyModel::AvailableData avail{};
+  if (model == "prague") {
+    if (prg_dataset.empty()) {
+      Rcpp::stop("prg_dataset must be supplied when model=\"prague\"");
+    }
+
+    if (prague_loaded_file != prg_dataset) {
+      prague_model.initialize(prg_dataset);
+      prague_loaded_file = prg_dataset;
+    }
+    avail = prague_model.getAvailableData();
+    if (albedo < avail.albedoMin || albedo > avail.albedoMax ||
+        visibility < avail.visibilityMin || visibility > avail.visibilityMax) {
+      Rcpp::stop("albedo or visibility outside dataset range");
+    }
+  } else if (model != "hosek") {
+    Rcpp::stop("unknown model \"%s\"", model.c_str());
+  }
+
+  // Spectral sampling setup
+  std::vector<double> lambda_values;
+  std::vector<double> lambda_weights;
+
+  if (model == "prague") {
+    lambda_values.reserve(avail.channels);
+    for (int i = 0; i < avail.channels; ++i) {
+      const double lam = avail.channelStart + (i + 0.5) * avail.channelWidth;
+      if (lam >= 380.0 && lam <= 740.0) {
+        lambda_values.push_back(lam);
+      }
+    }
+    if (lambda_values.empty()) {
+      Rcpp::stop("No Prague spectral channels fall within [380, 740] nm.");
+    }
+    lambda_weights.assign(lambda_values.size(), avail.channelWidth);
+  } else {
+    const auto &default_values = default_lambda_low();
+
+    if (lambda_nm.isNull()) {
+      lambda_values.assign(default_values.begin(), default_values.end());
+    } else {
+      Rcpp::NumericVector lambda_vec(lambda_nm.get());
+      if (lambda_vec.size() == 0) {
+        lambda_values.assign(default_values.begin(), default_values.end());
+      } else {
+        lambda_values.assign(lambda_vec.begin(), lambda_vec.end());
+      }
+    }
+
+    if (lambda_values.size() < 2) {
+      Rcpp::stop("lambda_nm must contain at least two wavelengths");
+    }
+    for (size_t i = 1; i < lambda_values.size(); ++i) {
+      if (!(lambda_values[i] > lambda_values[i - 1])) {
+        Rcpp::stop("lambda_nm must be strictly increasing");
+      }
+    }
+
+    lambda_weights = trapezoid_weights(lambda_values);
+  }
+
+  const size_t N_LAMBDA = lambda_values.size();
+  double L_band = 0.0;
+
+  if (model == "hosek") {
+    if (elevation < 0.0 || elevation > 90.0) {
+      Rcpp::stop("elevation must be in [0,90]");
+    }
+    if (turbidity < 1.7 || turbidity > 10.0) {
+      Rcpp::stop("turbidity must be in [1.7,10]");
+    }
+
+    ArHosekSkyModelState *hosek = arhosekskymodelstate_alloc_init(
+      elev_rad, turbidity, albedo);
+    if (!hosek) {
+      Rcpp::stop("Hosek–Wilkie initialisation failed");
+    }
+
+    const double theta = M_PI_2 - elev_rad;
+    const double gamma = 0.0;
+    for (size_t c = 0; c < N_LAMBDA; ++c) {
+      const double lam = lambda_values[c];
+      const double L = arhosekskymodel_solar_radiance(hosek, theta, gamma, lam);
+      const double d_lambda = lambda_weights[c];
+      L_band += L * d_lambda;
+    }
+    arhosekskymodelstate_free(hosek);
+  } else {
+    if (elevation < -4.2 || elevation > 90.0) {
+      Rcpp::stop("elevation must be in [-4.2, 90]");
+    }
+
+    Vec3<double> sun_dir(std::cos(az_rad) * std::cos(elev_rad),
+                         std::sin(az_rad) * std::cos(elev_rad),
+                         std::sin(elev_rad));
+    auto P = prague_model.computeParameters(
+      { 0.0, 0.0, altitude },
+      toPrague(sun_dir),
+      elev_rad,
+      az_rad,
+      visibility,
+      albedo
+    );
+
+    for (size_t i = 0; i < N_LAMBDA; ++i) {
+      const double Li = prague_model.sunRadiance(P, lambda_values[i]);
+      const double d_lambda = lambda_weights[i];
+      L_band += Li * d_lambda;
+    }
+  }
+
+  if (!std::isfinite(L_band)) {
+    L_band = 0.0;
+  }
+
+  return L_band;
 }
 
 // [[Rcpp::export]]
@@ -555,6 +712,7 @@ Rcpp::NumericMatrix calculate_raw_prague(Rcpp::NumericVector phi,
 
   // Initialize image buffer
   std::vector<double> img(3 * phi.size(), 0.0);
+  std::vector<double> band(phi.size(), 0.0);
 
   // Render loop (parallel over rows)
   RcppThread::parallelFor(
@@ -580,14 +738,17 @@ Rcpp::NumericMatrix calculate_raw_prague(Rcpp::NumericVector phi,
         /*visibility*/  visibility[t],
         /*albedo   */   albedo[t]);
         double X = 0.0, Y = 0.0, Z = 0.0;
+        double L_band = 0.0;
         const bool view_above_horizon = theta_rad <= M_PI_2;
         for (size_t c = 0; c < N_LAMBDA; ++c) {
           const double lam = lambda_values[c];
           double Li = prague_model.skyRadiance(P, lam);
           if (render_solar_disk && view_above_horizon) Li += prague_model.sunRadiance(P, lam);
-          X += Li * cie_samples[c].x * lambda_weights[c];
-          Y += Li * cie_samples[c].y * lambda_weights[c];
-          Z += Li * cie_samples[c].z * lambda_weights[c];
+          const double d_lambda = lambda_weights[c];
+          X += Li * cie_samples[c].x * d_lambda;
+          Y += Li * cie_samples[c].y * d_lambda;
+          Z += Li * cie_samples[c].z * d_lambda;
+          L_band += Li * d_lambda;
         }
         if (!std::isfinite(X) || !std::isfinite(Y) || !std::isfinite(Z)) {
           X = 0.0;
@@ -604,6 +765,7 @@ Rcpp::NumericMatrix calculate_raw_prague(Rcpp::NumericVector phi,
 		img[3 * t + 0] = R;
 		img[3 * t + 1] = G;
 		img[3 * t + 2] = B;
+        band[t] = L_band;
     },
     numbercores);
 
@@ -613,5 +775,7 @@ Rcpp::NumericMatrix calculate_raw_prague(Rcpp::NumericVector phi,
     rgb(p,1) = img[3*p + 1];
     rgb(p,2) = img[3*p + 2];
   }
+  Rcpp::NumericVector band_vals(band.begin(), band.end());
+  rgb.attr("L_band") = band_vals;
   return(rgb);
 }

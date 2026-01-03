@@ -350,35 +350,6 @@ build_from_z = function(x) {
 	return(matrix(c(xx, yy, zz), ncol = 3, byrow = FALSE))
 }
 
-sun_solid_angle_sr = function(diameter_deg = 0.533) {
-	r = (diameter_deg * 0.5) * pi / 180
-	2 * pi * (1 - cos(r))
-}
-
-# Prague direct-beam illuminance (lux) corresponding to 1 "unit" of Prague sun radiance
-prague_unit_direct_lux = function(
-	elevation_deg,
-	azimuth_deg,
-	albedo,
-	visibility,
-	altitude,
-	prg_dataset,
-	sun_diameter_deg = 0.533
-) {
-	# returns Y accumulated from prague_model.sunRadiance(...) over channels :contentReference[oaicite:4]{index=4}
-	Y_unit = calculate_sun_brightness_rcpp(
-		albedo = albedo,
-		elevation = elevation_deg,
-		azimuth_deg = azimuth_deg,
-		model = "prague",
-		prg_dataset = prg_dataset,
-		altitude = altitude,
-		visibility = visibility
-	)
-	683 * Y_unit * sun_solid_angle_sr(sun_diameter_deg)
-}
-
-
 #' Generate the moon into a lat-long image array patch
 #'
 #' @description Produce a rasterised moon texture aligned for composition into

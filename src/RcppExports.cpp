@@ -53,6 +53,25 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// calculate_sun_radiance_band_rcpp
+double calculate_sun_radiance_band_rcpp(double albedo, double turbidity, double elevation, double azimuth_deg, std::string model, std::string prg_dataset, double altitude, double visibility, Rcpp::Nullable<Rcpp::NumericVector> lambda_nm);
+RcppExport SEXP _skymodelr_calculate_sun_radiance_band_rcpp(SEXP albedoSEXP, SEXP turbiditySEXP, SEXP elevationSEXP, SEXP azimuth_degSEXP, SEXP modelSEXP, SEXP prg_datasetSEXP, SEXP altitudeSEXP, SEXP visibilitySEXP, SEXP lambda_nmSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< double >::type albedo(albedoSEXP);
+    Rcpp::traits::input_parameter< double >::type turbidity(turbiditySEXP);
+    Rcpp::traits::input_parameter< double >::type elevation(elevationSEXP);
+    Rcpp::traits::input_parameter< double >::type azimuth_deg(azimuth_degSEXP);
+    Rcpp::traits::input_parameter< std::string >::type model(modelSEXP);
+    Rcpp::traits::input_parameter< std::string >::type prg_dataset(prg_datasetSEXP);
+    Rcpp::traits::input_parameter< double >::type altitude(altitudeSEXP);
+    Rcpp::traits::input_parameter< double >::type visibility(visibilitySEXP);
+    Rcpp::traits::input_parameter< Rcpp::Nullable<Rcpp::NumericVector> >::type lambda_nm(lambda_nmSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_sun_radiance_band_rcpp(albedo, turbidity, elevation, azimuth_deg, model, prg_dataset, altitude, visibility, lambda_nm));
+    return rcpp_result_gen;
+END_RCPP
+}
 // calculate_raw_prague
 Rcpp::NumericMatrix calculate_raw_prague(Rcpp::NumericVector phi, Rcpp::NumericVector theta, Rcpp::NumericVector elevation, Rcpp::NumericVector albedo, Rcpp::NumericVector altitude, Rcpp::NumericVector visibility, Rcpp::NumericVector azimuth, unsigned int numbercores, std::string prg_dataset, bool render_solar_disk);
 RcppExport SEXP _skymodelr_calculate_raw_prague(SEXP phiSEXP, SEXP thetaSEXP, SEXP elevationSEXP, SEXP albedoSEXP, SEXP altitudeSEXP, SEXP visibilitySEXP, SEXP azimuthSEXP, SEXP numbercoresSEXP, SEXP prg_datasetSEXP, SEXP render_solar_diskSEXP) {
@@ -70,6 +89,28 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< std::string >::type prg_dataset(prg_datasetSEXP);
     Rcpp::traits::input_parameter< bool >::type render_solar_disk(render_solar_diskSEXP);
     rcpp_result_gen = Rcpp::wrap(calculate_raw_prague(phi, theta, elevation, albedo, altitude, visibility, azimuth, numbercores, prg_dataset, render_solar_disk));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cie_1931_2deg_rcpp
+Rcpp::List cie_1931_2deg_rcpp();
+RcppExport SEXP _skymodelr_cie_1931_2deg_rcpp() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(cie_1931_2deg_rcpp());
+    return rcpp_result_gen;
+END_RCPP
+}
+// spd_values_rcpp
+Rcpp::NumericVector spd_values_rcpp(Rcpp::NumericVector lambda_nm, std::string spd_type);
+RcppExport SEXP _skymodelr_spd_values_rcpp(SEXP lambda_nmSEXP, SEXP spd_typeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type lambda_nm(lambda_nmSEXP);
+    Rcpp::traits::input_parameter< std::string >::type spd_type(spd_typeSEXP);
+    rcpp_result_gen = Rcpp::wrap(spd_values_rcpp(lambda_nm, spd_type));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -101,7 +142,10 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_skymodelr_makesky_rcpp", (DL_FUNC) &_skymodelr_makesky_rcpp, 13},
     {"_skymodelr_calculate_sun_brightness_rcpp", (DL_FUNC) &_skymodelr_calculate_sun_brightness_rcpp, 9},
+    {"_skymodelr_calculate_sun_radiance_band_rcpp", (DL_FUNC) &_skymodelr_calculate_sun_radiance_band_rcpp, 9},
     {"_skymodelr_calculate_raw_prague", (DL_FUNC) &_skymodelr_calculate_raw_prague, 10},
+    {"_skymodelr_cie_1931_2deg_rcpp", (DL_FUNC) &_skymodelr_cie_1931_2deg_rcpp, 0},
+    {"_skymodelr_spd_values_rcpp", (DL_FUNC) &_skymodelr_spd_values_rcpp, 2},
     {"_skymodelr_make_starfield_rcpp", (DL_FUNC) &_skymodelr_make_starfield_rcpp, 14},
     {NULL, NULL, 0}
 };

@@ -9,10 +9,23 @@ calculate_sun_brightness_rcpp <- function(albedo = 0.5, turbidity = 3.0, elevati
     .Call(`_skymodelr_calculate_sun_brightness_rcpp`, albedo, turbidity, elevation, azimuth_deg, model, prg_dataset, altitude, visibility, lambda_nm)
 }
 
+calculate_sun_radiance_band_rcpp <- function(albedo = 0.5, turbidity = 3.0, elevation = 10.0, azimuth_deg = 90.0, model = "hosek", prg_dataset = "", altitude = 0.0, visibility = 50.0, lambda_nm = NULL) {
+    .Call(`_skymodelr_calculate_sun_radiance_band_rcpp`, albedo, turbidity, elevation, azimuth_deg, model, prg_dataset, altitude, visibility, lambda_nm)
+}
+
 calculate_raw_prague <- function(phi, theta, elevation, albedo, altitude, visibility, azimuth, numbercores = 1L, prg_dataset = "", render_solar_disk = TRUE) {
     .Call(`_skymodelr_calculate_raw_prague`, phi, theta, elevation, albedo, altitude, visibility, azimuth, numbercores, prg_dataset, render_solar_disk)
+}
+
+cie_1931_2deg_rcpp <- function() {
+    .Call(`_skymodelr_cie_1931_2deg_rcpp`)
+}
+
+spd_values_rcpp <- function(lambda_nm, spd_type = "D65") {
+    .Call(`_skymodelr_spd_values_rcpp`, lambda_nm, spd_type)
 }
 
 make_starfield_rcpp <- function(stars, resolution = 2048L, zero_point = 1.0, lon_deg = 0.0, lat_deg = 0.0, jd = 2451545.0, turbidity = 3.0, ozone_du = 300.0, altitude = 0.0, star_width = 1.0, use_rgb = TRUE, atmosphere_effects = TRUE, upper_hemisphere_only = TRUE, numbercores = 1L) {
     .Call(`_skymodelr_make_starfield_rcpp`, stars, resolution, zero_point, lon_deg, lat_deg, jd, turbidity, ozone_du, altitude, star_width, use_rgb, atmosphere_effects, upper_hemisphere_only, numbercores)
 }
+
