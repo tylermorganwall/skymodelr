@@ -252,7 +252,8 @@ generate_moon_latlong = function(
 			altitude = altitude,
 			visibility = visibility,
 			lambda_nm = if (hosek) lambda_values else NULL
-		) * sun_solid_angle_sr(0.533)
+		) *
+			sun_solid_angle_sr(0.533)
 		scale_prague_to_moon = if (is.finite(E_unit) && E_unit > 0) {
 			moon_irradiance / E_unit
 		} else {
@@ -284,10 +285,10 @@ generate_moon_latlong = function(
 	if (resize_moon_dim %% 2 == 0) {
 		resize_moon_dim = resize_moon_dim + 1
 	}
-
 	resized_moon_luminance_array = rayimage::render_resized(
 		moon_luminance_array,
-		dims = c(resize_moon_dim, resize_moon_dim)
+		dims = c(resize_moon_dim, resize_moon_dim),
+		method = "bilinear"
 	)
 	patch_mask = resized_moon_luminance_array[,, 4] > 0
 	if (!any(patch_mask)) {
