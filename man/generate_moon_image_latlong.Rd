@@ -9,8 +9,8 @@ generate_moon_image_latlong(
   lat,
   lon,
   elev_m = 0,
-  width = 400,
-  height = 400,
+  width = 800,
+  height = 800,
   earthshine = TRUE,
   verbose = FALSE
 )

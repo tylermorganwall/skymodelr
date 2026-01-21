@@ -128,7 +128,7 @@ generate_moon_latlong = function(
 					azimuth = moon_azimuth,
 					numbercores = numbercores,
 					wide_spectrum = wide_spectrum,
-					solar_disk = TRUE
+					render_mode = "all"
 				)
 			},
 			error = function(e) {
@@ -160,8 +160,8 @@ generate_moon_latlong = function(
 		lat,
 		lon,
 		altitude,
-		width = 401,
-		height = 401,
+		width = 801,
+		height = 801,
 		earthshine = earthshine
 	)
 	moon_luminance_array = moon_info_list$moon_luminance_array
@@ -238,7 +238,7 @@ generate_moon_latlong = function(
 			wide_spectrum = wide_spectrum,
 			visibility = visibility,
 			verbose = verbose,
-			render_solar_disk = FALSE
+			render_mode = "atmosphere"
 		)
 		lambda_values = seq(360, 720, by = 40)
 		model = if (hosek) "hosek" else "prague"
@@ -259,6 +259,12 @@ generate_moon_latlong = function(
 		} else {
 			0
 		}
+		moon_luminance_array[,, 1:3] = sweep(
+			moon_luminance_array[,, 1:3] * scale_prague_to_moon,
+			3,
+			sun_rgb_ratio,
+			"*"
+		)
 		# Apply radiometric scaling and atmospheric tint
 		moon_array[,, 1:3] = sweep(
 			moon_array[,, 1:3] * scale_prague_to_moon,
@@ -288,11 +294,29 @@ generate_moon_latlong = function(
 	resized_moon_luminance_array = rayimage::render_resized(
 		moon_luminance_array,
 		dims = c(resize_moon_dim, resize_moon_dim),
-		method = "bilinear"
+		method = "box"
 	)
 	patch_mask = resized_moon_luminance_array[,, 4] > 0
 	if (!any(patch_mask)) {
 		patch_mask[,] = TRUE
+	}
+	alpha_mask = resized_moon_luminance_array[,, 4] > 0
+	if (any(alpha_mask)) {
+		alpha_inds = which(alpha_mask, arr.ind = TRUE)
+		min_row = min(alpha_inds[, 1])
+		max_row = max(alpha_inds[, 1])
+		min_col = min(alpha_inds[, 2])
+		max_col = max(alpha_inds[, 2])
+		center_x = (min_col + max_col) / 2
+		center_y = (min_row + max_row) / 2
+		radius_x = max(1, (max_col - min_col + 1) / 2)
+		radius_y = max(1, (max_row - min_row + 1) / 2)
+	} else {
+		half_dim = (resize_moon_dim - 1) / 2
+		center_x = half_dim + 1
+		center_y = half_dim + 1
+		radius_x = half_dim
+		radius_y = half_dim
 	}
 	rgb_target = rgb_unit * sun_rgb_ratio
 	if (sum(rgb_target) > 0) {
@@ -357,8 +381,6 @@ generate_moon_latlong = function(
 	n_hat = n_hat / sqrt(sum(n_hat * n_hat)) # local north
 
 	tan_r = tan(r) # r = moon_angular_diameter_rad/2
-	half_dim = (resize_moon_dim - 1) / 2
-	center_dim = half_dim + 1
 
 	for (j in seq(j_min, j_max)) {
 		for (i in seq_len(nPhi)) {
@@ -383,8 +405,8 @@ generate_moon_latlong = function(
 			vz = sum(sample_dir_vec * z_hat) # == dot
 
 			# Inverse rectilinear mapping (square FOV 2*r):
-			u_px = center_dim + half_dim * (vx / (tan_r * vz))
-			v_px = center_dim + half_dim * (vy / (tan_r * vz))
+			u_px = center_x + radius_x * (vx / (tan_r * vz))
+			v_px = center_y + radius_y * (vy / (tan_r * vz))
 
 			u_i = rayrender:::clamp(round(u_px), 1, resize_moon_dim)
 			v_i = rayrender:::clamp(round(v_px), 1, resize_moon_dim)

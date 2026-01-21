@@ -5,10 +5,101 @@
 #include <algorithm>
 #include <mutex>
 #include <cmath>
+#include <vector>
 
-inline double mag_to_luminance(double Vmagnitude,
-                               double zeroPoint = 1.0) {
+#include "CIE1931Data.h"
+
+// Photometric illuminance (lux) from V-band magnitude.
+inline double mag_to_illuminance_lux(double Vmagnitude,
+                                     double zeroPoint = 1.0) {
   return zeroPoint * std::pow(10.0, (-14.18 - Vmagnitude)/2.5);
+}
+
+static inline double bv_to_temperature_K(double bv) {
+  if (!std::isfinite(bv)) return 5778.0;
+  const double bv_clamped = std::clamp(bv, -0.4, 2.0);
+  const double t = 4600.0 * (1.0 / (0.92 * bv_clamped + 1.7) +
+                             1.0 / (0.92 * bv_clamped + 0.62));
+  return std::clamp(t, 1000.0, 40000.0);
+}
+
+static inline double blackbody_spd(double lambda_nm, double temperature_k) {
+  const double lambda_m = lambda_nm * 1e-9;
+  const double c2 = 1.4387769e-2; // hc/k
+  const double expo = c2 / (lambda_m * temperature_k);
+  const double denom = std::exp(expo) - 1.0;
+  if (!std::isfinite(denom) || denom <= 0.0) return 0.0;
+  return 1.0 / (std::pow(lambda_m, 5.0) * denom);
+}
+
+static inline const std::vector<double>& cie_weights() {
+  static std::vector<double> weights;
+  if (!weights.empty()) return weights;
+  weights.resize(CIE_N, 0.0);
+  for (int i = 0; i < CIE_N; ++i) {
+    if (i == 0) {
+      weights[i] = (cie_lambda_nm[i + 1] - cie_lambda_nm[i]) / 2.0;
+    } else if (i == CIE_N - 1) {
+      weights[i] = (cie_lambda_nm[i] - cie_lambda_nm[i - 1]) / 2.0;
+    } else {
+      weights[i] = (cie_lambda_nm[i + 1] - cie_lambda_nm[i - 1]) / 2.0;
+    }
+  }
+  return weights;
+}
+
+static inline void xyz_to_srgb(double X, double Y, double Z,
+                               double& R, double& G, double& B) {
+  const double M[9] = {
+     3.2404542, -1.5371385, -0.4985314,
+    -0.9692660,  1.8760108,  0.0415560,
+     0.0556434, -0.2040259,  1.0572252
+  };
+  R = M[0]*X + M[1]*Y + M[2]*Z;
+  G = M[3]*X + M[4]*Y + M[5]*Z;
+  B = M[6]*X + M[7]*Y + M[8]*Z;
+}
+
+static inline void blackbody_rgb_unit(double temperature_k,
+                                      double& K_eff,
+                                      double& R, double& G, double& B) {
+  const auto& w = cie_weights();
+  double sum_spd = 0.0;
+  double sum_v = 0.0;
+  double X = 0.0;
+  double Y = 0.0;
+  double Z = 0.0;
+  for (int i = 0; i < CIE_N; ++i) {
+    const double spd = blackbody_spd(cie_lambda_nm[i], temperature_k);
+    const double wi = w[i];
+    sum_spd += spd * wi;
+    sum_v += spd * cie_ybar[i] * wi;
+    X += spd * cie_xbar[i] * wi;
+    Y += spd * cie_ybar[i] * wi;
+    Z += spd * cie_zbar[i] * wi;
+  }
+  if (sum_spd > 0.0 && std::isfinite(sum_spd)) {
+    K_eff = 683.0 * sum_v / sum_spd;
+  } else {
+    K_eff = 0.0;
+  }
+  xyz_to_srgb(X, Y, Z, R, G, B);
+  if (!std::isfinite(R) || !std::isfinite(G) || !std::isfinite(B)) {
+    R = 0.0;
+    G = 0.0;
+    B = 0.0;
+  }
+  R = std::max(R, 0.0);
+  G = std::max(G, 0.0);
+  B = std::max(B, 0.0);
+  const double sum_rgb = R + G + B;
+  if (sum_rgb > 0.0 && std::isfinite(sum_rgb)) {
+    R /= sum_rgb;
+    G /= sum_rgb;
+    B /= sum_rgb;
+  } else {
+    R = G = B = 1.0 / 3.0;
+  }
 }
 
 
@@ -71,6 +162,11 @@ Rcpp::NumericVector make_starfield_rcpp(Rcpp::DataFrame stars,
   Rcpp::NumericVector r_vec  = stars["r"];
   Rcpp::NumericVector g_vec  = stars["g"];
   Rcpp::NumericVector b_vec  = stars["b"];
+  const bool has_bv = stars.containsElementNamed("b_v");
+  Rcpp::NumericVector bv_vec;
+  if (has_bv) {
+    bv_vec = stars["b_v"];
+  }
 
   const std::size_t   N    = ra.size();
 
@@ -206,11 +302,32 @@ Rcpp::NumericVector make_starfield_rcpp(Rcpp::DataFrame stars,
   		}
   		if (norm <= 0.0) return;
 
-  		// Star radiance in channels
-  		double  L  = mag_to_luminance(mag[i], double(zero_point));
-  		double R0 = L * r * T_r / norm;
-  		double G0 = L * g * T_g / norm;
-  		double B0 = L * b * T_b / norm;
+  		// Star radiance in channels (radiometric; RGB unit sums to 1)
+  		double temperature_k = 5778.0;
+  		if (has_bv && std::isfinite(bv_vec[i])) {
+  		  temperature_k = bv_to_temperature_K(bv_vec[i]);
+  		}
+  		double K_eff = 0.0;
+  		double r_unit = 0.0, g_unit = 0.0, b_unit = 0.0;
+  		blackbody_rgb_unit(temperature_k, K_eff, r_unit, g_unit, b_unit);
+  		if (use_rgb && (!has_bv || !std::isfinite(bv_vec[i]))) {
+  		  const double sum_rgb = r + g + b;
+  		  if (sum_rgb > 0.0 && std::isfinite(sum_rgb)) {
+  		    r_unit = r / sum_rgb;
+  		    g_unit = g / sum_rgb;
+  		    b_unit = b / sum_rgb;
+  		  }
+  		}
+  		if (!use_rgb) {
+  		  r_unit = g_unit = b_unit = 1.0 / 3.0;
+  		}
+  		if (K_eff <= 0.0 || !std::isfinite(K_eff)) return;
+  		double E_v = mag_to_illuminance_lux(mag[i], double(zero_point));
+  		double E_e = E_v / K_eff;
+  		if (E_e <= 0.0 || !std::isfinite(E_e)) return;
+  		double R0 = E_e * r_unit * T_r / norm;
+  		double G0 = E_e * g_unit * T_g / norm;
+  		double B0 = E_e * b_unit * T_b / norm;
 
   		// ----- accumulate with row locks (one lock per affected row) -----
   		for (int dy = -rad; dy <= rad; ++dy) {

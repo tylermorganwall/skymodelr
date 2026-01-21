@@ -15,3 +15,4 @@ Numeric vector length 3, normalized so sum equals 1.
 \description{
 Compute a unit RGB vector for a chosen SPD
 }
+\keyword{internal}

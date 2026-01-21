@@ -14,7 +14,7 @@ calculate_sky_values(
   azimuth = 90,
   numbercores = 1,
   wide_spectrum = FALSE,
-  solar_disk = TRUE
+  render_mode = "all"
 )
 }
 \arguments{
@@ -36,7 +36,8 @@ calculate_sky_values(
 
 \item{wide_spectrum}{Default \code{FALSE}. Whether to use the wide‑spectrum (55‑channel, polarised) coefficients.}
 
-\item{solar_disk}{Default \code{TRUE}. Whether to sample the solar disk as well.}
+\item{render_mode}{Default \code{"all"}. One of \code{"all"}, \code{"atmosphere"}, or \code{"sun"}.
+Use \code{"all"} for atmosphere + solar disk, \code{"atmosphere"} for atmospheric radiance only, or \code{"sun"} for the solar disk only.}
 }
 \value{
 3 column RGB matrix.

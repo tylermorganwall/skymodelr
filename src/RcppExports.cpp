@@ -12,8 +12,8 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // makesky_rcpp
-Rcpp::NumericVector makesky_rcpp(double albedo, double turbidity, double elevation, double azimuth_deg, unsigned int resolution, unsigned int numbercores, std::string model, std::string prg_dataset, double altitude, double visibility, bool render_solar_disk, Rcpp::Nullable<Rcpp::NumericVector> lambda_nm, bool below_horizon);
-RcppExport SEXP _skymodelr_makesky_rcpp(SEXP albedoSEXP, SEXP turbiditySEXP, SEXP elevationSEXP, SEXP azimuth_degSEXP, SEXP resolutionSEXP, SEXP numbercoresSEXP, SEXP modelSEXP, SEXP prg_datasetSEXP, SEXP altitudeSEXP, SEXP visibilitySEXP, SEXP render_solar_diskSEXP, SEXP lambda_nmSEXP, SEXP below_horizonSEXP) {
+Rcpp::NumericVector makesky_rcpp(double albedo, double turbidity, double elevation, double azimuth_deg, unsigned int resolution, unsigned int numbercores, std::string model, std::string prg_dataset, double altitude, double visibility, std::string render_mode, Rcpp::Nullable<Rcpp::NumericVector> lambda_nm, bool below_horizon);
+RcppExport SEXP _skymodelr_makesky_rcpp(SEXP albedoSEXP, SEXP turbiditySEXP, SEXP elevationSEXP, SEXP azimuth_degSEXP, SEXP resolutionSEXP, SEXP numbercoresSEXP, SEXP modelSEXP, SEXP prg_datasetSEXP, SEXP altitudeSEXP, SEXP visibilitySEXP, SEXP render_modeSEXP, SEXP lambda_nmSEXP, SEXP below_horizonSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -27,10 +27,10 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< std::string >::type prg_dataset(prg_datasetSEXP);
     Rcpp::traits::input_parameter< double >::type altitude(altitudeSEXP);
     Rcpp::traits::input_parameter< double >::type visibility(visibilitySEXP);
-    Rcpp::traits::input_parameter< bool >::type render_solar_disk(render_solar_diskSEXP);
+    Rcpp::traits::input_parameter< std::string >::type render_mode(render_modeSEXP);
     Rcpp::traits::input_parameter< Rcpp::Nullable<Rcpp::NumericVector> >::type lambda_nm(lambda_nmSEXP);
     Rcpp::traits::input_parameter< bool >::type below_horizon(below_horizonSEXP);
-    rcpp_result_gen = Rcpp::wrap(makesky_rcpp(albedo, turbidity, elevation, azimuth_deg, resolution, numbercores, model, prg_dataset, altitude, visibility, render_solar_disk, lambda_nm, below_horizon));
+    rcpp_result_gen = Rcpp::wrap(makesky_rcpp(albedo, turbidity, elevation, azimuth_deg, resolution, numbercores, model, prg_dataset, altitude, visibility, render_mode, lambda_nm, below_horizon));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -73,8 +73,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // calculate_raw_prague
-Rcpp::NumericMatrix calculate_raw_prague(Rcpp::NumericVector phi, Rcpp::NumericVector theta, Rcpp::NumericVector elevation, Rcpp::NumericVector albedo, Rcpp::NumericVector altitude, Rcpp::NumericVector visibility, Rcpp::NumericVector azimuth, unsigned int numbercores, std::string prg_dataset, bool render_solar_disk);
-RcppExport SEXP _skymodelr_calculate_raw_prague(SEXP phiSEXP, SEXP thetaSEXP, SEXP elevationSEXP, SEXP albedoSEXP, SEXP altitudeSEXP, SEXP visibilitySEXP, SEXP azimuthSEXP, SEXP numbercoresSEXP, SEXP prg_datasetSEXP, SEXP render_solar_diskSEXP) {
+Rcpp::NumericMatrix calculate_raw_prague(Rcpp::NumericVector phi, Rcpp::NumericVector theta, Rcpp::NumericVector elevation, Rcpp::NumericVector albedo, Rcpp::NumericVector altitude, Rcpp::NumericVector visibility, Rcpp::NumericVector azimuth, unsigned int numbercores, std::string prg_dataset, std::string render_mode);
+RcppExport SEXP _skymodelr_calculate_raw_prague(SEXP phiSEXP, SEXP thetaSEXP, SEXP elevationSEXP, SEXP albedoSEXP, SEXP altitudeSEXP, SEXP visibilitySEXP, SEXP azimuthSEXP, SEXP numbercoresSEXP, SEXP prg_datasetSEXP, SEXP render_modeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -87,8 +87,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type azimuth(azimuthSEXP);
     Rcpp::traits::input_parameter< unsigned int >::type numbercores(numbercoresSEXP);
     Rcpp::traits::input_parameter< std::string >::type prg_dataset(prg_datasetSEXP);
-    Rcpp::traits::input_parameter< bool >::type render_solar_disk(render_solar_diskSEXP);
-    rcpp_result_gen = Rcpp::wrap(calculate_raw_prague(phi, theta, elevation, albedo, altitude, visibility, azimuth, numbercores, prg_dataset, render_solar_disk));
+    Rcpp::traits::input_parameter< std::string >::type render_mode(render_modeSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_raw_prague(phi, theta, elevation, albedo, altitude, visibility, azimuth, numbercores, prg_dataset, render_mode));
     return rcpp_result_gen;
 END_RCPP
 }

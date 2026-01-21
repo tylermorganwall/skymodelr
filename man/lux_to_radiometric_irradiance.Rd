@@ -17,3 +17,4 @@ Irradiance in W/m^2.
 \description{
 Convert photometric illuminance to radiometric irradiance
 }
+\keyword{internal}

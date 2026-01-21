@@ -23,7 +23,7 @@ generate_sky_latlong(
   moon = FALSE,
   moon_atmosphere = FALSE,
   moon_hosek = TRUE,
-  render_solar_disk = TRUE,
+  render_mode = "all",
   below_horizon = TRUE,
   verbose = FALSE,
   ...
@@ -72,7 +72,8 @@ when the black-sky condition is met (see \emph{Details}).}
 \item{moon_hosek}{Default \code{TRUE}. Whether to use the faster (but less accurate) Hosek model for atmospheric scattering from the moon. Note
 that the light scattered from the moon is much less intense than the sun, and thus small inaccuracies are much less likely to be noticable.}
 
-\item{render_solar_disk}{Default \code{TRUE}. Whether to render the solar disk in addition to the atmosphere.}
+\item{render_mode}{Default \code{"all"}. One of \code{"all"}, \code{"atmosphere"}, or \code{"sun"}.
+Use \code{"all"} for atmosphere + solar disk, \code{"atmosphere"} for atmospheric radiance only, or \code{"sun"} for the solar disk only.}
 
 \item{below_horizon}{Default \code{TRUE}. Whether to sample atmospheric scattering below the horizon, which is non-zero when altitude > 0.}
 

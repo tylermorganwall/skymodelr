@@ -370,8 +370,8 @@ generate_moon_image_latlong = function(
 	lat,
 	lon,
 	elev_m = 0,
-	width = 400,
-	height = 400,
+	width = 800,
+	height = 800,
 	earthshine = TRUE,
 	verbose = FALSE
 ) {
@@ -454,6 +454,7 @@ generate_moon_image_latlong = function(
 		lookat = dir_moon * 10,
 		camera_up = local_up,
 		fov = 0,
+		ortho_dimensions = c(2, 2), #Double dimensions to keep edge effects away
 		light_info = rayvertex::directional_light(
 			direction = -dir_sun,
 			intensity = 1
@@ -483,6 +484,7 @@ generate_moon_image_latlong = function(
 		lookat = dir_moon * 10,
 		camera_up = local_up,
 		fov = 0,
+		ortho_dimensions = c(2, 2), #Match padding used in sun-only pass
 		light_info = rayvertex::directional_light(
 			direction = -dir_sun,
 			intensity = 1

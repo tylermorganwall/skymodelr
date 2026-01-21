@@ -23,3 +23,4 @@ Effective luminous efficacy in lm/W.
 \description{
 Compute effective luminous efficacy for a chosen SPD
 }
+\keyword{internal}

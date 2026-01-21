@@ -10,6 +10,42 @@ jd_utc = function(time_utc) {
 	unclass(time_utc) / 86400 + 2440587.5 # Unix epoch to JD
 }
 
+spec_to_bv = function(spec) {
+	if (is.na(spec) || !nzchar(spec)) {
+		return(NA_real_)
+	}
+	s = toupper(trimws(spec))
+	letter = substr(s, 1, 1)
+	base = c(O = -0.33, B = -0.30, A = 0.00, F = 0.30, G = 0.58, K = 0.81, M = 1.40)
+	if (!letter %in% names(base)) {
+		return(NA_real_)
+	}
+	digit = suppressWarnings(as.numeric(substr(s, 2, 2)))
+	if (!is.finite(digit)) {
+		digit = 0
+	}
+	digit = max(0, min(9, digit))
+	next_letter = switch(letter, O = "B", B = "A", A = "F", F = "G", G = "K", K = "M", M = NA)
+	next_base = if (!is.na(next_letter)) base[[next_letter]] else base[["M"]] + 0.35
+	b_v = base[[letter]] + (digit / 10) * (next_base - base[[letter]])
+	max(-0.4, min(2.0, b_v))
+}
+
+stars_with_bv = local({
+	cache = NULL
+	function() {
+		if (!is.null(cache)) {
+			return(cache)
+		}
+		star_df = skymodelr::stars
+		if (!("b_v" %in% names(star_df))) {
+			star_df$b_v = vapply(star_df$spec, spec_to_bv, numeric(1))
+		}
+		cache = star_df
+		cache
+	}
+})
+
 # ---------------------------------------------------------------------------
 #' Generate a star‑field array aligned with `generate_sky()`
 #'
@@ -110,7 +146,7 @@ generate_stars = function(
 	jd = jd_utc(datetime)
 
 	star_rgb = make_starfield_rcpp(
-		stars = skymodelr::stars,
+		stars = stars_with_bv(),
 		resolution = resolution,
 		lon_deg = lon,
 		lat_deg = lat,

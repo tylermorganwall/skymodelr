@@ -17,7 +17,7 @@ generate_sky(
   wide_spectrum = FALSE,
   visibility = 50,
   verbose = FALSE,
-  render_solar_disk = TRUE,
+  render_mode = "all",
   below_horizon = TRUE
 )
 }
@@ -47,7 +47,8 @@ snow will have an albedo of 1.0.}
 
 \item{verbose}{Default \code{FALSE}. Whether to print progress bars/diagnostic info.}
 
-\item{render_solar_disk}{Default \code{TRUE}. Whether to render the solar disk in addition to the atmosphere.}
+\item{render_mode}{Default \code{"all"}. One of \code{"all"}, \code{"atmosphere"}, or \code{"sun"}.
+Use \code{"all"} for atmosphere + solar disk, \code{"atmosphere"} for atmospheric radiance only, or \code{"sun"} for the solar disk only.}
 
 \item{below_horizon}{Default \code{TRUE}. Whether to sample atmospheric scattering below the horizon, which is non-zero when altitude > 0.}
 }
@@ -73,7 +74,7 @@ generate_sky(
   elevation  = 15,
   azimuth    = 135,
   turbidity  = 3,
-  render_solar_disk = TRUE
+  render_mode = "all"
 ) |>
   rayimage::plot_image()
 }
@@ -84,7 +85,7 @@ generate_sky(
   elevation  = 15,
   azimuth    = 135,
   turbidity  = 6,
-  render_solar_disk = FALSE
+  render_mode = "atmosphere"
 ) |>
   rayimage::plot_image()
 }

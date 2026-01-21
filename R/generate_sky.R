@@ -1,3 +1,12 @@
+normalize_render_mode = function(render_mode) {
+	if (is.logical(render_mode)) {
+		stopifnot(length(render_mode) == 1)
+		return(if (render_mode) "all" else "atmosphere")
+	}
+	render_mode = tolower(as.character(render_mode))
+	match.arg(render_mode, c("all", "atmosphere", "sun"))
+}
+
 #' Generate a Hosek–Wilkie sky dome array
 #'
 #' @description Evaluate either the Hosek–Wilkie or Prague analytic sky models
@@ -17,7 +26,8 @@
 #' @param wide_spectrum      Default `FALSE`. Use the 55-channel Prague coefficients (sea level only).
 #' @param visibility         Default `50`. Meteorological range in kilometres for Prague model.
 #' @param verbose            Default `FALSE`. Whether to print progress bars/diagnostic info.
-#' @param render_solar_disk  Default `TRUE`. Whether to render the solar disk in addition to the atmosphere.
+#' @param render_mode        Default `"all"`. One of `"all"`, `"atmosphere"`, or `"sun"`.
+#'   Use `"all"` for atmosphere + solar disk, `"atmosphere"` for atmospheric radiance only, or `"sun"` for the solar disk only.
 #' @param below_horizon      Default `TRUE`. Whether to sample atmospheric scattering below the horizon, which is non-zero when altitude > 0.
 #'
 #' @return Either the image array, or the array is invisibly returned if a file
@@ -34,7 +44,7 @@
 #'   elevation  = 15,
 #'   azimuth    = 135,
 #'   turbidity  = 3,
-#'   render_solar_disk = TRUE
+#'   render_mode = "all"
 #' ) |>
 #'   rayimage::plot_image()
 #' }
@@ -45,7 +55,7 @@
 #'   elevation  = 15,
 #'   azimuth    = 135,
 #'   turbidity  = 6,
-#'   render_solar_disk = FALSE
+#'   render_mode = "atmosphere"
 #' ) |>
 #'   rayimage::plot_image()
 #' }
@@ -89,9 +99,10 @@ generate_sky = function(
 	wide_spectrum = FALSE,
 	visibility = 50,
 	verbose = FALSE,
-	render_solar_disk = TRUE,
+	render_mode = "all",
 	below_horizon = TRUE
 ) {
+	render_mode = normalize_render_mode(render_mode)
 	sea_level = altitude == 0
 	filesize = ""
 	if (sea_level & !wide_spectrum) {
@@ -193,7 +204,7 @@ generate_sky = function(
 		prg_dataset = coef_file,
 		altitude = altitude,
 		visibility = visibility,
-		render_solar_disk = render_solar_disk,
+		render_mode = render_mode,
 		lambda_nm = lambda_values,
 		below_horizon = below_horizon
 	)
@@ -255,7 +266,8 @@ generate_sky = function(
 #' @param moon_atmosphere    Default `FALSE`. If `TRUE`, this generates atmospheric scattering from light from the moon.
 #' @param moon_hosek         Default `TRUE`. Whether to use the faster (but less accurate) Hosek model for atmospheric scattering from the moon. Note
 #' that the light scattered from the moon is much less intense than the sun, and thus small inaccuracies are much less likely to be noticable.
-#' @param render_solar_disk  Default `TRUE`. Whether to render the solar disk in addition to the atmosphere.
+#' @param render_mode        Default `"all"`. One of `"all"`, `"atmosphere"`, or `"sun"`.
+#'   Use `"all"` for atmosphere + solar disk, `"atmosphere"` for atmospheric radiance only, or `"sun"` for the solar disk only.
 #' @param below_horizon      Default `TRUE`. Whether to sample atmospheric scattering below the horizon, which is non-zero when altitude > 0.
 #' @param verbose            Default `FALSE`. Whether to print progress bars/diagnostic info.
 #' @param ...                Additional arguments passed to [generate_stars()] and, when enabled, [generate_planets()].
@@ -333,11 +345,12 @@ generate_sky_latlong = function(
 	moon = FALSE,
 	moon_atmosphere = FALSE,
 	moon_hosek = TRUE,
-	render_solar_disk = TRUE,
+	render_mode = "all",
 	below_horizon = TRUE,
 	verbose = FALSE,
 	...
 ) {
+	render_mode = normalize_render_mode(render_mode)
 	if (is.character(datetime)) {
 		message(
 			"Assuming timezone is UTC, pass explicit POSIXct object to set timezone."
@@ -366,7 +379,7 @@ generate_sky_latlong = function(
 		wide_spectrum = wide_spectrum,
 		visibility = visibility,
 		verbose = verbose,
-		render_solar_disk = render_solar_disk
+		render_mode = render_mode
 	)
 
 	if (moon) {
@@ -447,7 +460,8 @@ generate_sky_latlong = function(
 #' @param azimuth            Default `90`, single value. Solar azimuth (degrees). Defaults South.
 #' @param numbercores        Default `1`. Number of threads to use in computation.
 #' @param wide_spectrum      Default `FALSE`. Whether to use the wide‑spectrum (55‑channel, polarised) coefficients.
-#' @param solar_disk 		 Default `TRUE`. Whether to sample the solar disk as well.
+#' @param render_mode        Default `"all"`. One of `"all"`, `"atmosphere"`, or `"sun"`.
+#'   Use `"all"` for atmosphere + solar disk, `"atmosphere"` for atmospheric radiance only, or `"sun"` for the solar disk only.
 #'
 #' @return 3 column RGB matrix.
 #' @export
@@ -479,8 +493,9 @@ calculate_sky_values = function(
 	azimuth = 90,
 	numbercores = 1,
 	wide_spectrum = FALSE,
-	solar_disk = TRUE
+	render_mode = "all"
 ) {
+	render_mode = normalize_render_mode(render_mode)
 	sea_level = all(altitude == 0)
 	stopifnot(all(phi <= 360 & phi >= 0))
 	stopifnot(all(theta <= 90 & theta >= -90))
@@ -551,7 +566,7 @@ calculate_sky_values = function(
 		df_values$azimuth,
 		numbercores,
 		coef_file,
-		solar_disk
+		render_mode
 	)
 	colnames(vals) = c("r", "g", "b")
 	return(as.data.frame(vals))

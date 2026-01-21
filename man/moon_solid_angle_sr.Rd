@@ -15,3 +15,4 @@ Solid angle in steradians.
 \description{
 Moon disk solid angle in steradians
 }
+\keyword{internal}

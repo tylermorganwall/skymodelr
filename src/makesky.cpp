@@ -17,11 +17,48 @@ extern "C" {
 #include <string>
 #include <algorithm>
 #include <iterator>
+#include <cctype>
 
 using namespace Imath;
 
 static inline double clamp_double(double x, double a, double b)
 { return (x < a) ? a : (x > b) ? b : x; }
+
+static inline std::string normalize_render_mode(std::string mode)
+{
+  std::transform(mode.begin(), mode.end(), mode.begin(),
+                 [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+  if (mode == "true") {
+    return "all";
+  }
+  if (mode == "false") {
+    return "atmosphere";
+  }
+  return mode;
+}
+
+static inline void resolve_render_mode(const std::string& render_mode,
+                                       bool& render_atmosphere,
+                                       bool& render_sun)
+{
+  const std::string mode = normalize_render_mode(render_mode);
+  if (mode == "all") {
+    render_atmosphere = true;
+    render_sun = true;
+    return;
+  }
+  if (mode == "atmosphere") {
+    render_atmosphere = true;
+    render_sun = false;
+    return;
+  }
+  if (mode == "sun") {
+    render_atmosphere = false;
+    render_sun = true;
+    return;
+  }
+  Rcpp::stop("render_mode must be one of \"all\", \"atmosphere\", or \"sun\"");
+}
 
 // Forward conversion to Prague’s tiny Vector3 wrapper
 static inline PragueSkyModel::Vector3 toPrague(const Vec3<double>& v)
@@ -133,10 +170,14 @@ Rcpp::NumericVector makesky_rcpp(
     std::string  prg_dataset       = "",
 	double       altitude          = 0.0,
     double       visibility        = 50.0, // Prague only (km)
-    bool         render_solar_disk = true,
+    std::string  render_mode       = "all",
     Rcpp::Nullable<Rcpp::NumericVector> lambda_nm = R_NilValue,
 	bool         below_horizon     = true
 ) {
+  bool render_atmosphere = true;
+  bool render_sun = true;
+  resolve_render_mode(render_mode, render_atmosphere, render_sun);
+
   if (albedo < 0.0 || albedo > 1.0) {
     Rcpp::stop("albedo must be in [0,1]");
   }
@@ -282,9 +323,21 @@ Rcpp::NumericVector makesky_rcpp(
             clamp_double(v.dot(sun_dir), -1.0, 1.0));
           for (size_t c = 0; c < N_LAMBDA; ++c) {
 				const double lam = lambda_values[c];
-				double L = (render_solar_disk && view_above_horizon) ?
-				  arhosekskymodel_solar_radiance(hosek, theta, gamma, lam) :
-				  arhosekskymodel_radiance      (hosek, theta, gamma, lam);
+				double L = 0.0;
+				if (render_atmosphere) {
+				  if (render_sun && view_above_horizon) {
+				    L = arhosekskymodel_solar_radiance(hosek, theta, gamma, lam);
+				  } else {
+				    L = arhosekskymodel_radiance(hosek, theta, gamma, lam);
+				  }
+				} else if (render_sun && view_above_horizon) {
+				  const double L_total = arhosekskymodel_solar_radiance(hosek, theta, gamma, lam);
+				  const double L_sky = arhosekskymodel_radiance(hosek, theta, gamma, lam);
+				  L = L_total - L_sky;
+				  if (L < 0.0) {
+				    L = 0.0;
+				  }
+				}
 			// Accumulate XYZ
             double Li = static_cast<double>(L);
             const double d_lambda = lambda_weights[c];
@@ -308,8 +361,14 @@ Rcpp::NumericVector makesky_rcpp(
 		);
 
           for (size_t i = 0; i < N_LAMBDA; ++i) {
-            double Li = prague_model.skyRadiance(P, lambda_values[i]);
-            if (render_solar_disk && view_above_horizon) Li += prague_model.sunRadiance(P, lambda_values[i]);
+            double Li = 0.0;
+            if (render_atmosphere) {
+              Li = prague_model.skyRadiance(P, lambda_values[i]);
+            }
+            if (render_sun && view_above_horizon) {
+              const double sun = prague_model.sunRadiance(P, lambda_values[i]);
+              Li = render_atmosphere ? (Li + sun) : sun;
+            }
             const double d_lambda = lambda_weights[i];
             X += Li * cie_samples[i].x * d_lambda;
             Y += Li * cie_samples[i].y * d_lambda;
@@ -675,8 +734,11 @@ Rcpp::NumericMatrix calculate_raw_prague(Rcpp::NumericVector phi,
 						   Rcpp::NumericVector azimuth,
                            unsigned int numbercores       = 1,
                             std::string  prg_dataset       = "",
-                            bool render_solar_disk = true)
+                            std::string render_mode = "all")
 {
+  bool render_atmosphere = true;
+  bool render_sun = true;
+  resolve_render_mode(render_mode, render_atmosphere, render_sun);
 
   // Prague model initialisation
   if (prg_dataset.empty()) {
@@ -742,8 +804,14 @@ Rcpp::NumericMatrix calculate_raw_prague(Rcpp::NumericVector phi,
         const bool view_above_horizon = theta_rad <= M_PI_2;
         for (size_t c = 0; c < N_LAMBDA; ++c) {
           const double lam = lambda_values[c];
-          double Li = prague_model.skyRadiance(P, lam);
-          if (render_solar_disk && view_above_horizon) Li += prague_model.sunRadiance(P, lam);
+          double Li = 0.0;
+          if (render_atmosphere) {
+            Li = prague_model.skyRadiance(P, lam);
+          }
+          if (render_sun && view_above_horizon) {
+            const double sun = prague_model.sunRadiance(P, lam);
+            Li = render_atmosphere ? (Li + sun) : sun;
+          }
           const double d_lambda = lambda_weights[c];
           X += Li * cie_samples[c].x * d_lambda;
           Y += Li * cie_samples[c].y * d_lambda;
