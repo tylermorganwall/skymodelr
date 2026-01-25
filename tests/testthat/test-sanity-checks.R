@@ -143,3 +143,86 @@ test_that("moon aligns with zenith ephemeris", {
 		max(2, degrees_per_pixel * 3)
 	)
 })
+
+test_that("sun radiance does not drop at 90 deg elevation", {
+	resolution_height = 512
+	lambda_values = seq(360, 720, by = 40)
+	sky_899 = makesky_rcpp(
+		elevation = 89.9,
+		azimuth_deg = 90,
+		resolution = resolution_height,
+		numbercores = 1,
+		model = "hosek",
+		render_mode = "sun",
+		lambda_nm = lambda_values
+	)
+	sky_90 = makesky_rcpp(
+		elevation = 90,
+		azimuth_deg = 90,
+		resolution = resolution_height,
+		numbercores = 1,
+		model = "hosek",
+		render_mode = "sun",
+		lambda_nm = lambda_values
+	)
+	L_899 = attr(sky_899, "L_band")
+	L_90 = attr(sky_90, "L_band")
+	testthat::skip_if(is.null(L_899) || is.null(L_90))
+
+	max_899 = max(L_899)
+	max_90 = max(L_90)
+	testthat::expect_gt(max_899, 0)
+	testthat::expect_gt(max_90, 0)
+	testthat::expect_gt(max_90 / max_899, 0.7)
+
+	row_luminance = rowSums(sky_90[, , 2, drop = FALSE])
+	max_row = which.max(row_luminance)
+	testthat::expect_lte(max_row, 2)
+})
+
+test_that("Prague sun radiance does not drop at 90 deg elevation", {
+	coef_file = file.path(
+		tools::R_user_dir("skymodelr", "data"),
+		"SkyModelDatasetGround.dat"
+	)
+	testthat::skip_if_not(file.exists(coef_file))
+
+	resolution_height = 512
+	sky_899 = makesky_rcpp(
+		elevation = 89.9,
+		azimuth_deg = 90,
+		resolution = resolution_height,
+		numbercores = 1,
+		model = "prague",
+		prg_dataset = coef_file,
+		altitude = 0,
+		visibility = 50,
+		albedo = 0.2,
+		render_mode = "sun"
+	)
+	sky_90 = makesky_rcpp(
+		elevation = 90,
+		azimuth_deg = 90,
+		resolution = resolution_height,
+		numbercores = 1,
+		model = "prague",
+		prg_dataset = coef_file,
+		altitude = 0,
+		visibility = 50,
+		albedo = 0.2,
+		render_mode = "sun"
+	)
+	L_899 = attr(sky_899, "L_band")
+	L_90 = attr(sky_90, "L_band")
+	testthat::skip_if(is.null(L_899) || is.null(L_90))
+
+	max_899 = max(L_899)
+	max_90 = max(L_90)
+	testthat::expect_gt(max_899, 0)
+	testthat::expect_gt(max_90, 0)
+	testthat::expect_gt(max_90 / max_899, 0.7)
+
+	row_luminance = rowSums(sky_90[, , 2, drop = FALSE])
+	max_row = which.max(row_luminance)
+	testthat::expect_lte(max_row, 2)
+})

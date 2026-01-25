@@ -24,6 +24,17 @@ using namespace Imath;
 static inline double clamp_double(double x, double a, double b)
 { return (x < a) ? a : (x > b) ? b : x; }
 
+static inline double clamp_sun_elevation_deg(double elevation_deg,
+                                             double epsilon_deg = 1e-4)
+{
+  // Avoid singularities at exactly 90 deg while preserving user-facing limits.
+  const double kMaxSunElevationDeg = 90.0;
+  if (elevation_deg >= kMaxSunElevationDeg) {
+    return kMaxSunElevationDeg - epsilon_deg;
+  }
+  return elevation_deg;
+}
+
 static inline std::string normalize_render_mode(std::string mode)
 {
   std::transform(mode.begin(), mode.end(), mode.begin(),
@@ -185,7 +196,11 @@ Rcpp::NumericVector makesky_rcpp(
     Rcpp::stop("resolution must be ≥ 1");
   }
 
-  double elev_rad = elevation * M_PI / 180.0;
+  // Nudge zenith by at least half a texel to keep the sun disk sampled at 90 deg.
+  const double elev_epsilon_deg = std::max(
+    0.5 * 180.0 / static_cast<double>(resolution), 1e-4);
+  const double safe_elevation = clamp_sun_elevation_deg(elevation, elev_epsilon_deg);
+  double elev_rad = safe_elevation * M_PI / 180.0;
   double az_rad = azimuth_deg * M_PI / 180.0;
 
   // Prague model initialisation
@@ -274,7 +289,7 @@ Rcpp::NumericVector makesky_rcpp(
     if (turbidity < 1.7 || turbidity > 10.0) {
       Rcpp::stop("turbidity must be in [1.7,10]");
     }
-    hosek = arhosekskymodelstate_alloc_init(elevation * M_PI / 180.0, turbidity,
+    hosek = arhosekskymodelstate_alloc_init(elev_rad, turbidity,
                                             albedo);
     if (!hosek)
       Rcpp::stop("Hosek–Wilkie initialisation failed");
@@ -450,7 +465,8 @@ double calculate_sun_brightness_rcpp(
     Rcpp::stop("albedo must be in [0,1]");
   }
 
-  const double elev_rad = elevation * M_PI / 180.0;
+  const double safe_elevation = clamp_sun_elevation_deg(elevation);
+  const double elev_rad = safe_elevation * M_PI / 180.0;
   const double az_rad = azimuth_deg * M_PI / 180.0;
 
   // Prague model initialisation
@@ -602,7 +618,8 @@ double calculate_sun_radiance_band_rcpp(
     Rcpp::stop("albedo must be in [0,1]");
   }
 
-  const double elev_rad = elevation * M_PI / 180.0;
+  const double safe_elevation = clamp_sun_elevation_deg(elevation);
+  const double elev_rad = safe_elevation * M_PI / 180.0;
   const double az_rad = azimuth_deg * M_PI / 180.0;
 
   // Prague model initialisation
@@ -782,7 +799,8 @@ Rcpp::NumericMatrix calculate_raw_prague(Rcpp::NumericVector phi,
     [&](size_t t) {
       double theta_rad = theta[t] * M_PI/180;
       double phi_rad = phi[t] * M_PI/180;
-      double elev_rad = elevation[t] * M_PI/180;
+      const double safe_elevation = clamp_sun_elevation_deg(elevation[t]);
+      double elev_rad = safe_elevation * M_PI/180;
   	  double az_rad = azimuth[t] * M_PI / 180;
 
       if (theta_rad > M_PI_2) {
