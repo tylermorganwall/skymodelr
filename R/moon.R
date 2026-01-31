@@ -97,7 +97,7 @@ generate_moon_latlong = function(
 	}
 	moon_altitude_azimuth = suncalc::getMoonPosition(datetime, lat, lon)
 	moon_elevation = moon_altitude_azimuth$altitude * 180 / pi
-	moon_azimuth = 90 + moon_altitude_azimuth$azimuth * 180 / pi
+	moon_azimuth = moon_altitude_azimuth$azimuth * 180 / pi
 	if (moon_azimuth < 0) {
 		moon_azimuth = moon_azimuth + 360
 	}
