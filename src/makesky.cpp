@@ -82,7 +82,7 @@ static std::string     prague_loaded_file;
 static inline void xyz_to_srgb(double X, double Y, double Z,
                                double& R, double& G, double& B)
 {
-  // IEC 61966-2-1 sRGB (D65), 1931 2°
+  // IEC 61966-2-1 sRGB (D65), 1931 2
   const double M[9] = {
      3.2404542, -1.5371385, -0.4985314,
     -0.9692660,  1.8760108,  0.0415560,

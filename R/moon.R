@@ -170,7 +170,7 @@ generate_moon_latlong = function(
 
 	if (verbose) {
 		message(sprintf(
-			"Moon: %0.1f° elevation, %0.1f° azimuth, %0.3f phase, %f lux",
+			"Moon: %0.1f elevation, %0.1f azimuth, %0.3f phase, %f lux",
 			moon_elevation,
 			moon_azimuth,
 			moon_phase,
@@ -368,7 +368,7 @@ generate_moon_latlong = function(
 	cos_theta = cos(thetas)
 	sin_theta = sin(thetas)
 
-	# Tangent frame at moon center (ẑ = moon_dir_vec)
+	# Tangent frame at moon center (z = moon_dir_vec)
 	lam_c = moon_azimuth * pi / 180
 	z_hat = moon_dir_vec
 	e_hat = c(-sin(lam_c), 0, cos(lam_c))

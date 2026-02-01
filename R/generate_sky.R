@@ -7,22 +7,22 @@ normalize_render_mode = function(render_mode) {
 	match.arg(render_mode, c("all", "atmosphere", "sun"))
 }
 
-#' Generate a Hosek–Wilkie sky dome array
+#' Generate a Hosek-Wilkie sky dome array
 #'
-#' @description Evaluate either the Hosek–Wilkie or Prague analytic sky models
+#' @description Evaluate either the Hosek-Wilkie or Prague analytic sky models
 #' and return a high-dynamic-range image array for the given solar
 #' configuration. An image file is written only when `filename` is supplied.
 #'
 #' @param filename           Default `NA`. Path to an image file to write. If not given, the array is returned instead.
-#' @param albedo             Default `0.1`. 0.0–1.0 ground albedo. Grass has an albedo of about 0.09, while a landscape covered in
+#' @param albedo             Default `0.1`. 0.0-1.0 ground albedo. Grass has an albedo of about 0.09, while a landscape covered in
 #' snow will have an albedo of 1.0.
-#' @param turbidity          Default `3`. 1.7–10 atmospheric turbidity. Only valid for Hosek model.
+#' @param turbidity          Default `3`. 1.7-10 atmospheric turbidity. Only valid for Hosek model.
 #' @param elevation          Default `10`. Solar elevation above the horizon (degrees).
 #' @param azimuth            Default `90`, sun directly east. Solar azimuth (degrees). The left edge of the image faces north and the middle faces south.
 #' @param altitude           Default `0`. Altitude of the viewer in meters. Valid range: 0 to 15000. Only valid for the Prague model.
 #' @param resolution         Default `2048`. Height of the image. Width is twice this number.
 #' @param numbercores        Default `1`. Number of threads to use in computation.
-#' @param hosek              Default `TRUE`. Use `"prague"` to enable the Prague 2021–22 spectral sky model.
+#' @param hosek              Default `TRUE`. Use `"prague"` to enable the Prague 2021-22 spectral sky model.
 #' @param wide_spectrum      Default `FALSE`. Use the 55-channel Prague coefficients (sea level only).
 #' @param visibility         Default `50`. Meteorological range in kilometres for Prague model.
 #' @param verbose            Default `FALSE`. Whether to print progress bars/diagnostic info.
@@ -237,7 +237,7 @@ generate_sky = function(
 #' Generate a location and time-specific sky dome (optionally with stars)
 #'
 #' @description Convenience wrapper around [generate_sky()] that:
-#' 1. Computes the Sun’s apparent position for `datetime`, `lat`, and `lon`
+#' 1. Computes the Sun's apparent position for `datetime`, `lat`, and `lon`
 #'    (via **suncalc**).
 #' 2. Renders the corresponding sky model.
 #' 3. Optionally overlays a star field using [generate_stars()] or moon with [generate_moon_latlong()].
@@ -273,12 +273,12 @@ generate_sky = function(
 #' @param ...                Additional arguments passed to [generate_stars()] and, when enabled, [generate_planets()].
 #'
 #' @details
-#' *Solar angles* — altitude (degrees above the horizon) and azimuth (degrees clockwise from
-#' east, so 90 degrees = south) — are derived internally; you never have to supply
+#' *Solar angles* - altitude (degrees above the horizon) and azimuth (degrees clockwise from
+#' east, so 90 degrees = south) - are derived internally; you never have to supply
 #' them directly.
 #'
-#' *Black-sky rule* — With the Prague model the sky radiance is defined only
-#' down to −4.2 degrees, and with the Hosek model it is defined only about 0 degrees.
+#' *Black-sky rule* - With the Prague model the sky radiance is defined only
+#' down to -4.2 degrees, and with the Hosek model it is defined only about 0 degrees.
 #' Below that the function skips the sky render and writes **only stars** when `stars = TRUE`.
 #'
 #' @return Either the raw data, or the data is invisibly returned if filename is given. The EXR is written to `filename`.
@@ -361,7 +361,7 @@ generate_sky_latlong = function(
 	azimuth = 180 + sun_altitude_azimuth$azimuth * 180 / pi
 	if (verbose) {
 		message(sprintf(
-			"Sun: %0.1f° elevation, %0.1f° azimuth",
+			"Sun: %0.1f elevation, %0.1f azimuth",
 			elevation,
 			azimuth
 		))
@@ -459,7 +459,7 @@ generate_sky_latlong = function(
 #' @param albedo             Default `0.5`, vectorized. Range 0 to 1. Ground albedo.
 #' @param azimuth            Default `90`, single value. Solar azimuth (degrees). Defaults South.
 #' @param numbercores        Default `1`. Number of threads to use in computation.
-#' @param wide_spectrum      Default `FALSE`. Whether to use the wide‑spectrum (55‑channel, polarised) coefficients.
+#' @param wide_spectrum      Default `FALSE`. Whether to use the wide-spectrum (55-channel, polarised) coefficients.
 #' @param render_mode        Default `"all"`. One of `"all"`, `"atmosphere"`, or `"sun"`.
 #'   Use `"all"` for atmosphere + solar disk, `"atmosphere"` for atmospheric radiance only, or `"sun"` for the solar disk only.
 #'

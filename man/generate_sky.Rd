@@ -2,7 +2,7 @@
 % Please edit documentation in R/generate_sky.R
 \name{generate_sky}
 \alias{generate_sky}
-\title{Generate a Hosek–Wilkie sky dome array}
+\title{Generate a Hosek-Wilkie sky dome array}
 \usage{
 generate_sky(
   filename = NA,
@@ -24,10 +24,10 @@ generate_sky(
 \arguments{
 \item{filename}{Default \code{NA}. Path to an image file to write. If not given, the array is returned instead.}
 
-\item{albedo}{Default \code{0.1}. 0.0–1.0 ground albedo. Grass has an albedo of about 0.09, while a landscape covered in
+\item{albedo}{Default \code{0.1}. 0.0-1.0 ground albedo. Grass has an albedo of about 0.09, while a landscape covered in
 snow will have an albedo of 1.0.}
 
-\item{turbidity}{Default \code{3}. 1.7–10 atmospheric turbidity. Only valid for Hosek model.}
+\item{turbidity}{Default \code{3}. 1.7-10 atmospheric turbidity. Only valid for Hosek model.}
 
 \item{elevation}{Default \code{10}. Solar elevation above the horizon (degrees).}
 
@@ -39,7 +39,7 @@ snow will have an albedo of 1.0.}
 
 \item{numbercores}{Default \code{1}. Number of threads to use in computation.}
 
-\item{hosek}{Default \code{TRUE}. Use \code{"prague"} to enable the Prague 2021–22 spectral sky model.}
+\item{hosek}{Default \code{TRUE}. Use \code{"prague"} to enable the Prague 2021-22 spectral sky model.}
 
 \item{wide_spectrum}{Default \code{FALSE}. Use the 55-channel Prague coefficients (sea level only).}
 
@@ -57,7 +57,7 @@ Either the image array, or the array is invisibly returned if a file
 is written. The array has dimensions \verb{(resolution, 2 * resolution, 4)}.
 }
 \description{
-Evaluate either the Hosek–Wilkie or Prague analytic sky models
+Evaluate either the Hosek-Wilkie or Prague analytic sky models
 and return a high-dynamic-range image array for the given solar
 configuration. An image file is written only when \code{filename} is supplied.
 }

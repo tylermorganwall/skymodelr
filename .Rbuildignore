@@ -1,5 +1,6 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^\.vscode$
 ^.+\.dat$
 ^compile_commands\.json$
 ^\.cache$
@@ -7,7 +8,10 @@
 ^.+\.mp4$
 ^.+\.png$
 ^README\.Rmd$
+^README_cache$
 ^_pkgdown\.yml$
+^data-raw$
 ^docs$
 ^pkgdown$
 ^src/.+/.+\.o$
+^.+\.jpg$

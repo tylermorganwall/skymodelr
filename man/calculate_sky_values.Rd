@@ -34,7 +34,7 @@ calculate_sky_values(
 
 \item{numbercores}{Default \code{1}. Number of threads to use in computation.}
 
-\item{wide_spectrum}{Default \code{FALSE}. Whether to use the wide‑spectrum (55‑channel, polarised) coefficients.}
+\item{wide_spectrum}{Default \code{FALSE}. Whether to use the wide-spectrum (55-channel, polarised) coefficients.}
 
 \item{render_mode}{Default \code{"all"}. One of \code{"all"}, \code{"atmosphere"}, or \code{"sun"}.
 Use \code{"all"} for atmosphere + solar disk, \code{"atmosphere"} for atmospheric radiance only, or \code{"sun"} for the solar disk only.}

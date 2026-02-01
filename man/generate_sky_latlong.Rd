@@ -87,19 +87,19 @@ Either the raw data, or the data is invisibly returned if filename is given. The
 \description{
 Convenience wrapper around \code{\link[=generate_sky]{generate_sky()}} that:
 \enumerate{
-\item Computes the Sun’s apparent position for \code{datetime}, \code{lat}, and \code{lon}
+\item Computes the Sun's apparent position for \code{datetime}, \code{lat}, and \code{lon}
 (via \strong{suncalc}).
 \item Renders the corresponding sky model.
 \item Optionally overlays a star field using \code{\link[=generate_stars]{generate_stars()}} or moon with \code{\link[=generate_moon_latlong]{generate_moon_latlong()}}.
 }
 }
 \details{
-\emph{Solar angles} — altitude (degrees above the horizon) and azimuth (degrees clockwise from
-east, so 90 degrees = south) — are derived internally; you never have to supply
+\emph{Solar angles} - altitude (degrees above the horizon) and azimuth (degrees clockwise from
+east, so 90 degrees = south) - are derived internally; you never have to supply
 them directly.
 
-\emph{Black-sky rule} — With the Prague model the sky radiance is defined only
-down to −4.2 degrees, and with the Hosek model it is defined only about 0 degrees.
+\emph{Black-sky rule} - With the Prague model the sky radiance is defined only
+down to -4.2 degrees, and with the Hosek model it is defined only about 0 degrees.
 Below that the function skips the sky render and writes \strong{only stars} when \code{stars = TRUE}.
 }
 \examples{

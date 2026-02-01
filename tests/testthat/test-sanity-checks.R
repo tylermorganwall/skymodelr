@@ -48,8 +48,8 @@ test_that("sun is correct at equinox", {
 
 # Additional test cases
 # 1) Eclipse at 44.906907, -72.804280, April 8, 2024, approx 3:29 PM EST
-# 2) On Tuesday, September 16, 2025 at 04:21:11 UTC the Sun is at its zenith at Latitude: 2° 33' North, Longitude: 113° 26' East
-# 3) On Tuesday, September 16, 2025 at 04:21:11 UTC the Moon is at its zenith at Latitude: 27° 08' North, Longitude: 47° 16' East
+# 2) On Tuesday, September 16, 2025 at 04:21:11 UTC the Sun is at its zenith at Latitude: 2 33' North, Longitude: 113 26' East
+# 3) On Tuesday, September 16, 2025 at 04:21:11 UTC the Moon is at its zenith at Latitude: 27 08' North, Longitude: 47 16' East
 
 test_that("sun position matches ephemeris during eclipse", {
 	resolution_height = 512
