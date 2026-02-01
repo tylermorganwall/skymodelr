@@ -19,7 +19,15 @@ Description: Generates physically based sky environment maps and radiance sample
     high-resolution output.
 License: GPL-3
 Depends: R (>= 4.2)
-LinkingTo: Rcpp, RcppThread, libimath, libopenexr, libdeflate
+Imports: Rcpp,
+    suncalc,
+	swephR,
+	rayvertex
+LinkingTo: Rcpp, 
+    RcppThread, 
+    libimath, 
+	libopenexr, 
+	libdeflate
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)

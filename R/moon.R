@@ -41,7 +41,7 @@ prague_unit_direct_irradiance = function(
 #'   1.7 to 10 (*Hosek only*).
 #' @param altitude           Default `0`. Observer altitude (m), range
 #'   0 to 15000 (*Prague only*).
-#' @param resolution         Default `2048`. Image height in pixels (width = 2 × height).
+#' @param resolution         Default `2048`. Image height in pixels (width = 2 * height).
 #' @param numbercores        Default `1`. CPU threads to use.
 #' @param moon_atmosphere    Default `FALSE`. If `TRUE`, this generates atmospheric scattering from light from the moon.
 #' @param earthshine         Default `TRUE`. If `FALSE`, disable earthshine contribution on the moon.

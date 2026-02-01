@@ -47,7 +47,7 @@ date-time; if missing a time-zone it is assumed to be local.}
 \item{altitude}{Default \code{0}. Observer altitude (m), range
 0 to 15000 (\emph{Prague only}).}
 
-\item{resolution}{Default \code{2048}. Image height in pixels (width = 2 × height).}
+\item{resolution}{Default \code{2048}. Image height in pixels (width = 2 * height).}
 
 \item{numbercores}{Default \code{1}. CPU threads to use.}
 

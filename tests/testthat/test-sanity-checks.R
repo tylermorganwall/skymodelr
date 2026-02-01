@@ -134,9 +134,9 @@ test_that("moon aligns with zenith ephemeris", {
 	brightest_row = which.max(row_luminance)
 
 	moon_position = suncalc::getMoonPosition(date_time, lat, lon)
-  #Azimuth doesn't work because it's spread fairly uniformly across the horizontal image
+	#Azimuth doesn't work because it's spread fairly uniformly across the horizontal image
 	testthat::expect_gt(moon_position$altitude * 180 / pi, 80)
-  expected_alt = moon_position$altitude * 180 / pi
+	expected_alt = moon_position$altitude * 180 / pi
 	actual_alt = row_altitude(brightest_row, degrees_per_pixel)
 	testthat::expect_lt(
 		angle_diff(expected_alt, actual_alt),
@@ -175,7 +175,7 @@ test_that("sun radiance does not drop at 90 deg elevation", {
 	testthat::expect_gt(max_90, 0)
 	testthat::expect_gt(max_90 / max_899, 0.7)
 
-	row_luminance = rowSums(sky_90[, , 2, drop = FALSE])
+	row_luminance = rowSums(sky_90[,, 2, drop = FALSE])
 	max_row = which.max(row_luminance)
 	testthat::expect_lte(max_row, 2)
 })
@@ -222,7 +222,7 @@ test_that("Prague sun radiance does not drop at 90 deg elevation", {
 	testthat::expect_gt(max_90, 0)
 	testthat::expect_gt(max_90 / max_899, 0.7)
 
-	row_luminance = rowSums(sky_90[, , 2, drop = FALSE])
+	row_luminance = rowSums(sky_90[,, 2, drop = FALSE])
 	max_row = which.max(row_luminance)
 	testthat::expect_lte(max_row, 2)
 })

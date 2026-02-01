@@ -20,7 +20,7 @@ normalize_render_mode = function(render_mode) {
 #' @param elevation          Default `10`. Solar elevation above the horizon (degrees).
 #' @param azimuth            Default `90`, sun directly east. Solar azimuth (degrees). The left edge of the image faces north and the middle faces south.
 #' @param altitude           Default `0`. Altitude of the viewer in meters. Valid range: 0 to 15000. Only valid for the Prague model.
-#' @param resolution         Default `2048`. Height of the image. Width is 2 × this number.
+#' @param resolution         Default `2048`. Height of the image. Width is twice this number.
 #' @param numbercores        Default `1`. Number of threads to use in computation.
 #' @param hosek              Default `TRUE`. Use `"prague"` to enable the Prague 2021–22 spectral sky model.
 #' @param wide_spectrum      Default `FALSE`. Use the 55-channel Prague coefficients (sea level only).
@@ -252,7 +252,7 @@ generate_sky = function(
 #'   1.7 to 10 (*Hosek only*).
 #' @param altitude           Default `0`. Observer altitude (m), range
 #'   0 to 15000 (*Prague only*).
-#' @param resolution         Default `2048`. Image height in pixels (width = 2 × height).
+#' @param resolution         Default `2048`. Image height in pixels (width = 2 * height).
 #' @param numbercores        Default `1`. CPU threads to use.
 #' @param hosek              Default `TRUE`. `FALSE` selects the Prague model.
 #' @param wide_spectrum      Default `FALSE`. 55-channel Prague coefficients (altitude = 0m only).
@@ -358,7 +358,7 @@ generate_sky_latlong = function(
 	}
 	sun_altitude_azimuth = suncalc::getSunlightPosition(datetime, lat, lon)
 	elevation = sun_altitude_azimuth$altitude * 180 / pi
-	azimuth = sun_altitude_azimuth$azimuth * 180 / pi
+	azimuth = 180 + sun_altitude_azimuth$azimuth * 180 / pi
 	if (verbose) {
 		message(sprintf(
 			"Sun: %0.1f° elevation, %0.1f° azimuth",

@@ -35,7 +35,7 @@ snow will have an albedo of 1.0.}
 
 \item{altitude}{Default \code{0}. Altitude of the viewer in meters. Valid range: 0 to 15000. Only valid for the Prague model.}
 
-\item{resolution}{Default \code{2048}. Height of the image. Width is 2 × this number.}
+\item{resolution}{Default \code{2048}. Height of the image. Width is twice this number.}
 
 \item{numbercores}{Default \code{1}. Number of threads to use in computation.}
 
