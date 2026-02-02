@@ -101,6 +101,41 @@ generate_moon_latlong = function(
 	if (moon_azimuth < 0) {
 		moon_azimuth = moon_azimuth + 360
 	}
+	if (hosek) {
+		if (moon_elevation < 0.0) {
+			if (verbose) {
+				message(
+					"Drawing black image as Hosek model does not produce valid output for elevation < 0."
+				)
+			}
+			black_sky = array(0, dim = c(resolution, resolution * 2, 4))
+			black_sky[,, 4] = 1
+			if (!is.na(filename)) {
+				warn_precision_loss(filename)
+				rayimage::ray_write_image(black_sky, filename)
+				return(invisible(black_sky))
+			} else {
+				return(black_sky)
+			}
+		}
+	} else {
+		if (moon_elevation < -4.2) {
+			if (verbose) {
+				message(
+					"Drawing black image as Prague model does not produce valid output for elevation < -4.2."
+				)
+			}
+			black_sky = array(0, dim = c(resolution, resolution * 2, 4))
+			black_sky[,, 4] = 1
+			if (!is.na(filename)) {
+				warn_precision_loss(filename)
+				rayimage::ray_write_image(black_sky, filename)
+				return(invisible(black_sky))
+			} else {
+				return(black_sky)
+			}
+		}
+	}
 	moon_sun_data = swe_dirs_topo_moon_sun(
 		datetime,
 		lat,
