@@ -1,9 +1,7 @@
 
-# skymodelr
-
 <img src="man/figures/startrailscolor.jpg"></img>
 
-## Overview
+# skymodelr<img src="man/figures/hex.png" align="right" width=250/>
 
 **skymodelr** generates physically‑plausible sky domes and night skies
 as high‑dynamic‑range EXR images/arrays directly from R. It implements
@@ -36,8 +34,8 @@ dataset(s) once (see `download_sky_data()` below).
 - `generate_sky()` — Write/return an EXR sky dome using either the
   Hosek–Wilkie (default) or Prague model.
 
-  - `filename = NA` to return the HDR array in‑memory (otherwise a `.exr`
-    is written).
+  - `filename = NA` to return the HDR array in‑memory (otherwise a
+    `.exr` is written).
   - `albedo = 0.5` ground reflectance (0–1).
   - `turbidity = 3` atmospheric turbidity (1.7–10; Hosek only).
   - `elevation = 10`, `azimuth = 90` solar position (degrees).
@@ -46,8 +44,8 @@ dataset(s) once (see `download_sky_data()` below).
   - `numbercores = 1` threads.
   - `hosek = TRUE` set `FALSE` to use the Prague model; Prague options
     `wide_spectrum`, `visibility`.
-  - `render_solar_disk = TRUE` set `FALSE` to render the atmospheric
-    scattering effects without the solar disk.
+  - `render_mode = "all"` for atmosphere + solar disk; use
+    `"atmosphere"` to omit the disk or `"sun"` for disk only.
 
 - `generate_sky_latlong()` — Produce a complete equirectangular sky
   array/EXR. Accepts date/time and observer location, and (optionally)
@@ -89,20 +87,24 @@ dataset(s) once (see `download_sky_data()` below).
 
 ## Usage
 
-Morning in DC:
+We’ll generate the sun on the morning (right after sunrise) in
+Washington DC on March 21st. On this day the sun is rising directly
+east, which we can see
 
 ``` r
 library(skymodelr)
 library(rayimage)
 
 env = generate_sky_latlong(
-  filename    = NA,
   datetime   = as.POSIXct("2025-03-21 06:15:00",tz="EST"),
   lat        = 38.9072,
   lon        = -77.0369,
-  resolution = 800
+  resolution = 800,
+  hosek = FALSE,
+  verbose = TRUE
 )
-rayimage::plot_image(env)
+rayimage::render_exposure(env, exposure=-2) |> 
+  rayimage::plot_image()
 ```
 
 ![](man/figures/full_sky-1.png)<!-- -->
@@ -111,13 +113,14 @@ Afternoon in DC:
 
 ``` r
 env = generate_sky_latlong(
-  filename    = NA,
   datetime   = as.POSIXct("2025-03-21 12:15:00",tz="EST"),
   lat        = 38.9072,
   lon        = -77.0369,
-  resolution = 800
+  resolution = 800,
+  hosek = FALSE
 )
-rayimage::plot_image(env)
+rayimage::render_exposure(env, exposure=-5) |> 
+  rayimage::plot_image()
 ```
 
 ![](man/figures/full_sky_afternoon-1.png)<!-- -->
@@ -126,65 +129,166 @@ Evening in DC:
 
 ``` r
 env = generate_sky_latlong(
-  filename    = NA,
-  datetime   = as.POSIXct("2025-03-21 18:15:00",tz="EST"),
-  lat        = 38.9072,
-  lon        = -77.0369,
-  resolution = 800
-)
-rayimage::plot_image(env)
-```
-
-![](man/figures/full_sky_evening-1.png)<!-- -->
-
-Evening in DC (Prague model):
-
-``` r
-env = generate_sky_latlong(
-  filename    = NA,
   datetime   = as.POSIXct("2025-03-21 18:15:00",tz="EST"),
   lat        = 38.9072,
   lon        = -77.0369,
   resolution = 800,
   hosek = FALSE
 )
-rayimage::plot_image(env)
+rayimage::render_exposure(env, exposure=-2) |> 
+  rayimage::plot_image()
+```
+
+![](man/figures/full_sky_evening-1.png)<!-- -->
+
+Evening in DC (Hosek model), note the unphysical yellowish tint:
+
+``` r
+env = generate_sky_latlong(
+  datetime   = as.POSIXct("2025-03-21 18:15:00",tz="EST"),
+  lat        = 38.9072,
+  lon        = -77.0369,
+  resolution = 800,
+  hosek = TRUE
+)
+rayimage::render_exposure(env, exposure=-4) |> 
+  rayimage::plot_image()
 ```
 
 ![](man/figures/full_sky_evening_prague-1.png)<!-- -->
 
-Full sun + moon + stars:
+The Prague model supports solar elevations below the horizon:
+
+``` r
+env = generate_sky_latlong(
+  datetime   = as.POSIXct("2025-03-21 18:37:00",tz="EST"),
+  lat        = 38.9072,
+  lon        = -77.0369,
+  verbose=TRUE,
+  resolution = 800,
+  hosek = FALSE
+)
+```
+
+    ## Sun: -4.1 elevation, 274.1 azimuth
+
+``` r
+rayimage::render_exposure(env, exposure=3) |> 
+  rayimage::plot_image()
+```
+
+![](man/figures/full_sky_evening_below-1.png)<!-- -->
+
+The Prague model also supports altitudes up to 15,000m.
+
+## 2,000 meters
+
+``` r
+env = generate_sky_latlong(
+  datetime   = as.POSIXct("2025-03-21 12:15:00",tz="EST"),
+  lat        = 38.9072,
+  lon        = -77.0369,
+  altitude = 2000,
+  resolution = 800,
+  hosek = FALSE
+)
+rayimage::render_exposure(env, exposure=-5) |> 
+  rayimage::plot_image()
+```
+
+![](man/figures/full_sky_evening_2000-1.png)<!-- -->
+
+## 7,500 meters
 
 ``` r
 env = generate_sky_latlong(
   filename    = NA,
-  datetime   = as.POSIXct("2025-03-21 18:00:00",tz="EST"),
+  datetime   = as.POSIXct("2025-03-21 12:15:00",tz="EST"),
+  lat        = 38.9072,
+  lon        = -77.0369,
+  altitude = 7500,
+  resolution = 800,
+  hosek = FALSE
+)
+rayimage::render_exposure(env, exposure=-5) |> 
+  rayimage::plot_image()
+```
+
+![](man/figures/full_sky_evening_7500-1.png)<!-- -->
+
+## 15,000 meters
+
+``` r
+env = generate_sky_latlong(
+  filename    = NA,
+  datetime   = as.POSIXct("2025-03-21 12:15:00",tz="EST"),
+  lat        = 38.9072,
+  lon        = -77.0369,
+  altitude = 15000,
+  resolution = 800,
+  hosek = FALSE
+)
+rayimage::render_exposure(env, exposure=-5) |> 
+  rayimage::plot_image()
+```
+
+![](man/figures/full_sky_evening_15000-1.png)<!-- -->
+
+## 15,000 meters, sunset
+
+``` r
+env = generate_sky_latlong(
+  filename    = NA,
+  datetime   = as.POSIXct("2025-03-21 18:30:00",tz="EST"),
+  lat        = 38.9072,
+  lon        = -77.0369,
+  altitude = 15000,
+  resolution = 800,
+  hosek = FALSE
+)
+
+rayimage::plot_image(env)
+```
+
+![](man/figures/full_sky_evening_15000_sunset-1.png)<!-- -->
+
+Full sun + moon + stars (with increased exposure for artistic effect):
+
+``` r
+env = generate_sky_latlong(
+  filename = NA,
+  datetime   = as.POSIXct("2025-03-21 18:37:00",tz="EST"),
   lat        = 38.9072,
   lon        = -77.0369,
   resolution = 800,
+  hosek = FALSE,
   stars = TRUE,
-  moon = TRUE
+  moon = TRUE, 
+  stars_exposure = 12
 )
-rayimage::plot_image(env)
+rayimage::render_exposure(env, exposure = 2)  |> 
+  rayimage::plot_image()
 ```
 
 ![](man/figures/full_sky_night-1.png)<!-- -->
 
-## Custom sun position, multicore, no solar disk
+## Custom sun position, multicore, atmosphere only
+
+`skymodelr` allows you to turn off the direct sun contribution to only
+included scattered light.
 
 ``` r
 sky = generate_sky(
-  filename = NA,
-  albedo = 0.2,
-  turbidity = 3,
-  elevation = 15,
+  albedo = 0,
+  elevation = 25,
   azimuth = 135,
   resolution = 800,
   numbercores = 2,
-  hosek = TRUE,
-  render_solar_disk = FALSE
+  hosek = FALSE,
+  render_mode = "atmosphere"
 )
-rayimage::plot_image(sky)
+rayimage::render_exposure(sky, exposure=-6) |> 
+  rayimage::plot_image()
 ```
 
 ![](man/figures/sky_basic-1.png)<!-- -->
@@ -200,11 +304,13 @@ moon_sky = generate_moon_latlong(
   albedo    = 0.2,
   turbidity = 3,
   resolution = 800,
-  hosek = TRUE
+  moon_atmosphere = TRUE,
+  hosek = FALSE,
+  verbose = TRUE
 )
 #Increase exposure
 moon_sky |> 
-  rayimage::render_exposure(17) |> 
+  rayimage::render_exposure(8) |> 
   rayimage::plot_image()
 ```
 
@@ -214,7 +320,6 @@ moon_sky |>
 
 ``` r
 stars = generate_stars(
-  filename   = NA,
   datetime  = as.POSIXct("2025-03-21 02:15:00",tz="EST"),
   lat       = 38.9072,
   lon       = -77.0369,
@@ -223,7 +328,7 @@ stars = generate_stars(
   upper_hemisphere_only = TRUE
 )
 stars |> 
-  render_exposure(5) |> 
+  rayimage::render_exposure(16) |> 
   rayimage::plot_image()
 ```
 
@@ -233,7 +338,6 @@ Now render the entire sphere:
 
 ``` r
 stars_full = generate_stars(
-  filename   = NA,
   datetime  = as.POSIXct("2025-03-21 02:15:00",tz="EST"),
   lat       = 38.9072,
   lon       = -77.0369,
@@ -242,7 +346,7 @@ stars_full = generate_stars(
   upper_hemisphere_only = FALSE
 )
 stars_full |> 
-  render_exposure(5) |> 
+  rayimage::render_exposure(16) |> 
   rayimage::plot_image()
 ```
 

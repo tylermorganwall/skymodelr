@@ -26,6 +26,7 @@ generate_sky_latlong(
   render_mode = "all",
   below_horizon = TRUE,
   verbose = FALSE,
+  stars_exposure = 0,
   ...
 )
 }
@@ -78,6 +79,8 @@ Use \code{"all"} for atmosphere + solar disk, \code{"atmosphere"} for atmospheri
 \item{below_horizon}{Default \code{TRUE}. Whether to sample atmospheric scattering below the horizon, which is non-zero when altitude > 0.}
 
 \item{verbose}{Default \code{FALSE}. Whether to print progress bars/diagnostic info.}
+
+\item{stars_exposure}{Default \code{0}. Increases star exposure by \code{2^exposure}. Non-physical, this just controls adjustments for artistic effect.}
 
 \item{...}{Additional arguments passed to \code{\link[=generate_stars]{generate_stars()}} and, when enabled, \code{\link[=generate_planets]{generate_planets()}}.}
 }
