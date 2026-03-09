@@ -7,7 +7,6 @@ output:
 editor_options: 
   chunk_output_type: console
 ---
-<img src="man/figures/startrailscolor.jpg"></img>
 
 skymodelr<img src="man/figures/hex.png" align="right" width=250/>
 =========================================================
@@ -15,6 +14,8 @@ skymodelr<img src="man/figures/hex.png" align="right" width=250/>
 **skymodelr** generates physically‑plausible sky domes and night skies as high‑dynamic‑range EXR images/arrays directly from R. It implements the Hosek–Wilkie analytic sky model and (optionally) the 2021–22 Prague spectral sky model (below‑horizon sun, altitude, and wide‑spectrum support). It also includes tools to add the moon as well as accurate visible **star fields** aligned to observer location/time. Outputs are lat‑long environment maps (2:1 equirectangular) that you can feed into renderers (such as *rayrender*).
 
 `generate_sky_latlong()` composes a full sky environment using the functions  `generate_sky()`, `generate_moon_latlong()`, and `generate_stars()` for a specific latitude, longitude, and time. By default `generate_sky_latlong()` only includes the sun's contribution, but you can also include stars and the moon by setting `moon = TRUE` and `stars = TRUE`.
+
+<img src="man/figures/startrailscolor.jpg"></img>
 
 Installation
 ------------

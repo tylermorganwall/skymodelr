@@ -1,6 +1,4 @@
 
-<img src="man/figures/startrailscolor.jpg"></img>
-
 # skymodelr<img src="man/figures/hex.png" align="right" width=250/>
 
 **skymodelr** generates physically‑plausible sky domes and night skies
@@ -18,6 +16,8 @@ functions `generate_sky()`, `generate_moon_latlong()`, and
 default `generate_sky_latlong()` only includes the sun’s contribution,
 but you can also include stars and the moon by setting `moon = TRUE` and
 `stars = TRUE`.
+
+<img src="man/figures/startrailscolor.jpg"></img>
 
 ## Installation
 
