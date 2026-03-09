@@ -36,7 +36,7 @@ dataset(s) once (see `download_sky_data()` below).
 
   - `filename = NA` to return the HDR array in‑memory (otherwise a
     `.exr` is written).
-  - `albedo = 0.5` ground reflectance (0–1).
+  - `albedo = 0.1` ground reflectance (0–1).
   - `turbidity = 3` atmospheric turbidity (1.7–10; Hosek only).
   - `elevation = 10`, `azimuth = 90` solar position (degrees).
   - `altitude = 0` observer altitude in meters (Prague only).
