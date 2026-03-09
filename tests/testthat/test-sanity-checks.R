@@ -97,15 +97,16 @@ test_that("sun is overhead at Borneo zenith time", {
   brightest_col = which.max(col_luminance)
   brightest_row = which.max(row_luminance)
 
-  sun_position = suncalc::getSunlightPosition(date_time, lat, lon)
-  expected_az = (180 + sun_position$azimuth * 180 / pi) %% 360
+  sunmoon_data = swe_dirs_topo_moon_sun(date_time, lat = lat, lon = lon)
+  sun_dir = sunmoon_data$sun_dir_topo
+  expected_az = (180 + atan2(sun_dir[1], sun_dir[2]) * 180 / pi + 360) %% 360
   actual_az = column_azimuth(brightest_col, degrees_per_pixel)
   testthat::expect_lt(
     angle_diff(actual_az, expected_az),
     max(2, degrees_per_pixel * 3)
   )
-  testthat::expect_gt(sun_position$altitude * 180 / pi, 85)
-  expected_alt = sun_position$altitude * 180 / pi
+  expected_alt = asin(sun_dir[3]) * 180 / pi
+  testthat::expect_gt(expected_alt, 85)
   actual_alt = row_altitude(brightest_row, degrees_per_pixel)
   testthat::expect_lt(
     angle_diff(expected_alt, actual_alt),
@@ -134,10 +135,11 @@ test_that("moon aligns with zenith ephemeris", {
   brightest_col = which.max(col_luminance)
   brightest_row = which.max(row_luminance)
 
-  moon_position = suncalc::getMoonPosition(date_time, lat, lon)
+  sunmoon_data = swe_dirs_topo_moon_sun(date_time, lat = lat, lon = lon)
+  moon_dir = sunmoon_data$moon_dir_topo
   #Azimuth doesn't work because it's spread fairly uniformly across the horizontal image
-  testthat::expect_gt(moon_position$altitude * 180 / pi, 80)
-  expected_alt = moon_position$altitude * 180 / pi
+  expected_alt = asin(moon_dir[3]) * 180 / pi
+  testthat::expect_gt(expected_alt, 80)
   actual_alt = row_altitude(brightest_row, degrees_per_pixel)
   testthat::expect_lt(
     angle_diff(expected_alt, actual_alt),

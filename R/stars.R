@@ -54,9 +54,9 @@ stars_with_bv = local({
 #' `(resolution, 2 * resolution, 4)` array with an opaque alpha channel. An
 #' image file is written only when `filename` is supplied.
 #'
-#' @param datetime Default `as.POSIXct("2000-01-01 00:00:00", tz = "UTC")`. `POSIXct` timestamp used to compute local sidereal time.
-#' @param lon Default `0`. Observer longitude in degrees (east positive).
-#' @param lat Default `0`. Observer latitude in degrees.
+#' @param datetime `POSIXct` timestamp used to compute local sidereal time.
+#' @param lon Observer longitude in degrees (east positive).
+#' @param lat Observer latitude in degrees.
 #' @param filename Default `NA`. Path to an image file to write. If `NA`, the
 #'   image array is returned without writing.
 #' @param resolution Default `2048`. Map half-width; the output image is `2 * resolution` × `resolution`.
@@ -125,9 +125,9 @@ stars_with_bv = local({
 #'   rayimage::plot_image()
 #'}
 generate_stars = function(
-	lon = 0,
-	lat = 0,
-	datetime = as.POSIXct("2000-01-01 00:00:00", tz = "UTC"),
+	lon,
+	lat,
+	datetime,
 	filename = NA,
 	resolution = 2048,
 	turbidity = 3.0,

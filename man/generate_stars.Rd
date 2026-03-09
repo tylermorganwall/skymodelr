@@ -5,9 +5,9 @@
 \title{Generate a star‑field array aligned with \code{generate_sky()}}
 \usage{
 generate_stars(
-  lon = 0,
-  lat = 0,
-  datetime = as.POSIXct("2000-01-01 00:00:00", tz = "UTC"),
+  lon,
+  lat,
+  datetime,
   filename = NA,
   resolution = 2048,
   turbidity = 3,
@@ -21,11 +21,11 @@ generate_stars(
 )
 }
 \arguments{
-\item{lon}{Default \code{0}. Observer longitude in degrees (east positive).}
+\item{lon}{Observer longitude in degrees (east positive).}
 
-\item{lat}{Default \code{0}. Observer latitude in degrees.}
+\item{lat}{Observer latitude in degrees.}
 
-\item{datetime}{Default \code{as.POSIXct("2000-01-01 00:00:00", tz = "UTC")}. \code{POSIXct} timestamp used to compute local sidereal time.}
+\item{datetime}{\code{POSIXct} timestamp used to compute local sidereal time.}
 
 \item{filename}{Default \code{NA}. Path to an image file to write. If \code{NA}, the
 image array is returned without writing.}

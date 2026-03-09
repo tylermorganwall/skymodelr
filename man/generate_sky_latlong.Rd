@@ -5,9 +5,9 @@
 \title{Generate a location and time-specific sky dome (optionally with stars)}
 \usage{
 generate_sky_latlong(
-  datetime = as.POSIXct("2025-03-21 18:00:00", tz = "EST"),
-  lat = 38.9072,
-  lon = -77.0369,
+  datetime,
+  lat,
+  lon,
   filename = NA,
   albedo = 0.5,
   turbidity = 3,
@@ -31,12 +31,11 @@ generate_sky_latlong(
 )
 }
 \arguments{
-\item{datetime}{Default \code{"2025-07-29 18:00:00"}. POSIX-compatible
-date-time; if missing a time-zone it is assumed to be local.}
+\item{datetime}{POSIX-compatible date-time.}
 
-\item{lat}{Default \code{38.9072}. Observer latitude (degrees N).}
+\item{lat}{Observer latitude (degrees N).}
 
-\item{lon}{Default \code{-77.0369}. Observer longitude (degrees E; west < 0).}
+\item{lon}{Observer longitude (degrees E; west < 0).}
 
 \item{filename}{Default \code{NA}. Path to the \code{.exr} file to write.}
 
@@ -82,7 +81,7 @@ Use \code{"all"} for atmosphere + solar disk, \code{"atmosphere"} for atmospheri
 
 \item{stars_exposure}{Default \code{0}. Increases star exposure by \code{2^exposure}. Non-physical, this just controls adjustments for artistic effect.}
 
-\item{...}{Additional arguments passed to \code{\link[=generate_stars]{generate_stars()}} and, when enabled, \code{\link[=generate_planets]{generate_planets()}}.}
+\item{...}{Additional arguments passed to \code{\link[=generate_stars]{generate_stars()}}, and when enabled, \code{\link[=generate_planets]{generate_planets()}} and \code{\link[=generate_moon_latlong]{generate_moon_latlong()}}.}
 }
 \value{
 Either the raw data, or the data is invisibly returned if filename is given. The EXR is written to \code{filename}.
@@ -91,7 +90,7 @@ Either the raw data, or the data is invisibly returned if filename is given. The
 Convenience wrapper around \code{\link[=generate_sky]{generate_sky()}} that:
 \enumerate{
 \item Computes the Sun's apparent position for \code{datetime}, \code{lat}, and \code{lon}
-(via \strong{suncalc}).
+(via Swiss Ephemeris / \strong{swephR}).
 \item Renders the corresponding sky model.
 \item Optionally overlays a star field using \code{\link[=generate_stars]{generate_stars()}} or moon with \code{\link[=generate_moon_latlong]{generate_moon_latlong()}}.
 }

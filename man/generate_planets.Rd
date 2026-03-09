@@ -5,9 +5,9 @@
 \title{Generate a bright-planet image array}
 \usage{
 generate_planets(
-  datetime = as.POSIXct("2000-01-01 00:00:00", tz = "UTC"),
-  lon = 0,
-  lat = 0,
+  datetime,
+  lon,
+  lat,
   filename = NA,
   resolution = 2048,
   turbidity = 3,
@@ -22,7 +22,7 @@ generate_planets(
 )
 }
 \arguments{
-\item{datetime}{POSIXct timestamp in UTC used for ephemerides.}
+\item{datetime}{POSIXct timestamp used for ephemerides.}
 
 \item{lon}{Observer longitude in degrees (east positive).}
 
@@ -74,7 +74,6 @@ generate_planets(
   resolution = 400,
   color      = TRUE,
   planet_width = 1,
-  zero_point = 10,
   atmosphere_effects   = TRUE,
   upper_hemisphere_only = TRUE,
   numbercores = 2

@@ -39,7 +39,7 @@ snow will have an albedo of 1.0.}
 
 \item{numbercores}{Default \code{1}. Number of threads to use in computation.}
 
-\item{hosek}{Default \code{TRUE}. Use \code{"prague"} to enable the Prague 2021-22 spectral sky model.}
+\item{hosek}{Default \code{TRUE}. Set to \code{FALSE} to enable the Prague 2021-22 spectral sky model.}
 
 \item{wide_spectrum}{Default \code{FALSE}. Use the 55-channel Prague coefficients (sea level only).}
 
@@ -86,17 +86,6 @@ generate_sky(
   azimuth    = 135,
   turbidity  = 6,
   render_mode = "atmosphere"
-) |>
-  rayimage::plot_image()
-}
-if(run_documentation()) {
-# Equal-area square mapping
-generate_sky(
-  resolution        = 400,
-  elevation         = 30,
-  azimuth           = 180,
-  square_projection = TRUE,
-  turbidity         = 3
 ) |>
   rayimage::plot_image()
 }

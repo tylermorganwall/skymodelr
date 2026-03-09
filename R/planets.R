@@ -3,7 +3,7 @@
 #' @description Build a planetary luminance map aligned with the sky dome for
 #' compositing within [generate_sky_latlong()].
 #'
-#' @param datetime POSIXct timestamp in UTC used for ephemerides.
+#' @param datetime POSIXct timestamp used for ephemerides.
 #' @param lon Observer longitude in degrees (east positive).
 #' @param lat Observer latitude in degrees.
 #' @param filename Default `NA`. Destination image path to write. When `NA`, the
@@ -36,7 +36,6 @@
 #'   resolution = 400,
 #'   color      = TRUE,
 #'   planet_width = 1,
-#'   zero_point = 10,
 #'   atmosphere_effects   = TRUE,
 #'   upper_hemisphere_only = TRUE,
 #'   numbercores = 2
@@ -44,9 +43,9 @@
 #'   rayimage::plot_image()
 #'}
 generate_planets = function(
-	datetime = as.POSIXct("2000-01-01 00:00:00", tz = "UTC"),
-	lon = 0,
-	lat = 0,
+	datetime,
+	lon,
+	lat,
 	filename = NA,
 	resolution = 2048,
 	turbidity = 3.0,

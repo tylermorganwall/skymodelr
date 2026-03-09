@@ -40,14 +40,14 @@ calculate_sky_values(
 Use \code{"all"} for atmosphere + solar disk, \code{"atmosphere"} for atmospheric radiance only, or \code{"sun"} for the solar disk only.}
 }
 \value{
-3 column RGB matrix.
+3-column RGB matrix.
 }
 \description{
 Evaluate the Prague spectral sky model at arbitrary spherical
 directions without writing an image, returning radiance-only samples.
 }
 \examples{
-#Generate a basic atmosphere with the Hosek model
+# Generate a basic atmosphere with the Prague model
 if(run_documentation()) {
 value_grid = expand.grid(
   phi = seq(0,360,by=30),

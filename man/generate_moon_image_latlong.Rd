@@ -12,7 +12,8 @@ generate_moon_image_latlong(
   width = 800,
   height = 800,
   earthshine = TRUE,
-  verbose = FALSE
+  verbose = FALSE,
+  ...
 )
 }
 \arguments{
@@ -31,6 +32,8 @@ generate_moon_image_latlong(
 \item{earthshine}{Default \code{TRUE}. If \code{FALSE}, skip the earthshine emissive term.}
 
 \item{verbose}{Default \code{FALSE}. If \code{TRUE}, print earthshine diagnostics.}
+
+\item{...}{Additional ignored arguments forwarded from wrapper functions.}
 }
 \description{
 Produce a rasterised moon texture aligned for composition into

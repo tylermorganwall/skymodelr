@@ -442,6 +442,7 @@ build_from_z = function(x) {
 #' @param height Output height in pixels.
 #' @param earthshine Default `TRUE`. If `FALSE`, skip the earthshine emissive term.
 #' @param verbose Default `FALSE`. If `TRUE`, print earthshine diagnostics.
+#' @param ... Additional ignored arguments forwarded from wrapper functions.
 #' @keywords internal
 generate_moon_image_latlong = function(
   datetime,
@@ -451,7 +452,8 @@ generate_moon_image_latlong = function(
   width = 800,
   height = 800,
   earthshine = TRUE,
-  verbose = FALSE
+  verbose = FALSE,
+  ...
 ) {
   moon_sun_data = swe_dirs_topo_moon_sun(datetime, lat, lon, elev_m)
   dir_moon = normalize(moon_sun_data$moon_ecef_geo)

@@ -5,9 +5,9 @@
 \title{Generate the atmosphere with the moon}
 \usage{
 generate_moon_latlong(
-  datetime = "2025-07-29 18:00:00",
-  lat = 38.9072,
-  lon = -77.0369,
+  datetime,
+  lat,
+  lon,
   filename = NA,
   albedo = 0.5,
   turbidity = 3,
@@ -24,12 +24,11 @@ generate_moon_latlong(
 )
 }
 \arguments{
-\item{datetime}{Default \code{"2025-07-29 18:00:00"}. POSIX-compatible
-date-time; if missing a time-zone it is assumed to be local.}
+\item{datetime}{POSIX-compatible date-time.}
 
-\item{lat}{Default \code{38.9072}. Observer latitude (degrees N).}
+\item{lat}{Observer latitude (degrees N).}
 
-\item{lon}{Default \code{-77.0369}. Observer longitude (degrees E; west < 0).}
+\item{lon}{Observer longitude (degrees E; west < 0).}
 
 \item{filename}{Default \code{NA}. Path to the image file to write.}
 
@@ -57,7 +56,7 @@ date-time; if missing a time-zone it is assumed to be local.}
 
 \item{verbose}{Default \code{FALSE}. Whether to print progress bars/diagnostic info.}
 
-\item{...}{Additional arguments passed to \code{\link[=generate_stars]{generate_stars()}}}
+\item{...}{Additional arguments forwarded to \code{\link[=generate_moon_image_latlong]{generate_moon_image_latlong()}}.}
 }
 \value{
 Either the image array, or the array is invisibly returned if a file

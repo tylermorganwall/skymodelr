@@ -22,7 +22,7 @@ normalize_render_mode = function(render_mode) {
 #' @param altitude           Default `0`. Altitude of the viewer in meters. Valid range: 0 to 15000. Only valid for the Prague model.
 #' @param resolution         Default `2048`. Height of the image. Width is twice this number.
 #' @param numbercores        Default `1`. Number of threads to use in computation.
-#' @param hosek              Default `TRUE`. Use `"prague"` to enable the Prague 2021-22 spectral sky model.
+#' @param hosek              Default `TRUE`. Set to `FALSE` to enable the Prague 2021-22 spectral sky model.
 #' @param wide_spectrum      Default `FALSE`. Use the 55-channel Prague coefficients (sea level only).
 #' @param visibility         Default `50`. Meteorological range in kilometres for Prague model.
 #' @param verbose            Default `FALSE`. Whether to print progress bars/diagnostic info.
@@ -56,17 +56,6 @@ normalize_render_mode = function(render_mode) {
 #'   azimuth    = 135,
 #'   turbidity  = 6,
 #'   render_mode = "atmosphere"
-#' ) |>
-#'   rayimage::plot_image()
-#' }
-#' if(run_documentation()) {
-#' # Equal-area square mapping
-#' generate_sky(
-#'   resolution        = 400,
-#'   elevation         = 30,
-#'   azimuth           = 180,
-#'   square_projection = TRUE,
-#'   turbidity         = 3
 #' ) |>
 #'   rayimage::plot_image()
 #' }
@@ -238,14 +227,13 @@ generate_sky = function(
 #'
 #' @description Convenience wrapper around [generate_sky()] that:
 #' 1. Computes the Sun's apparent position for `datetime`, `lat`, and `lon`
-#'    (via **suncalc**).
+#'    (via Swiss Ephemeris / **swephR**).
 #' 2. Renders the corresponding sky model.
 #' 3. Optionally overlays a star field using [generate_stars()] or moon with [generate_moon_latlong()].
 #'
-#' @param datetime           Default `"2025-07-29 18:00:00"`. POSIX-compatible
-#'   date-time; if missing a time-zone it is assumed to be local.
-#' @param lat                Default `38.9072`. Observer latitude (degrees N).
-#' @param lon                Default `-77.0369`. Observer longitude (degrees E; west < 0).
+#' @param datetime           POSIX-compatible date-time.
+#' @param lat                Observer latitude (degrees N).
+#' @param lon                Observer longitude (degrees E; west < 0).
 #' @param filename            Default `NA`. Path to the `.exr` file to write.
 #' @param albedo             Default `0.5`. Ground albedo, range 0 to 1.
 #' @param turbidity          Default `3`. Atmospheric turbidity, range
@@ -271,7 +259,7 @@ generate_sky = function(
 #' @param below_horizon      Default `TRUE`. Whether to sample atmospheric scattering below the horizon, which is non-zero when altitude > 0.
 #' @param stars_exposure     Default `0`. Increases star exposure by `2^exposure`. Non-physical, this just controls adjustments for artistic effect.
 #' @param verbose            Default `FALSE`. Whether to print progress bars/diagnostic info.
-#' @param ...                Additional arguments passed to [generate_stars()] and, when enabled, [generate_planets()].
+#' @param ...                Additional arguments passed to [generate_stars()], and when enabled, [generate_planets()] and [generate_moon_latlong()].
 #'
 #' @details
 #' *Solar angles* - altitude (degrees above the horizon) and azimuth (degrees clockwise from
@@ -328,9 +316,9 @@ generate_sky = function(
 #'   rayimage::plot_image()
 #' }
 generate_sky_latlong = function(
-  datetime = as.POSIXct("2025-03-21 18:00:00", tz = "EST"),
-  lat = 38.9072,
-  lon = -77.0369,
+  datetime,
+  lat,
+  lon,
   filename = NA,
   albedo = 0.5,
   turbidity = 3,
@@ -353,11 +341,6 @@ generate_sky_latlong = function(
   ...
 ) {
   render_mode = normalize_render_mode(render_mode)
-  if (is.character(datetime)) {
-    message(
-      "Assuming timezone is UTC, pass explicit POSIXct object to set timezone."
-    )
-  }
 
   sunmoon_data = swe_dirs_topo_moon_sun(
     datetime = datetime,
@@ -389,7 +372,8 @@ generate_sky_latlong = function(
     wide_spectrum = wide_spectrum,
     visibility = visibility,
     verbose = verbose,
-    render_mode = render_mode
+    render_mode = render_mode,
+    below_horizon = below_horizon
   )
 
   if (moon) {
@@ -474,10 +458,10 @@ generate_sky_latlong = function(
 #' @param render_mode        Default `"all"`. One of `"all"`, `"atmosphere"`, or `"sun"`.
 #'   Use `"all"` for atmosphere + solar disk, `"atmosphere"` for atmospheric radiance only, or `"sun"` for the solar disk only.
 #'
-#' @return 3 column RGB matrix.
+#' @return 3-column RGB matrix.
 #' @export
 #' @examples
-#' #Generate a basic atmosphere with the Hosek model
+#' # Generate a basic atmosphere with the Prague model
 #' if(run_documentation()) {
 #' value_grid = expand.grid(
 #'   phi = seq(0,360,by=30),
@@ -511,7 +495,7 @@ calculate_sky_values = function(
   stopifnot(all(phi <= 360 & phi >= 0))
   stopifnot(all(theta <= 90 & theta >= -90))
   stopifnot(all(altitude <= 15000 & altitude >= 0))
-  stopifnot(all(visibility <= 15000 & altitude >= 0))
+  stopifnot(all(visibility >= 20 & visibility <= 131.8))
   filesize = ""
   df_values = as.list(data.frame(
     phi = phi,
@@ -580,7 +564,7 @@ calculate_sky_values = function(
     render_mode
   )
   colnames(vals) = c("r", "g", "b")
-  return(as.data.frame(vals))
+  return(vals)
 }
 
 #' Sample sun luminance at the disk center.

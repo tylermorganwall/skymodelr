@@ -31,10 +31,9 @@ prague_unit_direct_irradiance = function(
 #' of the moon as compared to the sun. This function takes the phase of the moon into account,
 #' along with the increase in luminosity around a full moon (known as opposition surge).
 #'
-#' @param datetime           Default `"2025-07-29 18:00:00"`. POSIX-compatible
-#'   date-time; if missing a time-zone it is assumed to be local.
-#' @param lat                Default `38.9072`. Observer latitude (degrees N).
-#' @param lon                Default `-77.0369`. Observer longitude (degrees E; west < 0).
+#' @param datetime           POSIX-compatible date-time.
+#' @param lat                Observer latitude (degrees N).
+#' @param lon                Observer longitude (degrees E; west < 0).
 #' @param filename           Default `NA`. Path to the image file to write.
 #' @param albedo             Default `0.5`. Ground albedo, range 0 to 1.
 #' @param turbidity          Default `3`. Atmospheric turbidity, range
@@ -49,7 +48,7 @@ prague_unit_direct_irradiance = function(
 #' @param wide_spectrum      Default `FALSE`. 55-channel Prague coefficients (altitude = 0m only).
 #' @param visibility         Default `50`. Meteorological range (km); *Prague only*.
 #' @param verbose            Default `FALSE`. Whether to print progress bars/diagnostic info.
-#' @param ...                Additional arguments passed to [generate_stars()]
+#' @param ...                Additional arguments forwarded to [generate_moon_image_latlong()].
 #'
 #' @return Either the image array, or the array is invisibly returned if a file
 #'   is written. The array has dimensions `(resolution, 2 * resolution, 4)`.
@@ -73,9 +72,9 @@ prague_unit_direct_irradiance = function(
 #'   rayimage::plot_image()
 #' }
 generate_moon_latlong = function(
-  datetime = "2025-07-29 18:00:00",
-  lat = 38.9072,
-  lon = -77.0369,
+  datetime,
+  lat,
+  lon,
   filename = NA,
   albedo = 0.5,
   turbidity = 3,
@@ -90,11 +89,6 @@ generate_moon_latlong = function(
   verbose = FALSE,
   ...
 ) {
-  if (is.character(datetime)) {
-    message(
-      "Assuming timezone is UTC, pass explicit POSIXct object to set timezone."
-    )
-  }
   moon_sun_data = swe_dirs_topo_moon_sun(
     datetime = datetime,
     lat = lat,
@@ -186,15 +180,23 @@ generate_moon_latlong = function(
     moon_irradiance = 0
   }
 
-  moon_info_list = generate_moon_image_latlong(
-    datetime,
-    lat,
-    lon,
-    altitude,
-    width = 801,
-    height = 801,
-    earthshine = earthshine
+  moon_image_args = utils::modifyList(
+    list(
+      datetime = datetime,
+      lat = lat,
+      lon = lon,
+      elev_m = altitude,
+      earthshine = earthshine
+    ),
+    list(...)
   )
+  if (is.null(moon_image_args$width)) {
+    moon_image_args$width = 801
+  }
+  if (is.null(moon_image_args$height)) {
+    moon_image_args$height = 801
+  }
+  moon_info_list = do.call(generate_moon_image_latlong, moon_image_args)
   moon_luminance_array = moon_info_list$moon_luminance_array
   moon_angular_diameter_deg = moon_info_list$moon_angular_diameter_deg
   moon_angular_diameter_rad = moon_angular_diameter_deg * pi / 180
