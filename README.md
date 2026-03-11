@@ -88,8 +88,9 @@ dataset(s) once (see `download_sky_data()` below).
 ## Usage
 
 We’ll generate the sun on the morning (right after sunrise) in
-Washington DC on March 21st. On this day the sun is rising directly
-east, which we can see
+Washington DC on March 21st. On this day the sun is rising directly east
+(90 degrees azimuth), which we can see as the sun appearing a quarter of
+the way from the left side of the image.
 
 ``` r
 library(skymodelr)
@@ -183,6 +184,9 @@ The Prague model also supports altitudes up to 15,000m.
 
 ## 2,000 meters
 
+Note that now we’re above a good portion of the atmosphere, so we start
+seeing scattered light *below* us.
+
 ``` r
 env = generate_sky_latlong(
   datetime   = as.POSIXct("2025-03-21 12:15:00",tz="EST"),
@@ -199,6 +203,9 @@ rayimage::render_exposure(env, exposure=-5) |>
 ![](man/figures/full_sky_evening_2000-1.png)<!-- -->
 
 ## 7,500 meters
+
+High enough altitudes have the majority of the scattered light coming
+from below the viewer.
 
 ``` r
 env = generate_sky_latlong(
@@ -218,6 +225,9 @@ rayimage::render_exposure(env, exposure=-5) |>
 
 ## 15,000 meters
 
+At high altitudes, the resulting render has almost all the scattered
+light coming from below, resulting in a space-like appearance.
+
 ``` r
 env = generate_sky_latlong(
   filename    = NA,
@@ -235,6 +245,9 @@ rayimage::render_exposure(env, exposure=-5) |>
 ![](man/figures/full_sky_evening_15000-1.png)<!-- -->
 
 ## 15,000 meters, sunset
+
+Note the shadow of the Earth in the atmosphere opposite the sun when the
+sun is below the horizon.
 
 ``` r
 env = generate_sky_latlong(
@@ -303,18 +316,63 @@ moon_sky = generate_moon_latlong(
   lon       = -77.0369,
   albedo    = 0.2,
   turbidity = 3,
-  resolution = 800,
+  resolution = 6000,
   moon_atmosphere = TRUE,
-  hosek = FALSE,
   verbose = TRUE
 )
 #Increase exposure
 moon_sky |> 
-  rayimage::render_exposure(8) |> 
+  rayimage::render_exposure(10) |> 
   rayimage::plot_image()
 ```
 
 ![](man/figures/sky_moon-1.png)<!-- -->
+
+This generates and places a radiance-accurate moon into the scene,
+taking into account the moon’s phase, orientation with respect to the
+viewer’s latitude and longitude, surface albedo, non-lambertian
+reflectivity, distance to earth, earthshine, the “opposition surge”
+effect, and attenuation due to the atmosphere at varying lunar
+elevations. The moon is rendered in `rayvertex` and resampled so it is
+the correct size on the environment map. Here are some of the pre-scaled
+renders.
+
+``` r
+moon_image1 = skymodelr:::generate_moon_image_latlong(datetime  = as.POSIXct("2025-03-21 02:15:00",tz="EST"),
+  lat       = 38.9072,
+  lon       = -77.0369)
+rayimage::render_exposure(moon_image1$moon_luminance_array, 2, preview = TRUE)
+```
+
+![](man/figures/unnamed-chunk-1-1.png)<!-- -->
+
+``` r
+#Change latitude and our orientation changes
+moon_image2 = skymodelr:::generate_moon_image_latlong(datetime  = as.POSIXct("2025-03-10 02:15:00",tz="EST"),
+  lat       = 38.9072,
+  lon       = -77.0369)
+rayimage::render_exposure(moon_image2$moon_luminance_array, 2, preview = TRUE)
+```
+
+![](man/figures/unnamed-chunk-1-2.png)<!-- -->
+
+``` r
+moon_image3 = skymodelr:::generate_moon_image_latlong(datetime  = as.POSIXct("2025-03-10 02:15:00",tz="EST"),
+  lat       = 0,
+  lon       = -77.0369)
+rayimage::render_exposure(moon_image3$moon_luminance_array, 2, preview = TRUE)
+```
+
+![](man/figures/unnamed-chunk-1-3.png)<!-- -->
+
+``` r
+moon_image4 = skymodelr:::generate_moon_image_latlong(datetime  = as.POSIXct("2025-03-10 02:15:00",tz="EST"),
+  lat       = -38.9072,
+  lon       = -77.0369)
+rayimage::render_exposure(moon_image4$moon_luminance_array, 2, preview = TRUE)
+```
+
+![](man/figures/unnamed-chunk-1-4.png)<!-- -->
 
 ## Star field aligned to time and place
 
@@ -372,6 +430,64 @@ sky_prague = generate_sky(
 )
 plot_image(sky_prague)
 ```
+
+## Use in other packages
+
+You can pass these EXR images to rayrender. Here’s a daytime sky:
+
+``` r
+library(rayrender)
+day_exr = tempfile(fileext=".exr")
+generate_sky(
+  filename=day_exr,
+  elevation = 20, 
+  azimuth = 135,
+  resolution = 1000,
+  hosek = FALSE
+)
+
+generate_ground(depth = -0.5, material=diffuse(color="grey20", checkercolor = "grey50"),spheresize = 10000) |>
+  add_object(obj_model(r_obj())) |> 
+  render_scene(environment_light = day_exr, iso=10, 
+               clamp_value = 1000, fov = 80, lookfrom = c(0,0,-1), aperture = 0.05)
+```
+
+![](man/figures/unnamed-chunk-2-1.png)<!-- -->
+
+And a sunset sky, with the sun coming from due North, which is +Z in
+rayrender. If you are not trying to match a real place, you make
+adjustments to an existing environment map’s orientation using the
+`rotate_env` argument in rayrender.
+
+``` r
+sunset_exr = tempfile(fileext=".exr")
+generate_sky(
+  filename=sunset_exr,
+  elevation = 4, 
+  azimuth = 0,
+  resolution = 2000,
+  hosek = FALSE
+)
+
+#This has the light coming from north
+generate_ground(depth = -0.4, material=diffuse(color="grey20", checkercolor = "grey50"),spheresize = 10000) |>
+  add_object(obj_model(r_obj())) |> 
+  render_scene(environment_light = sunset_exr, iso=10, 
+               clamp_value = 1000, fov = 80, lookfrom = c(0,0,-1), aperture = 0.05)
+```
+
+![](man/figures/unnamed-chunk-3-1.png)<!-- -->
+
+``` r
+#Rotate the existing env 225 degrees to come from the southwest.
+generate_ground(depth = -0.4, material=diffuse(color="grey20", checkercolor = "grey50"),spheresize = 10000) |>
+  add_object(obj_model(r_obj())) |> 
+  render_scene(environment_light = sunset_exr, iso=20, 
+               clamp_value = 10000, fov = 40, lookfrom = c(0,1,-4), aperture = 0.05, 
+               rotate_env = 225)
+```
+
+![](man/figures/unnamed-chunk-3-2.png)<!-- -->
 
 ## Acknowledgements
 

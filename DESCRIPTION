@@ -11,7 +11,7 @@ Authors@R: c(
   )
 Description: Generates physically based sky environment maps and radiance samples using the
     spectral Hosek–Wilkie and Prague atmosphere models. Functions write
-    high-dynamic-range OpenEXR domes in latitude–longitude or equal-area square
+    high-dynamic-range OpenEXR domes in latitude–longitude
     projections, compute per-direction RGB or 55-channel values, and optionally
     composite location-accurate star fields. Features include automatic Sun positioning from date,
     time and location, support for sea-level and high-altitude observers, wide-
@@ -20,14 +20,13 @@ Description: Generates physically based sky environment maps and radiance sample
 License: GPL-3
 Depends: R (>= 4.2)
 Imports: Rcpp,
-    suncalc,
-	swephR,
-	rayvertex
+	  swephR,
+	  rayvertex
 LinkingTo: Rcpp, 
     RcppThread, 
     libimath, 
-	libopenexr, 
-	libdeflate
+	  libopenexr, 
+	  libdeflate
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
