@@ -37,7 +37,7 @@ Description: Generates physically based sky environment maps and radiance sample
     time and location, support for sea-level and high-altitude observers, wide-
     spectrum coefficients, and multithreaded C++/Rcpp acceleration for fast,
     high-resolution output.
-License: GPL-3
+License: GPL-3 + file LICENSE
 Depends: R (>= 4.2)
 Imports: Rcpp,
     swephR,
