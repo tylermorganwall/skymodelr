@@ -1,5 +1,5 @@
 # Set include paths
-PKG_CPPFLAGS = -I@OPENEXR_INCLUDE_DIR@ -I@IMATH_INCLUDE_DIR@ -I@DEFLATE_INCLUDE_DIR@ -I@PACKAGE_BASE_DIR@/src -I@PACKAGE_BASE_DIR@/src/math -I@PACKAGE_BASE_DIR@/src/hosek -I@PACKAGE_BASE_DIR@/src/ArHosekSkyModel -I@PACKAGE_BASE_DIR@/src/PragueSkyModel
+PKG_CPPFLAGS = -I@OPENEXR_INCLUDE_DIR@ -I@IMATH_INCLUDE_DIR@ -I@PACKAGE_BASE_DIR@/src -I@PACKAGE_BASE_DIR@/src/math -I@PACKAGE_BASE_DIR@/src/hosek -I@PACKAGE_BASE_DIR@/src/ArHosekSkyModel -I@PACKAGE_BASE_DIR@/src/PragueSkyModel
 
 AR_SOURCES=ArHosekSkyModel/ArHosekSkyModel.cpp 
 HOSEK_SOURCES=hosek/hosek.cpp hosek/cie.cpp hosek/atmosphere.cpp 
@@ -15,4 +15,4 @@ OBJECTS= $(SRC_OBJECTS) $(AR_OBJECTS) $(HOSEK_OBJECTS) $(PRAGUE_OBJECTS)
 
 # Static libraries we need to link against
 # Note that we're using the version suffix pattern that OpenEXR actually creates
-PKG_LIBS = -L@OPENEXR_LIB_ARCH@  -lOpenEXRUtil-3_4 -lOpenEXR-3_4 -lOpenEXRCore-3_4 -lIlmThread-3_4 -lIex-3_4 -L@IMATH_LIB_ARCH@  -lImath-3_2 -L@DEFLATE_LIB_ARCH@ -ldeflate
+PKG_LIBS = -L@OPENEXR_LIB_ARCH@  -lOpenEXRUtil-3_4 -lOpenEXR-3_4 -lOpenEXRCore-3_4 -lIlmThread-3_4 -lIex-3_4 -L@IMATH_LIB_ARCH@  -lImath-3_2

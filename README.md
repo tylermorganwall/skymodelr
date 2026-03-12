@@ -2,13 +2,17 @@
 # skymodelr<img src="man/figures/hex.png" align="right" width=250/>
 
 **skymodelr** generates physically‑plausible sky domes and night skies
-as high‑dynamic‑range EXR images/arrays directly from R. It implements
-the Hosek–Wilkie analytic sky model and (optionally) the 2021–22 Prague
+as high‑dynamic‑range EXR images/arrays directly from R. It provides the
+Hosek–Wilkie analytic sky model and (optionally) the 2021–22 Prague
 spectral sky model (below‑horizon sun, altitude, and wide‑spectrum
-support). It also includes tools to add the moon as well as accurate
-visible **star fields** aligned to observer location/time. Outputs are
-lat‑long environment maps (2:1 equirectangular) that you can feed into
-renderers (such as *rayrender*).
+support). It also includes options to add a physically-accurate moon
+that models phase correctly, adjusts orientation based on the viewers
+latitude and longitude, accounts for changes in brightness due to
+distance variation, opposition surge, and atmospheric attenuation.
+`skymodelr` also includes the option to add an accurate visible **star
+field** aligned to observer location/time. Outputs are lat‑long
+environment maps (2:1 equirectangular) that you can feed into renderers
+(such as *rayrender*).
 
 `generate_sky_latlong()` composes a full sky environment using the
 functions `generate_sky()`, `generate_moon_latlong()`, and
@@ -41,7 +45,7 @@ dataset(s) once (see `download_sky_data()` below).
   - `elevation = 10`, `azimuth = 90` solar position (degrees).
   - `altitude = 0` observer altitude in meters (Prague only).
   - `resolution = 2048` image height (width is `2 * resolution`).
-  - `numbercores = 1` threads.
+  - `number_cores = 1` threads.
   - `hosek = TRUE` set `FALSE` to use the Prague model; Prague options
     `wide_spectrum`, `visibility`.
   - `render_mode = "all"` for atmosphere + solar disk; use
@@ -52,7 +56,7 @@ dataset(s) once (see `download_sky_data()` below).
   adds stars and a moon‑lit atmosphere.
 
   - Core args: `filename = NA`, `datetime`, `lat`, `lon`, `albedo`,
-    `turbidity`, `resolution`, `numbercores`.
+    `turbidity`, `resolution`, `number_cores`.
   - Model selection: `hosek = TRUE` (Hosek–Wilkie) or set
     `hosek = FALSE` to use the Prague spectral model; Prague extras:
     `wide_spectrum`, `visibility`, `altitude`.
@@ -60,8 +64,9 @@ dataset(s) once (see `download_sky_data()` below).
 
 - `generate_moon_latlong()` — Produce a moon‑lit atmosphere by scaling a
   sky dome to the moon’s luminance (phase + opposition surge). Computes
-  the moon’s position from time/location. Arguments mirror
-  `generate_sky_latlong()`.
+  the moon’s position from time/location, and exposes moon-specific
+  controls such as `moon_extinction_kV`, `earthshine_albedo`, and
+  `solar_irradiance_w_m2`.
 
 - `generate_stars()` — Generate a star‑field EXR aligned with the sky
   dome:
@@ -71,7 +76,7 @@ dataset(s) once (see `download_sky_data()` below).
     for local sidereal time).
   - Optional extinction/appearance controls: `turbidity`, `ozone_du`,
     `altitude`, `star_width`, `atmosphere_effects`,
-    `upper_hemisphere_only`, `numbercores`.
+    `upper_hemisphere_only`, `number_cores`.
 
 - `calculate_sky_values()` — Sample radiance from the Prague model for
   given sky directions (`phi`, `theta`) and conditions (`elevation`,
@@ -296,7 +301,7 @@ sky = generate_sky(
   elevation = 25,
   azimuth = 135,
   resolution = 800,
-  numbercores = 2,
+  number_cores = 2,
   hosek = FALSE,
   render_mode = "atmosphere"
 )
@@ -317,6 +322,7 @@ moon_sky = generate_moon_latlong(
   albedo    = 0.2,
   turbidity = 3,
   resolution = 6000,
+  number_cores = 8,
   moon_atmosphere = TRUE,
   verbose = TRUE
 )
@@ -376,6 +382,9 @@ rayimage::render_exposure(moon_image4$moon_luminance_array, 2, preview = TRUE)
 
 ## Star field aligned to time and place
 
+Stars are rendered using color values derived from the star’s
+temperature.
+
 ``` r
 stars = generate_stars(
   datetime  = as.POSIXct("2025-03-21 02:15:00",tz="EST"),
@@ -426,7 +435,7 @@ sky_prague = generate_sky(
   wide_spectrum = FALSE,
   visibility = 50,
   resolution = 2048,
-  numbercores = 4
+  number_cores = 4
 )
 plot_image(sky_prague)
 ```

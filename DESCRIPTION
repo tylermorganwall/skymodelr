@@ -7,33 +7,51 @@ Authors@R: c(
       "Tyler", "Morgan-Wall",
       email = "tylermw@gmail.com",
       role = c("aut", "cre")
+    ),
+    person(
+      "Petr", "Vevoda",
+      role = "ctb"
+    ),
+    person(
+      "Charles University",
+      role = "cph"
+    ),
+    person(
+      "Eric", "Bruneton",
+      role = c("ctb", "cph")
+    ),
+    person(
+      "Lukas", "Hosek",
+      role = c("ctb", "cph")
+    ),
+    person(
+      "Alexander", "Wilkie",
+      role = c("ctb", "cph")
     )
   )
 Description: Generates physically based sky environment maps and radiance samples using the
     spectral Hosek–Wilkie and Prague atmosphere models. Functions write
     high-dynamic-range OpenEXR domes in latitude–longitude
     projections, compute per-direction RGB or 55-channel values, and optionally
-    composite location-accurate star fields. Features include automatic Sun positioning from date,
+    composite location-accurate star fields. Features include automatic sun and moon positioning from date,
     time and location, support for sea-level and high-altitude observers, wide-
     spectrum coefficients, and multithreaded C++/Rcpp acceleration for fast,
     high-resolution output.
 License: GPL-3
 Depends: R (>= 4.2)
 Imports: Rcpp,
-	  swephR,
-	  rayvertex
+    swephR,
+    rayvertex
 LinkingTo: Rcpp, 
     RcppThread, 
     libimath, 
-	  libopenexr, 
-	  libdeflate
+	libopenexr
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Config/build/compilation-database: true
-Suggests: 
-    testthat (>= 3.0.0),
+Suggests: testthat (>= 3.0.0),
     rayimage,
     rayrender
 Config/testthat/edition: 3

@@ -9,23 +9,6 @@ is_macos = identical(Sys.info()[['sysname']], "Darwin")
 
 TARGET_ARCH = Sys.info()[["machine"]]
 PACKAGE_BASE_DIR = normalizePath(getwd(), winslash = "/")
-DEFLATE_INCLUDE_DIR = system.file(
-  "include",
-  package = "libdeflate",
-  mustWork = TRUE
-)
-DEFLATE_LIB_ARCH = normalizePath(
-  sprintf(
-    "%s/%s",
-    system.file(
-      "lib",
-      package = "libdeflate",
-      mustWork = TRUE
-    ),
-    Sys.info()[["machine"]]
-  ),
-  winslash = "/"
-)
 
 IMATH_INCLUDE_DIR = system.file(
   "include",
@@ -68,8 +51,6 @@ OPENEXR_LIB_ARCH = normalizePath(
 define(
   PACKAGE_BASE_DIR = PACKAGE_BASE_DIR,
   TARGET_ARCH = TARGET_ARCH,
-  DEFLATE_INCLUDE_DIR = DEFLATE_INCLUDE_DIR,
-  DEFLATE_LIB_ARCH = DEFLATE_LIB_ARCH,
   IMATH_INCLUDE_DIR = IMATH_INCLUDE_DIR,
   IMATH_LIB_ARCH = IMATH_LIB_ARCH,
   OPENEXR_INCLUDE_DIR = OPENEXR_INCLUDE_DIR,

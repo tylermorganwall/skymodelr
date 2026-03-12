@@ -11,20 +11,6 @@ normalize = function(v) {
   return(v / s)
 }
 
-#' 3D cross product helper
-#'
-#' @description Compute the 3D cross product of two numeric vectors.
-#' @param x Numeric vector of length 3.
-#' @param y Numeric vector of length 3.
-#' @keywords internal
-cross_prod = function(x, y) {
-  return(c(
-    x[2] * y[3] - x[3] * y[2],
-    -(x[1] * y[3] - x[3] * y[1]),
-    x[1] * y[2] - x[2] * y[1]
-  ))
-}
-
 #' Convert altitude/azimuth to ENU
 #'
 #' @description Map altitude/azimuth angles (north-referenced) to a unit
@@ -98,24 +84,16 @@ apply_airmass_extinction = function(lux_top_atm, alt_deg, kV = 0.172) {
 #' @param lat Latitude in degrees.
 #' @param lon Longitude in degrees.
 #' @param elev_m Observer elevation above sea level in metres.
-#' @param albedo Default `0.5`. Ground albedo, range 0 to 1.
-#' @param turbidity Default `3`. Atmospheric turbidity, range 1.7 to 10
-#'   (*Hosek only*).
-#' @param visibility Default `50`. Meteorological range (km); *Prague only*.
-#' @param hosek Default `TRUE`. `FALSE` selects the Prague model.
-#' @param wide_spectrum Default `FALSE`. Use wide-spectrum (55-channel)
-#'   coefficients for Prague at sea level only.
+#' @param moon_extinction_kV Default `0.172`. V-band atmospheric extinction
+#'   coefficient used in the Rozenberg/Krisciunas-Schaefer airmass attenuation
+#'   model for moonlight.
 #' @keywords internal
 swe_dirs_topo_moon_sun = function(
   datetime,
   lat,
   lon,
   elev_m = 0,
-  albedo = 0.5,
-  turbidity = 3,
-  visibility = 50,
-  hosek = TRUE,
-  wide_spectrum = FALSE
+  moon_extinction_kV = 0.172
 ) {
   swephR::swe_set_topo(lon, lat, elev_m)
   attr(datetime, "tzone") = "UTC"
@@ -133,7 +111,6 @@ swe_dirs_topo_moon_sun = function(
   flg_eq_topo = swephR::SE$FLG_SWIEPH +
     swephR::SE$FLG_EQUATORIAL +
     swephR::SE$FLG_TOPOCTR
-  flg_eq_geo = swephR::SE$FLG_SWIEPH + swephR::SE$FLG_EQUATORIAL
   long_rad = lon * pi / 180
   lat_rad = lat * pi / 180
 
@@ -201,19 +178,10 @@ swe_dirs_topo_moon_sun = function(
   alt_mt = local_horizon_moon[2]
 
   moon_elev_deg = alt_mt * 180 / pi
-  moon_azimuth_deg = (azN_mt * 180 / pi + 180) %% 360
-  atten_elev_deg = moon_elev_deg
-  if (hosek) {
-    atten_elev_deg = max(min(atten_elev_deg, 90), 0)
-  } else {
-    atten_elev_deg = max(min(atten_elev_deg, 90), -4.2)
-  }
-
-  # Then, after you compute moon_elev_deg:
   moon_brightness_lux = apply_airmass_extinction(
     lux_top_atm = moon_brightness_lux_raw,
     alt_deg = moon_elev_deg,
-    kV = 0.172
+    kV = moon_extinction_kV
   )
 
   list(
@@ -282,46 +250,10 @@ swe_dirs_topo_sunmoon_df = function(datetime, lat, lon, elev_m = 0) {
   flg_eq_topo = swephR::SE$FLG_SWIEPH +
     swephR::SE$FLG_EQUATORIAL +
     swephR::SE$FLG_TOPOCTR
-  flg_eq_geo = swephR::SE$FLG_SWIEPH + swephR::SE$FLG_EQUATORIAL
-  long_rad = lon * pi / 180
-  lat_rad = lat * pi / 180
-
-  enu_to_ecef = matrix(
-    c(
-      -sin(long_rad),
-      cos(long_rad),
-      0,
-      -sin(lat_rad) * cos(long_rad),
-      -sin(lat_rad) * sin(long_rad),
-      cos(lat_rad),
-      cos(lat_rad) * cos(long_rad),
-      cos(lat_rad) * sin(long_rad),
-      sin(lat_rad)
-    ),
-    ncol = 3,
-    nrow = 3,
-    byrow = TRUE
-  )
 
   to_rad = pi / 180
-
-  to_local_horizontal_coordinates = function(ra_dec) {
-    aa = swephR::swe_azalt(
-      jd_ut,
-      swephR::SE$EQU2HOR,
-      c(lon, lat, elev_m),
-      0,
-      0,
-      xin = c(ra_dec[1], ra_dec[2], 1)
-    )$xaz
-    aa
-  }
   get_enu_magnitude = function(planet_flag) {
-    position_rad = #to_local_horizontal_coordinates(
-      swephR::swe_calc_ut(jd_ut, planet_flag, flg_eq_topo)$xx * to_rad
-    # ) *
-    # to_rad
-    # position_enu = altaz_to_enu(position_hori[1], position_hori[2])
+    position_rad = swephR::swe_calc_ut(jd_ut, planet_flag, flg_eq_topo)$xx * to_rad
     info = swephR::swe_pheno_ut(jd_ut, planet_flag, flg_eq_topo)$attr
     list(ra_rad = position_rad[1], dec_rad = position_rad[2], v_mag = info[5])
   }
@@ -358,46 +290,10 @@ swe_dirs_topo_planets_df = function(datetime, lat, lon, elev_m = 0) {
   flg_eq_topo = swephR::SE$FLG_SWIEPH +
     swephR::SE$FLG_EQUATORIAL +
     swephR::SE$FLG_TOPOCTR
-  flg_eq_geo = swephR::SE$FLG_SWIEPH + swephR::SE$FLG_EQUATORIAL
-  long_rad = lon * pi / 180
-  lat_rad = lat * pi / 180
-
-  enu_to_ecef = matrix(
-    c(
-      -sin(long_rad),
-      cos(long_rad),
-      0,
-      -sin(lat_rad) * cos(long_rad),
-      -sin(lat_rad) * sin(long_rad),
-      cos(lat_rad),
-      cos(lat_rad) * cos(long_rad),
-      cos(lat_rad) * sin(long_rad),
-      sin(lat_rad)
-    ),
-    ncol = 3,
-    nrow = 3,
-    byrow = TRUE
-  )
 
   to_rad = pi / 180
-
-  to_local_horizontal_coordinates = function(ra_dec) {
-    aa = swephR::swe_azalt(
-      jd_ut,
-      swephR::SE$EQU2HOR,
-      c(lon, lat, elev_m),
-      0,
-      0,
-      xin = c(ra_dec[1], ra_dec[2], 1)
-    )$xaz
-    aa
-  }
   get_enu_magnitude = function(planet_flag) {
-    position_rad = #to_local_horizontal_coordinates(
-      swephR::swe_calc_ut(jd_ut, planet_flag, flg_eq_topo)$xx * to_rad
-    # ) *
-    # to_rad
-    # position_enu = altaz_to_enu(position_hori[1], position_hori[2])
+    position_rad = swephR::swe_calc_ut(jd_ut, planet_flag, flg_eq_topo)$xx * to_rad
     info = swephR::swe_pheno_ut(jd_ut, planet_flag, flg_eq_topo)$attr
     list(ra_rad = position_rad[1], dec_rad = position_rad[2], v_mag = info[5])
   }
@@ -414,20 +310,6 @@ swe_dirs_topo_planets_df = function(datetime, lat, lon, elev_m = 0) {
 }
 
 
-#' Build an orthonormal frame from a Z axis
-#'
-#' @description Construct a 3×3 orientation matrix with the third column aligned
-#' to a supplied direction.
-#' @param x Numeric vector giving the desired Z axis.
-#' @keywords internal
-build_from_z = function(x) {
-  zz = normalize(x)
-  a = if (abs(zz[1]) > 0.9999999) c(0, 1, 0) else c(1, 0, 0)
-  yy = normalize(cross_prod(zz, a))
-  xx = cross_prod(yy, zz)
-  return(matrix(c(xx, yy, zz), ncol = 3, byrow = FALSE))
-}
-
 #' Generate the moon into a lat-long image array patch
 #'
 #' @description Produce a rasterised moon texture aligned for composition into
@@ -441,8 +323,13 @@ build_from_z = function(x) {
 #' @param width Output width in pixels.
 #' @param height Output height in pixels.
 #' @param earthshine Default `TRUE`. If `FALSE`, skip the earthshine emissive term.
+#' @param earthshine_albedo Default `0.19`. Effective Earth albedo term used
+#'   in the earthshine irradiance approximation.
+#' @param solar_irradiance_w_m2 Default `1300`. Reference solar irradiance at
+#'   1 AU (W/m^2) used to normalize earthshine emission intensity.
+#' @param moon_extinction_kV Default `0.172`. V-band atmospheric extinction
+#'   coefficient for direct moonlight attenuation.
 #' @param verbose Default `FALSE`. If `TRUE`, print earthshine diagnostics.
-#' @param ... Additional ignored arguments forwarded from wrapper functions.
 #' @keywords internal
 generate_moon_image_latlong = function(
   datetime,
@@ -452,14 +339,21 @@ generate_moon_image_latlong = function(
   width = 800,
   height = 800,
   earthshine = TRUE,
-  verbose = FALSE,
-  ...
+  earthshine_albedo = 0.19,
+  solar_irradiance_w_m2 = 1300,
+  moon_extinction_kV = 0.172,
+  verbose = FALSE
 ) {
-  moon_sun_data = swe_dirs_topo_moon_sun(datetime, lat, lon, elev_m)
+  moon_sun_data = swe_dirs_topo_moon_sun(
+    datetime = datetime,
+    lat = lat,
+    lon = lon,
+    elev_m = elev_m,
+    moon_extinction_kV = moon_extinction_kV
+  )
   dir_moon = normalize(moon_sun_data$moon_ecef_geo)
   dir_sun = -normalize(moon_sun_data$sun_ecef_geo)
   local_up = normalize(moon_sun_data$local_up_geo)
-  moon_brightness_lux = moon_sun_data$moon_brightness_lux
 
   tex = system.file(
     "textures",
@@ -481,8 +375,8 @@ generate_moon_image_latlong = function(
   earth_phase = clamp(earth_phase, 1e-6, pi - 1e-6)
 
   # Paper-based earthshine irradiance model:
-  # E_em = 0.19 * 0.5 * [1 - sin(phase/2) * tan(phase/2) * ln(cot(phase/4))]
-  E_em = 0.19 *
+  # E_em = A_e * 0.5 * [1 - sin(phase/2) * tan(phase/2) * ln(cot(phase/4))]
+  E_em = earthshine_albedo *
     0.5 *
     (1 -
       sin(earth_phase / 2) *
@@ -493,16 +387,12 @@ generate_moon_image_latlong = function(
     E_em = 0
   }
 
-  # Convert to unitless emission scale relative to solar irradiance at 1 AU.
-  # sunlight ~ 1.3e3 W/m^2.
-  solar_irradiance = 1.3e3
-
   earth_emissive_intensity = 0
-  if (earthshine) {
-    earth_emissive_intensity = E_em / solar_irradiance
+  if (earthshine && is.finite(solar_irradiance_w_m2) && solar_irradiance_w_m2 > 0) {
+    earth_emissive_intensity = E_em / solar_irradiance_w_m2
   }
 
-  # Build a base mesh transform shared by both passes
+  # Build a base mesh transform for the moon pass
   build_moon_mesh = function(material) {
     rayvertex::sphere_mesh(material = material, radius = 0.5) |>
       rayvertex::subdivide_mesh() |>
@@ -515,37 +405,7 @@ generate_moon_image_latlong = function(
       rayvertex::translate_mesh(dir_moon * 10)
   }
 
-  # Pass 1: sun-only material (no emission) for magnitude calibration
-  moon_material_sun = rayvertex::material_list(
-    texture_location = tex,
-    emissive_texture_location = tex,
-    diffuse = c(1, 1, 1),
-    emission = c(1, 1, 1),
-    diffuse_intensity = 1,
-    emission_intensity = 0,
-    sigma = 10
-  )
-
-  moon_mesh_sun = build_moon_mesh(moon_material_sun)
-
-  moon_image_sun = rayvertex::rasterize_scene(
-    moon_mesh_sun,
-    lookfrom = c(0, 0, 0),
-    lookat = dir_moon * 10,
-    camera_up = local_up,
-    fov = 0,
-    ortho_dimensions = c(2, 2), #Double dimensions to keep edge effects away
-    light_info = rayvertex::directional_light(
-      direction = -dir_sun,
-      intensity = 1
-    ),
-    transparent_background = TRUE,
-    plot = FALSE,
-    width = width,
-    height = height
-  )
-
-  # Pass 2: combined sun + earthshine using emissive intensity
+  # Combined sun + earthshine using emissive intensity
   moon_material = rayvertex::material_list(
     texture_location = tex,
     emissive_texture_location = tex,
@@ -564,7 +424,7 @@ generate_moon_image_latlong = function(
     lookat = dir_moon * 10,
     camera_up = local_up,
     fov = 0,
-    ortho_dimensions = c(2, 2), #Match padding used in sun-only pass
+    ortho_dimensions = c(2, 2), # Keep edge effects away from the visible disk
     light_info = rayvertex::directional_light(
       direction = -dir_sun,
       intensity = 1

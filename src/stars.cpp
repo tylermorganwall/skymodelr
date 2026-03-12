@@ -133,7 +133,7 @@ Rcpp::NumericVector make_starfield_rcpp(Rcpp::DataFrame stars,
             						 bool            use_rgb   = true,
             						 bool            atmosphere_effects = true,
             						 bool            upper_hemisphere_only = true,
-            						 unsigned int    numbercores  = 1)
+            						 unsigned int    number_cores  = 1)
 {
   if (resolution == 0) Rcpp::stop("resolution must be greater than or equal to 1");
   if(!upper_hemisphere_only & atmosphere_effects) {
@@ -350,7 +350,7 @@ Rcpp::NumericVector make_starfield_rcpp(Rcpp::DataFrame stars,
   		    }
   		  }
   		}
-    }, numbercores);
+    }, number_cores);
 
     Rcpp::NumericVector result(nPix * 3);
     result.attr("dim") = Rcpp::IntegerVector::create(nTheta, nPhi, 3);

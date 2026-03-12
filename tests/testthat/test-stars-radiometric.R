@@ -19,7 +19,7 @@ test_that("star env integration is resolution invariant", {
 			use_rgb = TRUE,
 			atmosphere_effects = FALSE,
 			upper_hemisphere_only = FALSE,
-			numbercores = 1
+			number_cores = 1
 		)
 	}
 	integrate_env = function(env) {

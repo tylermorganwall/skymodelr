@@ -13,7 +13,7 @@ generate_sky_latlong(
   turbidity = 3,
   altitude = 0,
   resolution = 2048,
-  numbercores = 1,
+  number_cores = 1,
   hosek = TRUE,
   wide_spectrum = FALSE,
   visibility = 50,
@@ -49,7 +49,7 @@ generate_sky_latlong(
 
 \item{resolution}{Default \code{2048}. Image height in pixels (width = 2 * height).}
 
-\item{numbercores}{Default \code{1}. CPU threads to use.}
+\item{number_cores}{Default \code{1}. CPU threads to use.}
 
 \item{hosek}{Default \code{TRUE}. \code{FALSE} selects the Prague model.}
 
@@ -81,7 +81,8 @@ Use \code{"all"} for atmosphere + solar disk, \code{"atmosphere"} for atmospheri
 
 \item{stars_exposure}{Default \code{0}. Increases star exposure by \code{2^exposure}. Non-physical, this just controls adjustments for artistic effect.}
 
-\item{...}{Additional arguments passed to \code{\link[=generate_stars]{generate_stars()}}, and when enabled, \code{\link[=generate_planets]{generate_planets()}} and \code{\link[=generate_moon_latlong]{generate_moon_latlong()}}.}
+\item{...}{Additional \strong{named} arguments forwarded to \code{\link[=generate_stars]{generate_stars()}}, and when enabled, \code{\link[=generate_planets]{generate_planets()}} and \code{\link[=generate_moon_latlong]{generate_moon_latlong()}}.
+Unmatched names are ignored.}
 }
 \value{
 Either the raw data, or the data is invisibly returned if filename is given. The EXR is written to \code{filename}.
@@ -111,7 +112,7 @@ generate_sky_latlong(
   datetime    = as.POSIXct("2025-03-21 06:15:00",tz="EST"),
   lat         = 38.9072,
   lon         = -77.0369,
-  numbercores = 2,
+  number_cores = 2,
   hosek = FALSE
 ) |>
   rayimage::plot_image()
@@ -121,7 +122,7 @@ generate_sky_latlong(
   datetime    = as.POSIXct("2025-03-21 12:00:00",tz="EST"),
   lat         = 38.9072,
   lon         = -77.0369,
-  numbercores = 2,
+  number_cores = 2,
 ) |>
   rayimage::plot_image()
 }
@@ -130,7 +131,7 @@ generate_sky_latlong(
   datetime    = as.POSIXct("2025-03-21 18:00:00",tz="EST"),
   lat         = 38.9072,
   lon         = -77.0369,
-  numbercores = 2,
+  number_cores = 2,
 ) |>
   rayimage::plot_image()
 }
@@ -139,7 +140,7 @@ generate_sky_latlong(
   datetime    = as.POSIXct("2025-03-21 18:30:00",tz="EST"),
   lat         = 38.9072,
   lon         = -77.0369,
-  numbercores = 2,
+  number_cores = 2,
   hosek = FALSE,
   verbose=TRUE,
 ) |>

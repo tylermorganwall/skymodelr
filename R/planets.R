@@ -16,7 +16,7 @@
 #' @param planet_width Approximate point-spread size for planets in pixels.
 #' @param upper_hemisphere_only If `TRUE`, mask pixels below the horizon.
 #' @param atmosphere_effects If `TRUE`, apply atmospheric extinction.
-#' @param numbercores CPU threads used for rendering.
+#' @param number_cores CPU threads used for rendering.
 #' @param verbose Emit diagnostic output when `TRUE`.
 #'
 #' @return Either the image array, or the array is invisibly returned if a file
@@ -38,7 +38,7 @@
 #'   planet_width = 1,
 #'   atmosphere_effects   = TRUE,
 #'   upper_hemisphere_only = TRUE,
-#'   numbercores = 2
+#'   number_cores = 2
 #' ) |>
 #'   rayimage::plot_image()
 #'}
@@ -55,7 +55,7 @@ generate_planets = function(
 	planet_width = 1,
 	upper_hemisphere_only = TRUE,
 	atmosphere_effects = TRUE,
-	numbercores = 1,
+	number_cores = 1,
 	verbose = FALSE
 ) {
 	if (!inherits(datetime, "POSIXct")) {
@@ -81,7 +81,7 @@ generate_planets = function(
 		star_width = planet_width,
 		atmosphere_effects = atmosphere_effects,
 		upper_hemisphere_only = upper_hemisphere_only,
-		numbercores = numbercores
+		number_cores = number_cores
 	)
 	planet_array = array(0, dim = c(resolution, resolution * 2, 4))
 	planet_array[,, 1:3] = planet_rgb

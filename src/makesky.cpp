@@ -166,7 +166,7 @@ trapezoid_weights(const std::vector<double> &lambda_values) {
 Rcpp::NumericVector
 makesky_rcpp(double albedo = 0.5, double turbidity = 3.0,
              double elevation = 10.0, double azimuth_deg = 90,
-             unsigned int resolution = 2048, unsigned int numbercores = 1,
+             unsigned int resolution = 2048, unsigned int number_cores = 1,
              std::string model = "hosek", // hosek | prague
              std::string prg_dataset = "", double altitude = 0.0,
              double visibility = 50.0, // Prague only (km)
@@ -398,7 +398,7 @@ makesky_rcpp(double albedo = 0.5, double turbidity = 3.0,
           img_band[int(t) * nPhi + p] = L_band;
         }
       },
-      numbercores);
+      number_cores);
 
   const int width = nPhi;
   const int height = nTheta;
@@ -712,7 +712,7 @@ Rcpp::NumericMatrix calculate_raw_prague(
     Rcpp::NumericVector phi, Rcpp::NumericVector theta,
     Rcpp::NumericVector elevation, Rcpp::NumericVector albedo,
     Rcpp::NumericVector altitude, Rcpp::NumericVector visibility,
-    Rcpp::NumericVector azimuth, unsigned int numbercores = 1,
+    Rcpp::NumericVector azimuth, unsigned int number_cores = 1,
     std::string prg_dataset = "", std::string render_mode = "all") {
   bool render_atmosphere = true;
   bool render_sun = true;
@@ -815,7 +815,7 @@ Rcpp::NumericMatrix calculate_raw_prague(
         img[3 * t + 2] = B;
         band[t] = L_band;
       },
-      numbercores);
+      number_cores);
 
   Rcpp::NumericMatrix rgb(phi.size(), 3);
   for (int p = 0; p < phi.size(); p++) {

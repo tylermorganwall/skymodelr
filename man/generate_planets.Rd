@@ -17,7 +17,7 @@ generate_planets(
   planet_width = 1,
   upper_hemisphere_only = TRUE,
   atmosphere_effects = TRUE,
-  numbercores = 1,
+  number_cores = 1,
   verbose = FALSE
 )
 }
@@ -47,7 +47,7 @@ image array is returned without writing.}
 
 \item{atmosphere_effects}{If \code{TRUE}, apply atmospheric extinction.}
 
-\item{numbercores}{CPU threads used for rendering.}
+\item{number_cores}{CPU threads used for rendering.}
 
 \item{verbose}{Emit diagnostic output when \code{TRUE}.}
 }
@@ -76,7 +76,7 @@ generate_planets(
   planet_width = 1,
   atmosphere_effects   = TRUE,
   upper_hemisphere_only = TRUE,
-  numbercores = 2
+  number_cores = 2
 ) |>
   rayimage::plot_image()
 }

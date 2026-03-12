@@ -12,7 +12,7 @@ calculate_sky_values(
   visibility = 50,
   albedo = 0.5,
   azimuth = 90,
-  numbercores = 1,
+  number_cores = 1,
   wide_spectrum = FALSE,
   render_mode = "all"
 )
@@ -32,7 +32,7 @@ calculate_sky_values(
 
 \item{azimuth}{Default \code{90}, single value. Solar azimuth (degrees). Defaults South.}
 
-\item{numbercores}{Default \code{1}. Number of threads to use in computation.}
+\item{number_cores}{Default \code{1}. Number of threads to use in computation.}
 
 \item{wide_spectrum}{Default \code{FALSE}. Whether to use the wide-spectrum (55-channel, polarised) coefficients.}
 

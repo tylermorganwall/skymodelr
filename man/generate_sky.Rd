@@ -12,7 +12,7 @@ generate_sky(
   azimuth = 90,
   altitude = 0,
   resolution = 2048,
-  numbercores = 1,
+  number_cores = 1,
   hosek = TRUE,
   wide_spectrum = FALSE,
   visibility = 50,
@@ -37,7 +37,7 @@ snow will have an albedo of 1.0.}
 
 \item{resolution}{Default \code{2048}. Height of the image. Width is twice this number.}
 
-\item{numbercores}{Default \code{1}. Number of threads to use in computation.}
+\item{number_cores}{Default \code{1}. Number of threads to use in computation.}
 
 \item{hosek}{Default \code{TRUE}. Set to \code{FALSE} to enable the Prague 2021-22 spectral sky model.}
 
@@ -100,7 +100,7 @@ generate_sky(
   albedo     = 0.2,
   elevation  = 5,
   azimuth    = 220,
-  numbercores = 2
+  number_cores = 2
 ) |>
   rayimage::plot_image()
 }

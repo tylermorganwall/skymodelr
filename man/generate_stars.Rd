@@ -17,7 +17,7 @@ generate_stars(
   star_width = 1,
   upper_hemisphere_only = TRUE,
   atmosphere_effects = TRUE,
-  numbercores = 1
+  number_cores = 1
 )
 }
 \arguments{
@@ -46,7 +46,7 @@ image array is returned without writing.}
 
 \item{atmosphere_effects}{Default \code{TRUE}. If \code{TRUE}, apply atmospheric extinction and color shift using \code{turbidity}, \code{ozone_du}, and \code{altitude}.}
 
-\item{numbercores}{Default \code{1}. Number of CPU threads to use.}
+\item{number_cores}{Default \code{1}. Number of CPU threads to use.}
 }
 \value{
 Either the image array, or the array is invisibly returned if a file
@@ -78,7 +78,7 @@ generate_stars(
   star_width = 1,
   atmosphere_effects   = TRUE,
   upper_hemisphere_only = TRUE,
-  numbercores = 2
+  number_cores = 2
 ) |>
   rayimage::plot_image()
 }

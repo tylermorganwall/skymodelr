@@ -16,7 +16,15 @@ spec_to_bv = function(spec) {
 	}
 	s = toupper(trimws(spec))
 	letter = substr(s, 1, 1)
-	base = c(O = -0.33, B = -0.30, A = 0.00, F = 0.30, G = 0.58, K = 0.81, M = 1.40)
+	base = c(
+		O = -0.33,
+		B = -0.30,
+		A = 0.00,
+		F = 0.30,
+		G = 0.58,
+		K = 0.81,
+		M = 1.40
+	)
 	if (!letter %in% names(base)) {
 		return(NA_real_)
 	}
@@ -25,8 +33,21 @@ spec_to_bv = function(spec) {
 		digit = 0
 	}
 	digit = max(0, min(9, digit))
-	next_letter = switch(letter, O = "B", B = "A", A = "F", F = "G", G = "K", K = "M", M = NA)
-	next_base = if (!is.na(next_letter)) base[[next_letter]] else base[["M"]] + 0.35
+	next_letter = switch(
+		letter,
+		O = "B",
+		B = "A",
+		A = "F",
+		F = "G",
+		G = "K",
+		K = "M",
+		M = NA
+	)
+	next_base = if (!is.na(next_letter)) {
+		base[[next_letter]]
+	} else {
+		base[["M"]] + 0.35
+	}
 	b_v = base[[letter]] + (digit / 10) * (next_base - base[[letter]])
 	max(-0.4, min(2.0, b_v))
 }
@@ -67,7 +88,7 @@ stars_with_bv = local({
 #' @param star_width Default `1`. Approximate stellar point-spread size in pixels (controls apparent star sharpness).
 #' @param upper_hemisphere_only Default `TRUE`. If `TRUE`, pixels below the local horizon are suppressed to match `generate_sky()`’s visible hemisphere.
 #' @param atmosphere_effects Default `TRUE`. If `TRUE`, apply atmospheric extinction and color shift using `turbidity`, `ozone_du`, and `altitude`.
-#' @param numbercores Default `1`. Number of CPU threads to use.
+#' @param number_cores Default `1`. Number of CPU threads to use.
 #'
 #' @return Either the image array, or the array is invisibly returned if a file
 #'   is written. The array has dimensions `(resolution, 2 * resolution, 4)`.
@@ -91,7 +112,7 @@ stars_with_bv = local({
 #'   star_width = 1,
 #'   atmosphere_effects   = TRUE,
 #'   upper_hemisphere_only = TRUE,
-#'   numbercores = 2
+#'   number_cores = 2
 #' ) |>
 #'   rayimage::plot_image()
 #'}
@@ -137,7 +158,7 @@ generate_stars = function(
 	star_width = 1,
 	upper_hemisphere_only = TRUE,
 	atmosphere_effects = TRUE,
-	numbercores = 1
+	number_cores = 1
 ) {
 	if (!inherits(datetime, "POSIXct")) {
 		stop("datetime must be POSIXct in UTC")
@@ -158,7 +179,7 @@ generate_stars = function(
 		star_width = star_width,
 		atmosphere_effects = atmosphere_effects,
 		upper_hemisphere_only = upper_hemisphere_only,
-		numbercores = numbercores
+		number_cores = number_cores
 	)
 	star_array = array(0, dim = c(resolution, resolution * 2, 4))
 	star_array[,, 1:3] = star_rgb

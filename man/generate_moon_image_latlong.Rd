@@ -12,8 +12,10 @@ generate_moon_image_latlong(
   width = 800,
   height = 800,
   earthshine = TRUE,
-  verbose = FALSE,
-  ...
+  earthshine_albedo = 0.19,
+  solar_irradiance_w_m2 = 1300,
+  moon_extinction_kV = 0.172,
+  verbose = FALSE
 )
 }
 \arguments{
@@ -31,9 +33,16 @@ generate_moon_image_latlong(
 
 \item{earthshine}{Default \code{TRUE}. If \code{FALSE}, skip the earthshine emissive term.}
 
-\item{verbose}{Default \code{FALSE}. If \code{TRUE}, print earthshine diagnostics.}
+\item{earthshine_albedo}{Default \code{0.19}. Effective Earth albedo term used
+in the earthshine irradiance approximation.}
 
-\item{...}{Additional ignored arguments forwarded from wrapper functions.}
+\item{solar_irradiance_w_m2}{Default \code{1300}. Reference solar irradiance at
+1 AU (W/m^2) used to normalize earthshine emission intensity.}
+
+\item{moon_extinction_kV}{Default \code{0.172}. V-band atmospheric extinction
+coefficient for direct moonlight attenuation.}
+
+\item{verbose}{Default \code{FALSE}. If \code{TRUE}, print earthshine diagnostics.}
 }
 \description{
 Produce a rasterised moon texture aligned for composition into

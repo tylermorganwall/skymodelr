@@ -13,14 +13,18 @@ generate_moon_latlong(
   turbidity = 3,
   altitude = 0,
   resolution = 2048,
-  numbercores = 1,
+  number_cores = 1,
   moon_atmosphere = FALSE,
   earthshine = TRUE,
+  earthshine_albedo = 0.19,
+  solar_irradiance_w_m2 = 1300,
+  moon_extinction_kV = 0.172,
   hosek = TRUE,
   wide_spectrum = FALSE,
   visibility = 50,
-  verbose = FALSE,
-  ...
+  moon_texture_width = 801,
+  moon_texture_height = 801,
+  verbose = FALSE
 )
 }
 \arguments{
@@ -42,11 +46,20 @@ generate_moon_latlong(
 
 \item{resolution}{Default \code{2048}. Image height in pixels (width = 2 * height).}
 
-\item{numbercores}{Default \code{1}. CPU threads to use.}
+\item{number_cores}{Default \code{1}. CPU threads to use.}
 
 \item{moon_atmosphere}{Default \code{FALSE}. If \code{TRUE}, this generates atmospheric scattering from light from the moon.}
 
 \item{earthshine}{Default \code{TRUE}. If \code{FALSE}, disable earthshine contribution on the moon.}
+
+\item{earthshine_albedo}{Default \code{0.19}. Effective Earth albedo term used
+in the earthshine irradiance approximation.}
+
+\item{solar_irradiance_w_m2}{Default \code{1300}. Reference solar irradiance at
+1 AU (W/m^2) used to normalize earthshine emission intensity.}
+
+\item{moon_extinction_kV}{Default \code{0.172}. V-band atmospheric extinction
+coefficient for direct moonlight attenuation.}
 
 \item{hosek}{Default \code{TRUE}. \code{FALSE} selects the Prague model.}
 
@@ -54,9 +67,11 @@ generate_moon_latlong(
 
 \item{visibility}{Default \code{50}. Meteorological range (km); \emph{Prague only}.}
 
-\item{verbose}{Default \code{FALSE}. Whether to print progress bars/diagnostic info.}
+\item{moon_texture_width}{Default \code{801}. Internal moon-texture render width.}
 
-\item{...}{Additional arguments forwarded to \code{\link[=generate_moon_image_latlong]{generate_moon_image_latlong()}}.}
+\item{moon_texture_height}{Default \code{801}. Internal moon-texture render height.}
+
+\item{verbose}{Default \code{FALSE}. Whether to print progress bars/diagnostic info.}
 }
 \value{
 Either the image array, or the array is invisibly returned if a file
@@ -65,7 +80,8 @@ is written. The array has dimensions \verb{(resolution, 2 * resolution, 4)}.
 \description{
 Note that this is just a scaled version of \code{generate_sky()}, scaled down by the luminance
 of the moon as compared to the sun. This function takes the phase of the moon into account,
-along with the increase in luminosity around a full moon (known as opposition surge).
+along with the increase in luminosity around a full moon (known as opposition surge). Moonlight
+attenuation uses the Rozenberg/Krisciunas-Schaefer airmass approximation with configurable \code{moon_extinction_kV}.
 }
 \note{
 Writing to non-EXR formats will introduce precision loss because HDR
