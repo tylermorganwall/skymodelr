@@ -15,4 +15,5 @@
 ^pkgdown$
 ^src/.+/.+\.o$
 ^.+\.jpg$
-^*.af$
+^.+\.af$
+^\.github$
