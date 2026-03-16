@@ -11,7 +11,15 @@ row_altitude = function(row_index, degrees_per_pixel) {
 	90 - ((row_index - 0.5) * degrees_per_pixel)
 }
 
+prague_ground_dataset = function() {
+	file.path(
+		tools::R_user_dir("skymodelr", "data"),
+		"SkyModelDatasetGround.dat"
+	)
+}
+
 test_that("sun is correct at equinox", {
+	testthat::skip_if_not(file.exists(prague_ground_dataset()))
 	resolution_height = 2000
 	resolution_width = 2 * resolution_height
 	degrees_per_pixel = 360 / (resolution_width)
@@ -183,10 +191,7 @@ test_that("sun radiance does not drop at 90 deg elevation", {
 })
 
 test_that("Prague sun radiance does not drop at 90 deg elevation", {
-	coef_file = file.path(
-		tools::R_user_dir("skymodelr", "data"),
-		"SkyModelDatasetGround.dat"
-	)
+	coef_file = prague_ground_dataset()
 	testthat::skip_if_not(file.exists(coef_file))
 
 	resolution_height = 512
