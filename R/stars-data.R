@@ -21,5 +21,5 @@
 #' Bright Star Catalogue, 5th Revised Edition (BSC5), stored in `data-raw/BSC5`.
 #'
 #' @usage data(stars)
-#' @keywords datasets
+#' @keywords datasets internal
 "stars"

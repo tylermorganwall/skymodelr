@@ -19,3 +19,4 @@ Apparent V magnitude \code{m}.
 \description{
 Moon V-band magnitude from phase angle
 }
+\keyword{internal}

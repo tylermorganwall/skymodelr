@@ -28,3 +28,4 @@ A data frame of stellar positions and photometric/color information used by
 \code{\link[=generate_stars]{generate_stars()}} to render star fields.
 }
 \keyword{datasets}
+\keyword{internal}

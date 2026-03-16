@@ -12,3 +12,6 @@ README_cache
 src/*.so
 src/Makevars
 src/Makevars.win
+
+/.quarto/
+**/*.quarto_ipynb
