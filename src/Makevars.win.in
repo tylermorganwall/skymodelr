@@ -15,4 +15,4 @@ OBJECTS= $(SRC_OBJECTS) $(AR_OBJECTS) $(HOSEK_OBJECTS) $(PRAGUE_OBJECTS)
 
 # Static libraries we need to link against
 # Note that we're using the version suffix pattern that OpenEXR actually creates
-PKG_LIBS = -L@OPENEXR_LIB_ARCH@  -lOpenEXRUtil-3_4 -lOpenEXR-3_4 -lOpenEXRCore-3_4 -lIlmThread-3_4 -lIex-3_4 -L@IMATH_LIB_ARCH@  -lImath-3_2
+PKG_LIBS = -L@OPENEXR_LIB_ARCH@  -lOpenEXRUtil-4_0 -lOpenEXR-4_0 -lOpenEXRCore-4_0 -lIlmThread-4_0 -lIex-4_0 -L@IMATH_LIB_ARCH@  -lImath-3_2
