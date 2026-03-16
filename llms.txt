@@ -8,8 +8,8 @@ support). It also includes options to add a physically-accurate moon
 that models phase correctly, adjusts orientation based on the viewers
 latitude and longitude, accounts for changes in brightness due to
 distance variation, opposition surge, and atmospheric attenuation.
-`skymodelr` also includes the option to add an accurate visible **star
-field** aligned to observer location/time. Outputs are lat‑long
+`skymodelr` also includes the option to add an accurate visible star
+field aligned to observer location/time. Outputs are lat‑long
 environment maps (2:1 equirectangular) that you can feed into renderers
 (such as *rayrender*).
 
