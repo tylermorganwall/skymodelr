@@ -56,3 +56,6 @@ Suggests: testthat (>= 3.0.0),
     rayrender
 Config/testthat/edition: 3
 URL: https://www.skymodelr.com
+Remotes: tylermorganwall/rayvertex,
+    tylermorganwall/rayrender,
+	tylermorganwall/rayimage
