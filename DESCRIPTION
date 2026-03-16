@@ -41,7 +41,8 @@ License: GPL-3 + file LICENSE
 Depends: R (>= 4.2)
 Imports: Rcpp,
     swephR,
-    rayvertex
+    rayvertex (>= 0.14.0),
+    rayimage (>= 0.24.1),
 LinkingTo: Rcpp, 
     RcppThread, 
     libimath, 
@@ -52,7 +53,6 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Config/build/compilation-database: true
 Suggests: testthat (>= 3.0.0),
-    rayimage,
     rayrender
 Config/testthat/edition: 3
 URL: https://www.skymodelr.com
