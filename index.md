@@ -1,0 +1,517 @@
+# skymodelr![](reference/figures/hex.png)
+
+**skymodelr** generates physically‑plausible sky domes and night skies
+as high‑dynamic‑range EXR images/arrays directly from R. It provides the
+Hosek–Wilkie analytic sky model and (optionally) the 2021–22 Prague
+spectral sky model (below‑horizon sun, altitude, and wide‑spectrum
+support). It also includes options to add a physically-accurate moon
+that models phase correctly, adjusts orientation based on the viewers
+latitude and longitude, accounts for changes in brightness due to
+distance variation, opposition surge, and atmospheric attenuation.
+`skymodelr` also includes the option to add an accurate visible **star
+field** aligned to observer location/time. Outputs are lat‑long
+environment maps (2:1 equirectangular) that you can feed into renderers
+(such as *rayrender*).
+
+[`generate_sky_latlong()`](https://tylermorganwall.github.io/skymodelr/reference/generate_sky_latlong.md)
+composes a full sky environment using the functions
+[`generate_sky()`](https://tylermorganwall.github.io/skymodelr/reference/generate_sky.md),
+[`generate_moon_latlong()`](https://tylermorganwall.github.io/skymodelr/reference/generate_moon_latlong.md),
+and
+[`generate_stars()`](https://tylermorganwall.github.io/skymodelr/reference/generate_stars.md)
+for a specific latitude, longitude, and time. By default
+[`generate_sky_latlong()`](https://tylermorganwall.github.io/skymodelr/reference/generate_sky_latlong.md)
+only includes the sun’s contribution, but you can also include stars and
+the moon by setting `moon = TRUE` and `stars = TRUE`.
+
+![](reference/figures/startrailscolor.jpg)
+
+## Installation
+
+``` r
+# Latest version from GitHub
+remotes::install_github("tylermorganwall/skymodelr")
+```
+
+If you plan to use the Prague spectral model, download its coefficient
+dataset(s) once (see
+[`download_sky_data()`](https://tylermorganwall.github.io/skymodelr/reference/download_sky_data.md)
+below).
+
+## Functions
+
+- [`generate_sky()`](https://tylermorganwall.github.io/skymodelr/reference/generate_sky.md)
+  — Write/return an EXR sky dome using either the Hosek–Wilkie (default)
+  or Prague model.
+
+  - `filename = NA` to return the HDR array in‑memory (otherwise a
+    `.exr` is written).
+  - `albedo = 0.1` ground reflectance (0–1).
+  - `turbidity = 3` atmospheric turbidity (1.7–10; Hosek only).
+  - `elevation = 10`, `azimuth = 90` solar position (degrees).
+  - `altitude = 0` observer altitude in meters (Prague only).
+  - `resolution = 2048` image height (width is `2 * resolution`).
+  - `number_cores = 1` threads.
+  - `hosek = TRUE` set `FALSE` to use the Prague model; Prague options
+    `wide_spectrum`, `visibility`.
+  - `render_mode = "all"` for atmosphere + solar disk; use
+    `"atmosphere"` to omit the disk or `"sun"` for disk only.
+
+- [`generate_sky_latlong()`](https://tylermorganwall.github.io/skymodelr/reference/generate_sky_latlong.md)
+  — Produce a complete equirectangular sky array/EXR. Accepts date/time
+  and observer location, and (optionally) adds stars and a moon‑lit
+  atmosphere.
+
+  - Core args: `filename = NA`, `datetime`, `lat`, `lon`, `albedo`,
+    `turbidity`, `resolution`, `number_cores`.
+  - Model selection: `hosek = TRUE` (Hosek–Wilkie) or set
+    `hosek = FALSE` to use the Prague spectral model; Prague extras:
+    `wide_spectrum`, `visibility`, `altitude`.
+  - Composition: `stars = FALSE`, `star_width = 1`, `moon = FALSE`.
+
+- [`generate_moon_latlong()`](https://tylermorganwall.github.io/skymodelr/reference/generate_moon_latlong.md)
+  — Produce a moon‑lit atmosphere by scaling a sky dome to the moon’s
+  luminance (phase + opposition surge). Computes the moon’s position
+  from time/location, and exposes moon-specific controls such as
+  `moon_extinction_kV`, `earthshine_albedo`, and
+  `solar_irradiance_w_m2`.
+
+- [`generate_stars()`](https://tylermorganwall.github.io/skymodelr/reference/generate_stars.md)
+  — Generate a star‑field EXR aligned with the sky dome:
+
+  - `filename = NA`, `resolution = 2048`.
+  - `lon`, `lat` observer longitude/latitude (deg) and `datetime` (used
+    for local sidereal time).
+  - Optional extinction/appearance controls: `turbidity`, `ozone_du`,
+    `altitude`, `star_width`, `atmosphere_effects`,
+    `upper_hemisphere_only`, `number_cores`.
+
+- [`calculate_sky_values()`](https://tylermorganwall.github.io/skymodelr/reference/calculate_sky_values.md)
+  — Sample radiance from the Prague model for given sky directions
+  (`phi`, `theta`) and conditions (`elevation`, `altitude`,
+  `visibility`, `albedo`, `azimuth`).
+
+- `download_sky_data(sea_level = TRUE, wide_spectrum = FALSE)` —
+  Download Prague model coefficient data:
+
+  - Sea‑level, standard spectrum: `SkyModelDatasetGround.dat` (~107 MB)
+  - Sea‑level, wide spectrum: `PragueSkyModelDatasetGroundInfra.dat`
+    (~574 MB)
+  - Full‑altitude dataset: `SkyModelDataset.dat` (~2.4 GB)
+
+## Usage
+
+We’ll generate the sun on the morning (right after sunrise) in
+Washington DC on March 21st. On this day the sun is rising directly east
+(90 degrees azimuth), which we can see as the sun appearing a quarter of
+the way from the left side of the image.
+
+``` r
+library(skymodelr)
+library(rayimage)
+
+env = generate_sky_latlong(
+  datetime   = as.POSIXct("2025-03-21 06:15:00",tz="EST"),
+  lat        = 38.9072,
+  lon        = -77.0369,
+  resolution = 800,
+  hosek = FALSE,
+  verbose = TRUE
+)
+rayimage::render_exposure(env, exposure=-2) |> 
+  rayimage::plot_image()
+```
+
+![](reference/figures/full_sky-1.png)
+
+Afternoon in DC:
+
+``` r
+env = generate_sky_latlong(
+  datetime   = as.POSIXct("2025-03-21 12:15:00",tz="EST"),
+  lat        = 38.9072,
+  lon        = -77.0369,
+  resolution = 800,
+  hosek = FALSE
+)
+rayimage::render_exposure(env, exposure=-5) |> 
+  rayimage::plot_image()
+```
+
+![](reference/figures/full_sky_afternoon-1.png)
+
+Evening in DC:
+
+``` r
+env = generate_sky_latlong(
+  datetime   = as.POSIXct("2025-03-21 18:15:00",tz="EST"),
+  lat        = 38.9072,
+  lon        = -77.0369,
+  resolution = 800,
+  hosek = FALSE
+)
+rayimage::render_exposure(env, exposure=-2) |> 
+  rayimage::plot_image()
+```
+
+![](reference/figures/full_sky_evening-1.png)
+
+Evening in DC (Hosek model), note the unphysical yellowish tint:
+
+``` r
+env = generate_sky_latlong(
+  datetime   = as.POSIXct("2025-03-21 18:15:00",tz="EST"),
+  lat        = 38.9072,
+  lon        = -77.0369,
+  resolution = 800,
+  hosek = TRUE
+)
+rayimage::render_exposure(env, exposure=-4) |> 
+  rayimage::plot_image()
+```
+
+![](reference/figures/full_sky_evening_prague-1.png)
+
+The Prague model supports solar elevations below the horizon:
+
+``` r
+env = generate_sky_latlong(
+  datetime   = as.POSIXct("2025-03-21 18:37:00",tz="EST"),
+  lat        = 38.9072,
+  lon        = -77.0369,
+  verbose=TRUE,
+  resolution = 800,
+  hosek = FALSE
+)
+```
+
+``` R
+## Sun: -4.1 elevation, 274.1 azimuth
+```
+
+``` r
+rayimage::render_exposure(env, exposure=3) |> 
+  rayimage::plot_image()
+```
+
+![](reference/figures/full_sky_evening_below-1.png)
+
+The Prague model also supports altitudes up to 15,000m.
+
+## 2,000 meters
+
+Note that now we’re above a good portion of the atmosphere, so we start
+seeing scattered light *below* us.
+
+``` r
+env = generate_sky_latlong(
+  datetime   = as.POSIXct("2025-03-21 12:15:00",tz="EST"),
+  lat        = 38.9072,
+  lon        = -77.0369,
+  altitude = 2000,
+  resolution = 800,
+  hosek = FALSE
+)
+rayimage::render_exposure(env, exposure=-5) |> 
+  rayimage::plot_image()
+```
+
+![](reference/figures/full_sky_evening_2000-1.png)
+
+## 7,500 meters
+
+High enough altitudes have the majority of the scattered light coming
+from below the viewer.
+
+``` r
+env = generate_sky_latlong(
+  filename    = NA,
+  datetime   = as.POSIXct("2025-03-21 12:15:00",tz="EST"),
+  lat        = 38.9072,
+  lon        = -77.0369,
+  altitude = 7500,
+  resolution = 800,
+  hosek = FALSE
+)
+rayimage::render_exposure(env, exposure=-5) |> 
+  rayimage::plot_image()
+```
+
+![](reference/figures/full_sky_evening_7500-1.png)
+
+## 15,000 meters
+
+At high altitudes, the resulting render has almost all the scattered
+light coming from below, resulting in a space-like appearance.
+
+``` r
+env = generate_sky_latlong(
+  filename    = NA,
+  datetime   = as.POSIXct("2025-03-21 12:15:00",tz="EST"),
+  lat        = 38.9072,
+  lon        = -77.0369,
+  altitude = 15000,
+  resolution = 800,
+  hosek = FALSE
+)
+rayimage::render_exposure(env, exposure=-5) |> 
+  rayimage::plot_image()
+```
+
+![](reference/figures/full_sky_evening_15000-1.png)
+
+## 15,000 meters, sunset
+
+Note the shadow of the Earth in the atmosphere opposite the sun when the
+sun is below the horizon.
+
+``` r
+env = generate_sky_latlong(
+  filename    = NA,
+  datetime   = as.POSIXct("2025-03-21 18:30:00",tz="EST"),
+  lat        = 38.9072,
+  lon        = -77.0369,
+  altitude = 15000,
+  resolution = 800,
+  hosek = FALSE
+)
+
+rayimage::plot_image(env)
+```
+
+![](reference/figures/full_sky_evening_15000_sunset-1.png)
+
+Full sun + moon + stars (with increased exposure for artistic effect):
+
+``` r
+env = generate_sky_latlong(
+  filename = NA,
+  datetime   = as.POSIXct("2025-03-21 18:37:00",tz="EST"),
+  lat        = 38.9072,
+  lon        = -77.0369,
+  resolution = 800,
+  hosek = FALSE,
+  stars = TRUE,
+  moon = TRUE, 
+  stars_exposure = 12
+)
+rayimage::render_exposure(env, exposure = 2)  |> 
+  rayimage::plot_image()
+```
+
+![](reference/figures/full_sky_night-1.png)
+
+## Custom sun position, multicore, atmosphere only
+
+`skymodelr` allows you to turn off the direct sun contribution to only
+included scattered light.
+
+``` r
+sky = generate_sky(
+  albedo = 0,
+  elevation = 25,
+  azimuth = 135,
+  resolution = 800,
+  number_cores = 2,
+  hosek = FALSE,
+  render_mode = "atmosphere"
+)
+rayimage::render_exposure(sky, exposure=-6) |> 
+  rayimage::plot_image()
+```
+
+![](reference/figures/sky_basic-1.png)
+
+## Moon‑lit atmosphere
+
+``` r
+moon_sky = generate_moon_latlong(
+  filename   = NA,
+  datetime  = as.POSIXct("2025-03-21 02:15:00",tz="EST"),
+  lat       = 38.9072,
+  lon       = -77.0369,
+  albedo    = 0.2,
+  turbidity = 3,
+  resolution = 6000,
+  number_cores = 8,
+  moon_atmosphere = TRUE,
+  verbose = TRUE
+)
+#Increase exposure
+moon_sky |> 
+  rayimage::render_exposure(10) |> 
+  rayimage::plot_image()
+```
+
+![](reference/figures/sky_moon-1.png)
+
+This generates and places a radiance-accurate moon into the scene,
+taking into account the moon’s phase, orientation with respect to the
+viewer’s latitude and longitude, surface albedo, non-lambertian
+reflectivity, distance to earth, earthshine, the “opposition surge”
+effect, and attenuation due to the atmosphere at varying lunar
+elevations. The moon is rendered in `rayvertex` and resampled so it is
+the correct size on the environment map. Here are some of the pre-scaled
+renders.
+
+``` r
+moon_image1 = skymodelr:::generate_moon_image_latlong(datetime  = as.POSIXct("2025-03-21 02:15:00",tz="EST"),
+  lat       = 38.9072,
+  lon       = -77.0369)
+rayimage::render_exposure(moon_image1$moon_luminance_array, 2, preview = TRUE)
+```
+
+![](reference/figures/unnamed-chunk-1-1.png)
+
+``` r
+#Change latitude and our orientation changes
+moon_image2 = skymodelr:::generate_moon_image_latlong(datetime  = as.POSIXct("2025-03-10 02:15:00",tz="EST"),
+  lat       = 38.9072,
+  lon       = -77.0369)
+rayimage::render_exposure(moon_image2$moon_luminance_array, 2, preview = TRUE)
+```
+
+![](reference/figures/unnamed-chunk-1-2.png)
+
+``` r
+moon_image3 = skymodelr:::generate_moon_image_latlong(datetime  = as.POSIXct("2025-03-10 02:15:00",tz="EST"),
+  lat       = 0,
+  lon       = -77.0369)
+rayimage::render_exposure(moon_image3$moon_luminance_array, 2, preview = TRUE)
+```
+
+![](reference/figures/unnamed-chunk-1-3.png)
+
+``` r
+moon_image4 = skymodelr:::generate_moon_image_latlong(datetime  = as.POSIXct("2025-03-10 02:15:00",tz="EST"),
+  lat       = -38.9072,
+  lon       = -77.0369)
+rayimage::render_exposure(moon_image4$moon_luminance_array, 2, preview = TRUE)
+```
+
+![](reference/figures/unnamed-chunk-1-4.png)
+
+## Star field aligned to time and place
+
+Stars are rendered using color values derived from the star’s
+temperature.
+
+``` r
+stars = generate_stars(
+  datetime  = as.POSIXct("2025-03-21 02:15:00",tz="EST"),
+  lat       = 38.9072,
+  lon       = -77.0369,
+  resolution = 800,
+  atmosphere_effects = TRUE,
+  upper_hemisphere_only = TRUE
+)
+stars |> 
+  rayimage::render_exposure(16) |> 
+  rayimage::plot_image()
+```
+
+![](reference/figures/stars_basic-1.png)
+
+Now render the entire sphere:
+
+``` r
+stars_full = generate_stars(
+  datetime  = as.POSIXct("2025-03-21 02:15:00",tz="EST"),
+  lat       = 38.9072,
+  lon       = -77.0369,
+  resolution = 800,
+  atmosphere_effects = FALSE,
+  upper_hemisphere_only = FALSE
+)
+stars_full |> 
+  rayimage::render_exposure(16) |> 
+  rayimage::plot_image()
+```
+
+![](reference/figures/stars_basic_full-1.png)
+
+## Use the Prague spectral model
+
+``` r
+# Download once (choose variant via args):
+coef_path = download_sky_data(sea_level = TRUE, wide_spectrum = FALSE)
+
+# Render with the Prague model:
+sky_prague = generate_sky(
+  albedo = 0.3,
+  elevation = 10,
+  azimuth = 90,
+  altitude = 0,
+  hosek = FALSE,
+  wide_spectrum = FALSE,
+  visibility = 50,
+  resolution = 2048,
+  number_cores = 4
+)
+plot_image(sky_prague)
+```
+
+## Use in other packages
+
+You can pass these EXR images to rayrender. Here’s a daytime sky:
+
+``` r
+library(rayrender)
+day_exr = tempfile(fileext=".exr")
+generate_sky(
+  filename=day_exr,
+  elevation = 20, 
+  azimuth = 135,
+  resolution = 1000,
+  hosek = FALSE
+)
+
+generate_ground(depth = -0.5, material=diffuse(color="grey20", checkercolor = "grey50"),spheresize = 10000) |>
+  add_object(obj_model(r_obj())) |> 
+  render_scene(environment_light = day_exr, iso=10, 
+               clamp_value = 1000, fov = 80, lookfrom = c(0,0,-1), aperture = 0.05)
+```
+
+![](reference/figures/unnamed-chunk-2-1.png)
+
+And a sunset sky, with the sun coming from due North, which is +Z in
+rayrender. If you are not trying to match a real place, you make
+adjustments to an existing environment map’s orientation using the
+`rotate_env` argument in rayrender.
+
+``` r
+sunset_exr = tempfile(fileext=".exr")
+generate_sky(
+  filename=sunset_exr,
+  elevation = 4, 
+  azimuth = 0,
+  resolution = 2000,
+  hosek = FALSE
+)
+
+#This has the light coming from north
+generate_ground(depth = -0.4, material=diffuse(color="grey20", checkercolor = "grey50"),spheresize = 10000) |>
+  add_object(obj_model(r_obj())) |> 
+  render_scene(environment_light = sunset_exr, iso=10, 
+               clamp_value = 1000, fov = 80, lookfrom = c(0,0,-1), aperture = 0.05)
+```
+
+![](reference/figures/unnamed-chunk-3-1.png)
+
+``` r
+#Rotate the existing env 225 degrees to come from the southwest.
+generate_ground(depth = -0.4, material=diffuse(color="grey20", checkercolor = "grey50"),spheresize = 10000) |>
+  add_object(obj_model(r_obj())) |> 
+  render_scene(environment_light = sunset_exr, iso=20, 
+               clamp_value = 10000, fov = 40, lookfrom = c(0,1,-4), aperture = 0.05, 
+               rotate_env = 225)
+```
+
+![](reference/figures/unnamed-chunk-3-2.png)
+
+## Acknowledgements
+
+- Hosek–Wilkie sky model (analytic daylight model).
+- Prague 2021–22 spectral sky model (wide‑spectrum, below‑horizon sun,
+  altitude).
+- Star positions from the Yale Bright Star Catalog.
