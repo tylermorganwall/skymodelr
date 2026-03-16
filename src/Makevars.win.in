@@ -16,3 +16,12 @@ OBJECTS= $(SRC_OBJECTS) $(AR_OBJECTS) $(HOSEK_OBJECTS) $(PRAGUE_OBJECTS)
 # Static libraries we need to link against
 # Note that we're using the version suffix pattern that OpenEXR actually creates
 PKG_LIBS = -L@OPENEXR_LIB_ARCH@  -lOpenEXRUtil-4_0 -lOpenEXR-4_0 -lOpenEXRCore-4_0 -lopenjph -lIlmThread-4_0 -lIex-4_0 -L@IMATH_LIB_ARCH@  -lImath-3_2
+
+
+# Main target
+all: $(OBJECTS)
+
+$(OBJECTS): $(SKYMODELR_CONFIG)
+
+$(SKYMODELR_CONFIG):
+	"$(R_HOME)/bin/Rscript" tools/fix-line-endings.R src/Makevars 
