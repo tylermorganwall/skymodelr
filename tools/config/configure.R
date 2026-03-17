@@ -7,6 +7,13 @@
 is_windows = identical(.Platform$OS.type, "windows")
 is_macos = identical(Sys.info()[['sysname']], "Darwin")
 
+# This script configures Makevars explicitly; disable the helper's
+# post-script auto-configuration pass to avoid regenerating both files.
+options(
+	configure.common = FALSE,
+	configure.platform = FALSE
+)
+
 TARGET_ARCH = Sys.info()[["machine"]]
 PACKAGE_BASE_DIR = normalizePath(getwd(), winslash = "/")
 
