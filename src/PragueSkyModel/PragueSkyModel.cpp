@@ -299,7 +299,7 @@ PragueSkyModel::Vector3 normalize(const PragueSkyModel::Vector3& vector) {
 // Helper functions
 /////////////////////////////////////////////////////////////////////////////////////
 
-double lerp(const double from, const double to, const double factor) {
+double pragueLerp(const double from, const double to, const double factor) {
     return (1.0 - factor) * from + factor * to;
 }
 
@@ -1204,14 +1204,14 @@ double PragueSkyModel::reconstructTrans(const int                     visibility
 
     // Perform bi-linear interpolation
     if (transParams.distance.factor > 0.f) {
-        transmittance[0] = lerp(transmittance[0], transmittance[1], transParams.distance.factor);
-        transmittance[1] = lerp(transmittance[2], transmittance[3], transParams.distance.factor);
+        transmittance[0] = pragueLerp(transmittance[0], transmittance[1], transParams.distance.factor);
+        transmittance[1] = pragueLerp(transmittance[2], transmittance[3], transParams.distance.factor);
     }
     transmittance[0] = std::max(transmittance[0], 0.0);
 
     if (transParams.altitude.factor > 0.f) {
         transmittance[1] = std::max(transmittance[1], 0.0);
-        transmittance[0] = lerp(transmittance[0], transmittance[1], transParams.altitude.factor);
+        transmittance[0] = pragueLerp(transmittance[0], transmittance[1], transParams.altitude.factor);
     }
 
     assert(transmittance[0] >= 0.0);
@@ -1229,7 +1229,7 @@ double PragueSkyModel::interpolateTrans(const int                     visibility
     if (altitudeParam.factor > 0.0) {
         const double transHigh =
             reconstructTrans(visibilityIndex, altitudeParam.index + 1, transParams, channelIndex);
-        trans = lerp(trans, transHigh, altitudeParam.factor);
+        trans = pragueLerp(trans, transHigh, altitudeParam.factor);
     }
 
     return trans;
@@ -1267,7 +1267,7 @@ double PragueSkyModel::transmittance(const Parameters& params,
         const double transHigh =
             interpolateTrans(visibilityParam.index + 1, altitudeParam, transParams, channelIndex);
 
-        trans = lerp(trans, transHigh, visibilityParam.factor);
+        trans = pragueLerp(trans, transHigh, visibilityParam.factor);
     }
 
     // Transmittance is stored as a square root. Needs to be restored here.

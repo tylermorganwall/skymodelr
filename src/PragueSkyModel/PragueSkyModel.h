@@ -6,7 +6,7 @@
 #include <vector>
 #include <cmath>
 
-double lerp(const double from, const double to, const double factor);
+double pragueLerp(const double from, const double to, const double factor);
 
 /// Implementation of the physically-based sky model presented by Wilkie et al. [2021]
 /// (https://cgg.mff.cuni.cz/publications/skymodel-2021/) and Vevoda et al. [2022]. Improves on previous work
@@ -426,7 +426,7 @@ private:
                                                                        metadata);
 
             /// Interpolate between the two
-            return lerp(resultLow, resultHigh, controlParameters.interpolationFactor[TLevel]);
+            return pragueLerp(resultLow, resultHigh, controlParameters.interpolationFactor[TLevel]);
         }
     }
 
