@@ -223,5 +223,7 @@ generate_sky_latlong(
   rayimage::render_exposure(exposure=2) |>
   rayimage::plot_image()
 }
-#> Error: 'render_exposure' is not an exported object from 'namespace:rayimage'
+#> Sun: -2.7 elevation, 273.0 azimuth
+#>  Coefficient file for this setting not yet present: this is a large file (107MB), download? [y/n] 
+#> Error in check_coef_file("SkyModelDatasetGround.dat"): Input not recognized.
 ```

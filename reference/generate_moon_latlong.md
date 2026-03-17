@@ -150,5 +150,6 @@ generate_moon_latlong(
   rayimage::render_exposure(15) |>
   rayimage::plot_image()
 }
-#> Error: 'render_exposure' is not an exported object from 'namespace:rayimage'
+#> phi=0.3991, earth_phase=2.7425, E_em=0.002508 W/m^2, emission_intensity=1.929e-06
+#> Moon: 8.1 elevation, 120.6 azimuth, 22.809 phase, 0.064058 lux
 ```
