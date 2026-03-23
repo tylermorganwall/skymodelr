@@ -17,13 +17,13 @@
 ## Citation
 
 Morgan-Wall T (2026). *skymodelr: Generates and Samples Realistic
-Terrestrial Atmospheres*. R package version 0.1.0,
+Terrestrial Atmospheres*. R package version 0.2.0,
 <https://www.skymodelr.com>.
 
     @Manual{,
       title = {skymodelr: Generates and Samples Realistic Terrestrial Atmospheres},
       author = {Tyler Morgan-Wall},
       year = {2026},
-      note = {R package version 0.1.0},
+      note = {R package version 0.2.0},
       url = {https://www.skymodelr.com},
     }
