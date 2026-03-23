@@ -13,6 +13,10 @@ calculate_sun_radiance_band_rcpp <- function(albedo = 0.5, turbidity = 3.0, elev
     .Call(`_skymodelr_calculate_sun_radiance_band_rcpp`, albedo, turbidity, elevation, azimuth_deg, model, prg_dataset, altitude, visibility, lambda_nm)
 }
 
+calculate_raw_prague_radiance <- function(phi, theta, lambda_nm, elevation, albedo, altitude, visibility, azimuth, number_cores = 1L, prg_dataset = "", render_mode = "all") {
+    .Call(`_skymodelr_calculate_raw_prague_radiance`, phi, theta, lambda_nm, elevation, albedo, altitude, visibility, azimuth, number_cores, prg_dataset, render_mode)
+}
+
 calculate_raw_prague <- function(phi, theta, elevation, albedo, altitude, visibility, azimuth, number_cores = 1L, prg_dataset = "", render_mode = "all") {
     .Call(`_skymodelr_calculate_raw_prague`, phi, theta, elevation, albedo, altitude, visibility, azimuth, number_cores, prg_dataset, render_mode)
 }

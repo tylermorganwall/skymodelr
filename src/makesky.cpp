@@ -79,6 +79,38 @@ static inline PragueSkyModel::Vector3 toPrague(const Vec3<double> &v) {
 static PragueSkyModel prague_model;
 static std::string prague_loaded_file;
 
+static PragueSkyModel::AvailableData
+initialize_prague_model(const std::string &prg_dataset) {
+  if (prg_dataset.empty()) {
+    Rcpp::stop("prg_dataset must be supplied when model=\"prague\"");
+  }
+
+  if (prague_loaded_file != prg_dataset) {
+    prague_model.initialize(prg_dataset);
+    prague_loaded_file = prg_dataset;
+  }
+
+  return prague_model.getAvailableData();
+}
+
+static inline double
+prague_lambda_upper_nm(const PragueSkyModel::AvailableData &avail) {
+  return avail.channelStart + avail.channels * avail.channelWidth;
+}
+
+static void validate_prague_lambda_nm(
+    const Rcpp::NumericVector &lambda_nm,
+    const PragueSkyModel::AvailableData &avail) {
+  const double lambda_upper = prague_lambda_upper_nm(avail);
+  for (R_xlen_t i = 0; i < lambda_nm.size(); ++i) {
+    const double lam = lambda_nm[i];
+    if (!std::isfinite(lam) || lam < avail.channelStart || lam >= lambda_upper) {
+      Rcpp::stop("lambda_nm entries must be within [%f, %f)",
+                 avail.channelStart, lambda_upper);
+    }
+  }
+}
+
 static inline void xyz_to_srgb(double X, double Y, double Z, double &R,
                                double &G, double &B) {
   // IEC 61966-2-1 sRGB (D65), 1931 2
@@ -708,6 +740,66 @@ double calculate_sun_radiance_band_rcpp(
 }
 
 // [[Rcpp::export]]
+Rcpp::NumericVector calculate_raw_prague_radiance(
+    Rcpp::NumericVector phi, Rcpp::NumericVector theta,
+    Rcpp::NumericVector lambda_nm, Rcpp::NumericVector elevation,
+    Rcpp::NumericVector albedo, Rcpp::NumericVector altitude,
+    Rcpp::NumericVector visibility, Rcpp::NumericVector azimuth,
+    unsigned int number_cores = 1, std::string prg_dataset = "",
+    std::string render_mode = "all") {
+  bool render_atmosphere = true;
+  bool render_sun = true;
+  resolve_render_mode(render_mode, render_atmosphere, render_sun);
+
+  const auto avail = initialize_prague_model(prg_dataset);
+  validate_prague_lambda_nm(lambda_nm, avail);
+
+  std::vector<double> radiance(phi.size(), 0.0);
+
+  RcppThread::parallelFor(
+      0u, size_t(phi.size()),
+      [&](size_t t) {
+        const double theta_rad = theta[t] * M_PI / 180.0;
+        const double phi_rad = phi[t] * M_PI / 180.0;
+        const double lam = lambda_nm[t];
+        const double safe_elevation = clamp_sun_elevation_deg(elevation[t]);
+        const double elev_rad = safe_elevation * M_PI / 180.0;
+        const double az_rad = azimuth[t] * M_PI / 180.0;
+
+        if (theta_rad > M_PI_2) {
+          return;
+        }
+
+        Vec3<double> v_zup(std::cos(phi_rad) * std::cos(theta_rad),
+                           std::sin(phi_rad) * std::cos(theta_rad),
+                           std::sin(theta_rad));
+        auto P = prague_model.computeParameters(
+            /*viewPoint*/ {0.0, 0.0, altitude[t]},
+            /*viewDir  */ toPrague(v_zup),
+            /*sunElev  */ elev_rad,
+            /*sunAzim  */ az_rad,
+            /*visibility*/ visibility[t],
+            /*albedo   */ albedo[t]);
+
+        double Li = 0.0;
+        if (render_atmosphere) {
+          Li = prague_model.skyRadiance(P, lam);
+        }
+        if (render_sun) {
+          const double sun = prague_model.sunRadiance(P, lam);
+          Li = render_atmosphere ? (Li + sun) : sun;
+        }
+        if (!std::isfinite(Li)) {
+          Li = 0.0;
+        }
+        radiance[t] = Li;
+      },
+      number_cores);
+
+  return Rcpp::NumericVector(radiance.begin(), radiance.end());
+}
+
+// [[Rcpp::export]]
 Rcpp::NumericMatrix calculate_raw_prague(
     Rcpp::NumericVector phi, Rcpp::NumericVector theta,
     Rcpp::NumericVector elevation, Rcpp::NumericVector albedo,
@@ -718,16 +810,7 @@ Rcpp::NumericMatrix calculate_raw_prague(
   bool render_sun = true;
   resolve_render_mode(render_mode, render_atmosphere, render_sun);
 
-  // Prague model initialisation
-  if (prg_dataset.empty()) {
-    Rcpp::stop("prg_dataset must be supplied when model=\"prague\"");
-  }
-
-  if (prague_loaded_file != prg_dataset) {
-    prague_model.initialize(prg_dataset);
-    prague_loaded_file = prg_dataset;
-  }
-  auto avail = prague_model.getAvailableData();
+  const auto avail = initialize_prague_model(prg_dataset);
 
   // Spectral sampling: lock to Prague dataset channel centers within CIE range
   // (380–740 nm).

@@ -7,6 +7,55 @@ normalize_render_mode = function(render_mode) {
 	match.arg(render_mode, c("all", "atmosphere", "sun"))
 }
 
+resolve_prague_coef_file = function(altitude = 0, wide_spectrum = FALSE) {
+	sea_level = all(altitude == 0)
+	filesize = ""
+	if (sea_level && !wide_spectrum) {
+		filesize = "107MB"
+	} else if (sea_level && wide_spectrum) {
+		filesize = "574MB"
+	} else if (!sea_level && !wide_spectrum) {
+		filesize = "2.4GB"
+	}
+	check_coef_file = function(filename) {
+		coef_file = file.path(tools::R_user_dir("skymodelr", "data"), filename)
+		if (!file.exists(coef_file)) {
+			response = readline(
+				prompt = sprintf(
+					" Coefficient file for this setting not yet present: this is a large file (%s), download? [y/n] ",
+					filesize
+				)
+			)
+			if (response == "y") {
+				download_sky_data(sea_level, wide_spectrum)
+			} else if (response == "n") {
+				return("")
+			} else {
+				stop("Input not recognized.")
+			}
+		}
+		return(coef_file)
+	}
+	coef_file = ""
+	if (!wide_spectrum) {
+		if (sea_level) {
+			coef_file = check_coef_file("SkyModelDatasetGround.dat")
+		} else {
+			coef_file = check_coef_file("SkyModelDataset.dat")
+		}
+	} else {
+		if (sea_level) {
+			coef_file = check_coef_file("PragueSkyModelDatasetGroundInfra.dat")
+		} else {
+			stop("`wide_spectrum = TRUE` is only valid when `altitude == 0`.")
+		}
+	}
+	if (coef_file == "") {
+		stop("No coefficient file downloaded for this set of inputs.")
+	}
+	coef_file
+}
+
 #' Generate a Hosek-Wilkie sky dome array
 #'
 #' @description Evaluate either the Hosek-Wilkie or Prague analytic sky models
@@ -92,54 +141,11 @@ generate_sky = function(
 	below_horizon = TRUE
 ) {
 	render_mode = normalize_render_mode(render_mode)
-	sea_level = altitude == 0
-	filesize = ""
-	if (sea_level & !wide_spectrum) {
-		filesize = "107MB"
-	} else if (sea_level & wide_spectrum) {
-		filesize = "574MB"
-	} else if (!sea_level & !wide_spectrum) {
-		filesize = "2.4GB"
-	}
-	check_coef_file = function(filename) {
-		coef_file = file.path(tools::R_user_dir("skymodelr", "data"), filename)
-		if (!file.exists(coef_file)) {
-			response = readline(
-				prompt = sprintf(
-					" Coefficient file for this setting not yet present: this is a large file (%s), download? [y/n] ",
-					filesize
-				)
-			)
-			if (response == "y") {
-				download_sky_data(sea_level, wide_spectrum)
-			} else if (response == "n") {
-				return("")
-			} else {
-				stop("Input not recognized.")
-			}
-		}
-		return(coef_file)
-	}
 	coef_file = ""
 	if (!hosek) {
 		stopifnot(altitude >= 0 && altitude <= 15000)
 		model = "prague"
-		if (!wide_spectrum) {
-			if (altitude == 0) {
-				coef_file = check_coef_file("SkyModelDatasetGround.dat")
-			} else {
-				coef_file = check_coef_file("SkyModelDataset.dat")
-			}
-		} else {
-			if (altitude == 0) {
-				coef_file = check_coef_file("PragueSkyModelDatasetGroundInfra.dat")
-			} else {
-				stop("`wide_spectrum = TRUE` is only valid when `altitude == 0`.")
-			}
-		}
-		if (coef_file == "") {
-			stop("No coefficient file downloaded for this set of inputs.")
-		}
+		coef_file = resolve_prague_coef_file(altitude, wide_spectrum)
 	} else {
 		model = "hosek"
 	}
@@ -521,12 +527,11 @@ calculate_sky_values = function(
 	render_mode = "all"
 ) {
 	render_mode = normalize_render_mode(render_mode)
-	sea_level = all(altitude == 0)
 	stopifnot(all(phi <= 360 & phi >= 0))
 	stopifnot(all(theta <= 90 & theta >= -90))
 	stopifnot(all(altitude <= 15000 & altitude >= 0))
 	stopifnot(all(visibility >= 20 & visibility <= 131.8))
-	filesize = ""
+	stopifnot(all(albedo >= 0 & albedo <= 1))
 	df_values = as.list(data.frame(
 		phi = phi,
 		theta = theta,
@@ -536,51 +541,8 @@ calculate_sky_values = function(
 		albedo = albedo,
 		azimuth = azimuth
 	))
-	if (sea_level & !wide_spectrum) {
-		filesize = "107MB"
-	} else if (sea_level & wide_spectrum) {
-		filesize = "574MB"
-	} else if (!sea_level & !wide_spectrum) {
-		filesize = "2.4GB"
-	}
-	check_coef_file = function(filename) {
-		coef_file = file.path(tools::R_user_dir("skymodelr", "data"), filename)
-		if (!file.exists(coef_file)) {
-			response = readline(
-				prompt = sprintf(
-					" Coefficient file for this setting not yet present: this is a large file (%s), download? [y/n] ",
-					filesize
-				)
-			)
-			if (response == "y") {
-				download_sky_data(sea_level, wide_spectrum)
-			} else if (response == "n") {
-				return("")
-			} else {
-				stop("Input not recognized.")
-			}
-		}
-		return(coef_file)
-	}
-	coef_file = ""
 	stopifnot(all(altitude >= 0 & altitude <= 15000))
-	model = "prague"
-	if (!wide_spectrum) {
-		if (sea_level) {
-			coef_file = check_coef_file("SkyModelDatasetGround.dat")
-		} else {
-			coef_file = check_coef_file("SkyModelDataset.dat")
-		}
-	} else {
-		if (sea_level) {
-			coef_file = check_coef_file("PragueSkyModelDatasetGroundInfra.dat")
-		} else {
-			stop("`wide_spectrum = TRUE` is only valid when `altitude == 0`.")
-		}
-	}
-	if (coef_file == "") {
-		stop("No coefficient file downloaded for this set of inputs.")
-	}
+	coef_file = resolve_prague_coef_file(altitude, wide_spectrum)
 	vals = calculate_raw_prague(
 		df_values$phi,
 		df_values$theta,
@@ -595,6 +557,86 @@ calculate_sky_values = function(
 	)
 	colnames(vals) = c("r", "g", "b")
 	return(vals)
+}
+
+#' Sample Prague sky radiance at a chosen wavelength.
+#'
+#' @description Evaluate the Prague spectral sky model at arbitrary spherical
+#'   directions and return radiance at a user-specified wavelength. Use
+#'   `render_mode = "all"` for atmosphere + solar disk, `"atmosphere"` for
+#'   atmospheric radiance only, or `"sun"` for the solar disk only.
+#'
+#' @param phi                Azimuthal angle of the sample, degrees. Vectorized. Range 0 to 360.
+#' @param theta              Vertical angle of the sample, degrees. Vectorized. Range -90 to 90.
+#' @param lambda_nm          Wavelength in nanometers. Vectorized. Must lie within the loaded Prague dataset range.
+#' @param altitude           Default `0`, vectorized. Altitude of the viewer in meters. Range 0 to 15000.
+#' @param elevation          Default `10`, vectorized. Solar elevation angle above/below the horizon (degrees). Range -4.2 to 90.
+#' @param visibility         Default `50`, vectorized. Range 20 to 131.8. Meteorological range in kilometers for Prague model.
+#' @param albedo             Default `0.5`, vectorized. Range 0 to 1. Ground albedo.
+#' @param azimuth            Default `90`, single value. Solar azimuth (degrees). Defaults South.
+#' @param number_cores       Default `1`. Number of threads to use in computation.
+#' @param wide_spectrum      Default `FALSE`. Whether to use the wide-spectrum (55-channel, polarised) coefficients.
+#' @param render_mode        Default `"all"`. One of `"all"`, `"atmosphere"`, or `"sun"`.
+#'   Use `"all"` for atmosphere + solar disk, `"atmosphere"` for atmospheric radiance only, or `"sun"` for the solar disk only.
+#'
+#' @return Numeric vector of radiance values at the requested wavelength(s).
+#' @export
+#' @examples
+#' if(run_documentation()) {
+#' lambda_vals = calculate_sky_radiance(
+#'   phi = c(90, 90),
+#'   theta = c(45, 45),
+#'   lambda_nm = 550,
+#'   altitude = c(0, 10000),
+#'   elevation = 20,
+#'   visibility = 80,
+#'   albedo = 0.1
+#' )
+#' cbind(altitude = c(0, 10000), radiance = lambda_vals)
+#' }
+calculate_sky_radiance = function(
+	phi,
+	theta,
+	lambda_nm,
+	altitude = 0,
+	elevation = 10,
+	visibility = 50,
+	albedo = 0.5,
+	azimuth = 90,
+	number_cores = 1,
+	wide_spectrum = FALSE,
+	render_mode = "all"
+) {
+	render_mode = normalize_render_mode(render_mode)
+	stopifnot(all(phi <= 360 & phi >= 0))
+	stopifnot(all(theta <= 90 & theta >= -90))
+	stopifnot(all(altitude <= 15000 & altitude >= 0))
+	stopifnot(all(visibility >= 20 & visibility <= 131.8))
+	stopifnot(all(albedo >= 0 & albedo <= 1))
+	df_values = as.list(data.frame(
+		phi = phi,
+		theta = theta,
+		lambda_nm = lambda_nm,
+		altitude = altitude,
+		elevation = elevation,
+		visibility = visibility,
+		albedo = albedo,
+		azimuth = azimuth
+	))
+	coef_file = resolve_prague_coef_file(altitude, wide_spectrum)
+	calculate_raw_prague_radiance(
+		df_values$phi,
+		df_values$theta,
+		df_values$lambda_nm,
+		df_values$elevation,
+		df_values$albedo,
+		df_values$altitude,
+		df_values$visibility,
+		df_values$azimuth,
+		number_cores,
+		coef_file,
+		render_mode
+	)
 }
 
 #' Sample sun luminance at the disk center.
@@ -646,50 +688,7 @@ calculate_sun_brightness = function(
 	coef_file = ""
 
 	if (!hosek) {
-		sea_level = altitude == 0
-		filesize = ""
-		if (sea_level & !wide_spectrum) {
-			filesize = "107MB"
-		} else if (sea_level & wide_spectrum) {
-			filesize = "574MB"
-		} else if (!sea_level & !wide_spectrum) {
-			filesize = "2.4GB"
-		}
-		check_coef_file = function(filename) {
-			coef_file = file.path(tools::R_user_dir("skymodelr", "data"), filename)
-			if (!file.exists(coef_file)) {
-				response = readline(
-					prompt = sprintf(
-						" Coefficient file for this setting not yet present: this is a large file (%s), download? [y/n] ",
-						filesize
-					)
-				)
-				if (response == "y") {
-					download_sky_data(sea_level, wide_spectrum)
-				} else if (response == "n") {
-					return("")
-				} else {
-					stop("Input not recognized.")
-				}
-			}
-			return(coef_file)
-		}
-		if (!wide_spectrum) {
-			if (sea_level) {
-				coef_file = check_coef_file("SkyModelDatasetGround.dat")
-			} else {
-				coef_file = check_coef_file("SkyModelDataset.dat")
-			}
-		} else {
-			if (sea_level) {
-				coef_file = check_coef_file("PragueSkyModelDatasetGroundInfra.dat")
-			} else {
-				stop("`wide_spectrum = TRUE` is only valid when `altitude == 0`.")
-			}
-		}
-		if (coef_file == "") {
-			stop("No coefficient file downloaded for this set of inputs.")
-		}
+		coef_file = resolve_prague_coef_file(altitude, wide_spectrum)
 	}
 
 	calculate_sun_brightness_rcpp(
