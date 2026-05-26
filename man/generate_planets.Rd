@@ -31,7 +31,7 @@ generate_planets(
 \item{filename}{Default \code{NA}. Destination image path to write. When \code{NA}, the
 image array is returned without writing.}
 
-\item{resolution}{Default \code{2048}. Map half-width (image is \code{2 * resolution} × \code{resolution}).}
+\item{resolution}{Default \code{2048}. Map half-width (image is \code{2 * resolution} by \code{resolution}).}
 
 \item{turbidity}{Atmospheric turbidity for extinction modelling.}
 
@@ -65,19 +65,19 @@ data are quantised to the destination format, and low dynamic range outputs like
 and JPEG files will not represent the true luminosity values encoded in the array.
 }
 \examples{
+\dontshow{if (interactive() || identical(Sys.getenv("IN_PKGDOWN"), "true")) withAutoprint(\{ # examplesIf}
 # Basic star field over Washington, DC at a fixed time
-if(run_documentation()) {
 generate_planets(
-  datetime   = as.POSIXct("2025-03-21 02:20:00", tz = "EST"),
-  lon        = -77.0369,
-  lat        = 38.9072,
+  datetime = as.POSIXct("2025-03-21 02:20:00", tz = "America/New_York"),
+  lon = -77.0369,
+  lat = 38.9072,
   resolution = 400,
-  color      = TRUE,
+  color = TRUE,
   planet_width = 1,
-  atmosphere_effects   = TRUE,
+  atmosphere_effects = TRUE,
   upper_hemisphere_only = TRUE,
   number_cores = 2
 ) |>
   rayimage::plot_image()
-}
+\dontshow{\}) # examplesIf}
 }

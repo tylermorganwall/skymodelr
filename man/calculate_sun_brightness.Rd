@@ -48,7 +48,5 @@ integrate against the CIE Y curve to return a luminance value. This is
 useful for relative attenuation (e.g., comparing zenith sun to a low sun).
 }
 \examples{
-if(run_documentation()) {
-  calculate_sun_brightness(elevation = 45, hosek = TRUE)
-}
+calculate_sun_brightness(elevation = 45, hosek = TRUE)
 }

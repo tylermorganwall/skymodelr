@@ -67,7 +67,15 @@ data are quantised to the destination format, and low dynamic range outputs like
 and JPEG files will not represent the true luminosity values encoded in the array.
 }
 \examples{
-if(run_documentation()) {
+sky = generate_sky(
+  resolution = 8,
+  elevation = 30,
+  azimuth = 135,
+  render_mode = "atmosphere"
+)
+dim(sky)
+
+\dontshow{if (interactive() || identical(Sys.getenv("IN_PKGDOWN"), "true")) withAutoprint(\{ # examplesIf}
 # Hosek model (default): clear morning, Sun SE, with solar disk
 generate_sky(
   resolution = 400,
@@ -77,8 +85,7 @@ generate_sky(
   render_mode = "all"
 ) |>
   rayimage::plot_image()
-}
-if(run_documentation()) {
+
 # Same view but hazier and without the solar disk
 generate_sky(
   resolution = 400,
@@ -88,10 +95,8 @@ generate_sky(
   render_mode = "atmosphere"
 ) |>
   rayimage::plot_image()
-}
-# Prague model (may prompt to download coefficients on first use)
-\donttest{
-if(run_documentation()) {
+
+# Prague model (requires downloaded coefficients)
 generate_sky(
   resolution = 400,
   hosek      = FALSE,
@@ -103,6 +108,5 @@ generate_sky(
   number_cores = 2
 ) |>
   rayimage::plot_image()
-}
-}
+\dontshow{\}) # examplesIf}
 }

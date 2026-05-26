@@ -7,7 +7,7 @@
 moon_mag(phase_deg, dist_km = 384400, mean_km = 384400)
 }
 \arguments{
-\item{phase_deg}{Phase angle ψ in degrees (0 = full Moon, 180 = new).}
+\item{phase_deg}{Phase angle psi in degrees (0 = full Moon, 180 = new).}
 
 \item{dist_km}{Default \code{384400}. Current geocentric distance (km).}
 

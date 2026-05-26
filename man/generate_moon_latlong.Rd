@@ -89,17 +89,17 @@ data are quantised to the destination format, and low dynamic range outputs like
 and JPEG files will not represent the true luminosity values encoded in the array.
 }
 \examples{
+\dontshow{if (interactive() || identical(Sys.getenv("IN_PKGDOWN"), "true")) withAutoprint(\{ # examplesIf}
 # Moonlit sky (Hosek), mid-evening in DC
-if(run_documentation()) {
 generate_moon_latlong(
-  datetime   = as.POSIXct("2025-09-05 19:30:00",tz="America/New_York"),
-  lat        = 38.9072,
-  lon        = -77.0369,
+  datetime = as.POSIXct("2025-09-05 19:30:00", tz = "America/New_York"),
+  lat = 38.9072,
+  lon = -77.0369,
   resolution = 400,
-  turbidity  = 3,
-  verbose    = TRUE
+  turbidity = 3,
+  verbose = TRUE
 ) |>
   rayimage::render_exposure(15) |>
   rayimage::plot_image()
-}
+\dontshow{\}) # examplesIf}
 }

@@ -106,45 +106,50 @@ down to -4.2 degrees, and with the Hosek model it is defined only about 0 degree
 Below that the function skips the sky render and writes \strong{only stars} when \code{stars = TRUE}.
 }
 \examples{
+sky = generate_sky_latlong(
+  datetime = as.POSIXct("2025-03-21 12:00:00", tz = "America/New_York"),
+  lat = 38.9072,
+  lon = -77.0369,
+  resolution = 8
+)
+dim(sky)
+
+\dontshow{if (interactive() || identical(Sys.getenv("IN_PKGDOWN"), "true")) withAutoprint(\{ # examplesIf}
 # Morning sunrise on spring solstice over Washington, DC with Prague model
-if(run_documentation()) {
 generate_sky_latlong(
-  datetime    = as.POSIXct("2025-03-21 06:15:00",tz="EST"),
-  lat         = 38.9072,
-  lon         = -77.0369,
+  datetime = as.POSIXct("2025-03-21 06:15:00", tz = "America/New_York"),
+  lat = 38.9072,
+  lon = -77.0369,
   number_cores = 2,
   hosek = FALSE
 ) |>
   rayimage::plot_image()
-}
-if(run_documentation()) {
+
 generate_sky_latlong(
-  datetime    = as.POSIXct("2025-03-21 12:00:00",tz="EST"),
-  lat         = 38.9072,
-  lon         = -77.0369,
-  number_cores = 2,
+  datetime = as.POSIXct("2025-03-21 12:00:00", tz = "America/New_York"),
+  lat = 38.9072,
+  lon = -77.0369,
+  number_cores = 2
 ) |>
   rayimage::plot_image()
-}
-if(run_documentation()) {
+
 generate_sky_latlong(
-  datetime    = as.POSIXct("2025-03-21 18:00:00",tz="EST"),
-  lat         = 38.9072,
-  lon         = -77.0369,
-  number_cores = 2,
+  datetime = as.POSIXct("2025-03-21 18:00:00", tz = "America/New_York"),
+  lat = 38.9072,
+  lon = -77.0369,
+  number_cores = 2
 ) |>
   rayimage::plot_image()
-}
-if(run_documentation()) {
+
 generate_sky_latlong(
-  datetime    = as.POSIXct("2025-03-21 18:30:00",tz="EST"),
-  lat         = 38.9072,
-  lon         = -77.0369,
+  datetime = as.POSIXct("2025-03-21 18:30:00", tz = "America/New_York"),
+  lat = 38.9072,
+  lon = -77.0369,
   number_cores = 2,
   hosek = FALSE,
-  verbose=TRUE,
+  verbose = TRUE
 ) |>
-  rayimage::render_exposure(exposure=2) |>
+  rayimage::render_exposure(exposure = 2) |>
   rayimage::plot_image()
-}
+\dontshow{\}) # examplesIf}
 }

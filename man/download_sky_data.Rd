@@ -7,11 +7,11 @@
 download_sky_data(sea_level = TRUE, wide_spectrum = FALSE)
 }
 \arguments{
-\item{sea_level}{Default \code{TRUE}. Download the sea‑level–only data.
-Set to \code{FALSE} to download the full‑altitude dataset.}
+\item{sea_level}{Default \code{TRUE}. Download the sea-level-only data.
+Set to \code{FALSE} to download the full-altitude dataset.}
 
 \item{wide_spectrum}{Default \code{FALSE}. If \code{TRUE}, downloads the
-wide‑spectrum (55‑channel, polarised) version. Valid only when \code{sea_level = TRUE}.}
+wide-spectrum (55-channel, polarised) version. Valid only when \code{sea_level = TRUE}.}
 }
 \value{
 Invisibly, the full path to the data file.
@@ -31,14 +31,14 @@ of this dataset, listed here in order of increasing size:
 }
 }
 \examples{
-\dontrun{
-  # Standard (11‑channel, sea‑level) coefficients
-  download_sky_data()
+\dontshow{if (interactive() || identical(Sys.getenv("IN_PKGDOWN"), "true")) withAutoprint(\{ # examplesIf}
+# Standard (11-channel, sea-level) coefficients
+download_sky_data()
 
-  # Wide‑spectrum sea‑level coefficients
-  download_sky_data(wide_spectrum = TRUE)
+# Wide-spectrum sea-level coefficients
+download_sky_data(wide_spectrum = TRUE)
 
-  # Full altitude‑range coefficients
-  download_sky_data(sea_level = FALSE)
-}
+# Full altitude-range coefficients
+download_sky_data(sea_level = FALSE)
+\dontshow{\}) # examplesIf}
 }

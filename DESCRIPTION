@@ -1,7 +1,7 @@
 Package: skymodelr
 Type: Package
 Title: Generates and Samples Realistic Terrestrial Atmospheres
-Version: 0.2.0
+Version: 0.2.1
 Authors@R: c(
     person(
       "Tyler", "Morgan-Wall",
@@ -30,32 +30,36 @@ Authors@R: c(
     )
   )
 Description: Generates physically based sky environment maps and radiance samples using the
-    spectral Hosek–Wilkie and Prague atmosphere models. Functions write
-    high-dynamic-range OpenEXR domes in latitude–longitude
+    spectral Hosek-Wilkie and Prague atmosphere models. Functions write
+    high-dynamic-range OpenEXR domes in latitude-longitude
     projections, compute per-direction RGB or 55-channel values, and optionally
     composite location-accurate star fields. Features include automatic sun and moon positioning from date,
     time and location, support for sea-level and high-altitude observers, wide-
     spectrum coefficients, and multithreaded C++/Rcpp acceleration for fast,
-    high-resolution output.
+    high-resolution output. For model details, see Hosek and Wilkie (2012)
+    <doi:10.1145/2185520.2185591>, Hosek and Wilkie (2013)
+    <doi:10.1109/MCG.2013.18>, Wilkie et al. (2021)
+    <doi:10.1145/3450626.3459758>, and Vevoda et al. (2022)
+    <doi:10.1111/cgf.14677>.
 License: GPL-3 + file LICENSE
-Depends: R (>= 4.2)
+Depends:
+    R (>= 4.3.0)
 Imports: Rcpp,
     swephR,
     rayvertex (>= 0.14.0),
-    rayimage (>= 0.24.1),
+    rayimage (>= 0.24.1)
 LinkingTo: Rcpp, 
     RcppThread, 
     libimath, 
-	libopenexr
+    libopenexr
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
 Config/build/compilation-database: true
 Suggests: testthat (>= 3.0.0),
     rayrender (>= 0.40.1)
 Config/testthat/edition: 3
-URL: https://www.skymodelr.com
-Remotes: tylermorganwall/rayvertex,
-    tylermorganwall/rayrender,
-	tylermorganwall/rayimage
+URL: https://www.tylermw.com/posts/rayverse/atmospheric-simulation-in-r.html,
+    https://github.com/tylermorganwall/skymodelr
+BugReports: https://github.com/tylermorganwall/skymodelr/issues
+Config/roxygen2/version: 8.0.0

@@ -52,7 +52,7 @@ directions and return radiance at a user-specified wavelength. Use
 atmospheric radiance only, or \code{"sun"} for the solar disk only.
 }
 \examples{
-if(run_documentation()) {
+\dontshow{if (interactive() || identical(Sys.getenv("IN_PKGDOWN"), "true")) withAutoprint(\{ # examplesIf}
 lambda_vals = calculate_sky_radiance(
   phi = c(90, 90),
   theta = c(45, 45),
@@ -63,5 +63,5 @@ lambda_vals = calculate_sky_radiance(
   albedo = 0.1
 )
 cbind(altitude = c(0, 10000), radiance = lambda_vals)
-}
+\dontshow{\}) # examplesIf}
 }

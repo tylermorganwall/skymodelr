@@ -2,7 +2,7 @@
 % Please edit documentation in R/stars.R
 \name{generate_stars}
 \alias{generate_stars}
-\title{Generate a star‑field array aligned with \code{generate_sky()}}
+\title{Generate a star-field array aligned with \code{generate_sky()}}
 \usage{
 generate_stars(
   lon,
@@ -30,7 +30,7 @@ generate_stars(
 \item{filename}{Default \code{NA}. Path to an image file to write. If \code{NA}, the
 image array is returned without writing.}
 
-\item{resolution}{Default \code{2048}. Map half-width; the output image is \code{2 * resolution} × \code{resolution}.}
+\item{resolution}{Default \code{2048}. Map half-width; the output image is \code{2 * resolution} by \code{resolution}.}
 
 \item{turbidity}{Default \code{3.0}. Atmospheric turbidity controlling aerosol optical depth for extinction/reddening.}
 
@@ -42,7 +42,7 @@ image array is returned without writing.}
 
 \item{star_width}{Default \code{1}. Approximate stellar point-spread size in pixels (controls apparent star sharpness).}
 
-\item{upper_hemisphere_only}{Default \code{TRUE}. If \code{TRUE}, pixels below the local horizon are suppressed to match \code{generate_sky()}’s visible hemisphere.}
+\item{upper_hemisphere_only}{Default \code{TRUE}. If \code{TRUE}, pixels below the local horizon are suppressed to match \code{generate_sky()}'s visible hemisphere.}
 
 \item{atmosphere_effects}{Default \code{TRUE}. If \code{TRUE}, apply atmospheric extinction and color shift using \code{turbidity}, \code{ozone_du}, and \code{altitude}.}
 
@@ -64,51 +64,59 @@ data are quantised to the destination format, and low dynamic range outputs like
 and JPEG files will not represent the true luminosity values encoded in the array.
 }
 \examples{
+star_map = generate_stars(
+  resolution = 8,
+  lon = -77.0369,
+  lat = 38.9072,
+  datetime = as.POSIXct("2025-03-21 02:20:00", tz = "UTC"),
+  atmosphere_effects = FALSE,
+  number_cores = 1
+)
+dim(star_map)
+
+\dontshow{if (interactive() || identical(Sys.getenv("IN_PKGDOWN"), "true")) withAutoprint(\{ # examplesIf}
 # Note: exposure has been increased for all examples (via white_point) for
 # ease of visibility in documentation
 
 # Basic star field over Washington, DC at a fixed time
-if(run_documentation()) {
 generate_stars(
   resolution = 400,
-  lon        = -77.0369,
-  lat        = 38.9072,
-  datetime   = as.POSIXct("2025-03-21 02:20:00", tz = "EST"),
-  color      = TRUE,
+  lon = -77.0369,
+  lat = 38.9072,
+  datetime = as.POSIXct("2025-03-21 02:20:00", tz = "America/New_York"),
+  color = TRUE,
   star_width = 1,
-  atmosphere_effects   = TRUE,
+  atmosphere_effects = TRUE,
   upper_hemisphere_only = TRUE,
   number_cores = 2
 ) |>
   rayimage::plot_image()
-}
-if(run_documentation()) {
+
 # Monochrome stars, no atmospheric extinction/reddening, full sphere
 generate_stars(
   resolution = 400,
-  lon        = -122.4194,
-  lat        = 37.7749,
-  datetime   = as.POSIXct("2025-06-01 08:00:00", tz = "UTC"),
-  color      = FALSE,
+  lon = -122.4194,
+  lat = 37.7749,
+  datetime = as.POSIXct("2025-06-01 08:00:00", tz = "UTC"),
+  color = FALSE,
   star_width = 1,
   upper_hemisphere_only = FALSE,
-  atmosphere_effects    = FALSE
+  atmosphere_effects = FALSE
 ) |>
   rayimage::plot_image()
-}
-if(run_documentation()) {
+
 # Sharper stars (smaller PSF) with ozone/turbidity and altitude
 generate_stars(
   resolution = 400,
-  lon        = 10,
-  lat        = 45,
-  datetime   = as.POSIXct("2025-12-01 22:00:00", tz = "UTC"),
+  lon = 10,
+  lat = 45,
+  datetime = as.POSIXct("2025-12-01 22:00:00", tz = "UTC"),
   star_width = 0.5,
-  turbidity  = 3.5,
-  ozone_du   = 320,
-  altitude   = 1000,
-  color      = TRUE
+  turbidity = 3.5,
+  ozone_du = 320,
+  altitude = 1000,
+  color = TRUE
 ) |>
   rayimage::plot_image()
-}
+\dontshow{\}) # examplesIf}
 }

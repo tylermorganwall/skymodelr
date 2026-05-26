@@ -3,7 +3,10 @@
 ^\.vscode$
 ^.+\.dat$
 ^compile_commands\.json$
+^codecov[.]yml$
 ^\.cache$
+^[^/]+[.]Rcheck$
+^[^/]+[.]tar[.]gz$
 ^.+\.exr$
 ^.+\.mp4$
 ^.+\.png$
@@ -11,9 +14,10 @@
 ^README_cache$
 ^_pkgdown\.yml$
 ^data-raw$
+^tests$
 ^docs$
 ^pkgdown$
 ^src/.+/.+\.o$
-^.+\.jpg$
+^lroc_color_poles_1k[.]jpg$
 ^.+\.af$
 ^\.github$

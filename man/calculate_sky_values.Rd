@@ -47,13 +47,13 @@ Evaluate the Prague spectral sky model at arbitrary spherical
 directions without writing an image, returning radiance-only samples.
 }
 \examples{
+\dontshow{if (interactive() || identical(Sys.getenv("IN_PKGDOWN"), "true")) withAutoprint(\{ # examplesIf}
 # Generate a basic atmosphere with the Prague model
-if(run_documentation()) {
 value_grid = expand.grid(
-  phi = seq(0,360,by=30),
-  theta = seq(0,90,by=10),
-  altitude = c(0,10000)
- )
+  phi = seq(0, 360, by = 30),
+  theta = seq(0, 90, by = 10),
+  altitude = c(0, 10000)
+)
 vals = calculate_sky_values(
   phi = value_grid$phi,
   theta = value_grid$theta,
@@ -61,7 +61,7 @@ vals = calculate_sky_values(
   elevation = 45,
   visibility = 120,
   albedo = 0
- )
- cbind(value_grid, vals)
-}
+)
+cbind(value_grid, vals)
+\dontshow{\}) # examplesIf}
 }

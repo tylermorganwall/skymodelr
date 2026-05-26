@@ -5,7 +5,7 @@
 #' [generate_stars()] to render star fields.
 #'
 #' @format
-#' A tibble with 9,110 rows and 8 variables:
+#' A data.frame with 9,110 rows and 8 variables:
 #' \describe{
 #'   \item{bsc_number}{Numeric identifier from the source catalog.}
 #'   \item{ra_rad}{Right ascension in radians.}
