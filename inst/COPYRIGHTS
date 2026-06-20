@@ -25,11 +25,6 @@ Copyright:
   Copyright (c) Charles University
   Implementation repository and software by Petr Vevoda
 
-Notes:
-  The upstream Prague Sky Model repository provides the implementation and
-  associated notices. Those notices are kept in source file headers rather than
-  duplicated here.
-
 2. Math utility code from Eric Bruneton
 ---------------------------------------
 
@@ -44,10 +39,6 @@ Upstream source:
 Copyright:
   Copyright (c) 2015 Eric Bruneton
   All rights reserved.
-
-Notes:
-  These files are distinct from the bundled ArHosek / Hosek-Wilkie model files.
-  They retain Eric Bruneton's copyright notice where applicable.
 
 3. ArHosek / Hosek-Wilkie sky model code
 ----------------------------------------
@@ -72,24 +63,8 @@ Related papers:
 ---------------
 
 Bundled file:
-
   inst/textures/lroc_color_poles_1k.jpg
 
-Provenance:
-  Derived from NASA Lunar Reconnaissance Orbiter Camera (LROC) lunar image
-  data. The exact upstream source page and local processing chain are not
-  recorded in this repository; the filename and package usage identify it as
-  an LROC color lunar texture with polar coverage.
-
 Rights/provenance:
-  NASA-origin imagery is public domain in the United States unless a specific
-  third-party restriction is identified. No additional non-NASA restriction
-  for this bundled texture was found in this repository.
-
-Local modifications
-===================
-
-The skymodelr package may contain local modifications, wrappers, build-system
-changes, R and Rcpp integration code, and interface code by Tyler Morgan-Wall.
-Such modifications do not alter the upstream notices that continue to apply to
-the bundled third-party material listed above.
+  Derived from NASA Lunar Reconnaissance Orbiter Camera (LROC) lunar image
+  data. NASA-origin imagery is public domain in the United States.
