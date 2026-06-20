@@ -108,7 +108,15 @@ values encoded in the array.
 ## Examples
 
 ``` r
-if(run_documentation()) {
+sky = generate_sky(
+  resolution = 8,
+  elevation = 30,
+  azimuth = 135,
+  render_mode = "atmosphere"
+)
+dim(sky)
+#> [1]  8 16  4
+
 # Hosek model (default): clear morning, Sun SE, with solar disk
 generate_sky(
   resolution = 400,
@@ -118,9 +126,8 @@ generate_sky(
   render_mode = "all"
 ) |>
   rayimage::plot_image()
-}
 
-if(run_documentation()) {
+
 # Same view but hazier and without the solar disk
 generate_sky(
   resolution = 400,
@@ -130,11 +137,9 @@ generate_sky(
   render_mode = "atmosphere"
 ) |>
   rayimage::plot_image()
-}
 
-# Prague model (may prompt to download coefficients on first use)
-# \donttest{
-if(run_documentation()) {
+
+# Prague model (requires downloaded coefficients)
 generate_sky(
   resolution = 400,
   hosek      = FALSE,
@@ -146,8 +151,4 @@ generate_sky(
   number_cores = 2
 ) |>
   rayimage::plot_image()
-}
-#>  Coefficient file for this setting not yet present: this is a large file (107MB), download? [y/n] 
-#> Error in check_coef_file("SkyModelDatasetGround.dat"): Input not recognized.
-# }
 ```

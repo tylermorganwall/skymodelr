@@ -20,7 +20,7 @@ Functions for generating different sky models
 - [`generate_stars()`](https://tylermorganwall.github.io/skymodelr/reference/generate_stars.md)
   :
 
-  Generate a star‑field array aligned with
+  Generate a star-field array aligned with
   [`generate_sky()`](https://tylermorganwall.github.io/skymodelr/reference/generate_sky.md)
 
 ## Downloading
@@ -44,6 +44,3 @@ Functions to sample specific values from the atmospheric model
 ## pkgdown utils
 
 Internal but must be exported to meet CRAN guidelines
-
-- [`run_documentation()`](https://tylermorganwall.github.io/skymodelr/reference/run_documentation.md)
-  : Run Documentation

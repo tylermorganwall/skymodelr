@@ -12,7 +12,7 @@ moon_mag(phase_deg, dist_km = 384400, mean_km = 384400)
 
 - phase_deg:
 
-  Phase angle ψ in degrees (0 = full Moon, 180 = new).
+  Phase angle psi in degrees (0 = full Moon, 180 = new).
 
 - dist_km:
 

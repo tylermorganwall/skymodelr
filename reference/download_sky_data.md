@@ -15,12 +15,12 @@ download_sky_data(sea_level = TRUE, wide_spectrum = FALSE)
 
 - sea_level:
 
-  Default `TRUE`. Download the sea‑level–only data. Set to `FALSE` to
-  download the full‑altitude dataset.
+  Default `TRUE`. Download the sea-level-only data. Set to `FALSE` to
+  download the full-altitude dataset.
 
 - wide_spectrum:
 
-  Default `FALSE`. If `TRUE`, downloads the wide‑spectrum (55‑channel,
+  Default `FALSE`. If `TRUE`, downloads the wide-spectrum (55-channel,
   polarised) version. Valid only when `sea_level = TRUE`.
 
 ## Value
@@ -29,24 +29,28 @@ Invisibly, the full path to the data file.
 
 ## Details
 
-|                                           |                                        |       |
-|-------------------------------------------|----------------------------------------|-------|
-| Argument combination                      | File                                   | Size  |
-| `sea_level = TRUE, wide_spectrum = FALSE` | `SkyModelDatasetGround.dat`            | 107MB |
-| `sea_level = TRUE, wide_spectrum = TRUE`  | `PragueSkyModelDatasetGroundInfra.dat` | 574MB |
-| `sea_level = FALSE`                       | `SkyModelDataset.dat`                  | 2.4GB |
+|  |  |  |
+|----|----|----|
+| Argument combination | File | Size |
+| `sea_level = TRUE, wide_spectrum = FALSE` | `SkyModelDatasetGround.dat` | 107MB |
+| `sea_level = TRUE, wide_spectrum = TRUE` | `PragueSkyModelDatasetGroundInfra.dat` | 574MB |
+| `sea_level = FALSE` | `SkyModelDataset.dat` | 2.4GB |
 
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-  # Standard (11‑channel, sea‑level) coefficients
-  download_sky_data()
+# Standard (11-channel, sea-level) coefficients
+download_sky_data()
+#> Downloading SkyModelDatasetGround.dat
+#> Saved to /home/runner/.local/share/R/skymodelr/SkyModelDatasetGround.dat
 
-  # Wide‑spectrum sea‑level coefficients
-  download_sky_data(wide_spectrum = TRUE)
+# Wide-spectrum sea-level coefficients
+download_sky_data(wide_spectrum = TRUE)
+#> Downloading PragueSkyModelDatasetGroundInfra.dat
+#> Saved to /home/runner/.local/share/R/skymodelr/PragueSkyModelDatasetGroundInfra.dat
 
-  # Full altitude‑range coefficients
-  download_sky_data(sea_level = FALSE)
-} # }
+# Full altitude-range coefficients
+download_sky_data(sea_level = FALSE)
+#> Downloading SkyModelDataset.dat
+#> Saved to /home/runner/.local/share/R/skymodelr/SkyModelDataset.dat
 ```

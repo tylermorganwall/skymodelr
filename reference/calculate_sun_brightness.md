@@ -67,8 +67,6 @@ Numeric scalar of sun luminance (CIE Y, relative scale).
 ## Examples
 
 ``` r
-if(run_documentation()) {
-  calculate_sun_brightness(elevation = 45, hosek = TRUE)
-}
+calculate_sun_brightness(elevation = 45, hosek = TRUE)
 #> [1] 2237321
 ```

@@ -178,52 +178,53 @@ about 0 degrees. Below that the function skips the sky render and writes
 ## Examples
 
 ``` r
+sky = generate_sky_latlong(
+  datetime = as.POSIXct("2025-03-21 12:00:00", tz = "America/New_York"),
+  lat = 38.9072,
+  lon = -77.0369,
+  resolution = 8
+)
+dim(sky)
+#> [1]  8 16  4
+
 # Morning sunrise on spring solstice over Washington, DC with Prague model
-if(run_documentation()) {
 generate_sky_latlong(
-  datetime    = as.POSIXct("2025-03-21 06:15:00",tz="EST"),
-  lat         = 38.9072,
-  lon         = -77.0369,
+  datetime = as.POSIXct("2025-03-21 06:15:00", tz = "America/New_York"),
+  lat = 38.9072,
+  lon = -77.0369,
   number_cores = 2,
   hosek = FALSE
 ) |>
   rayimage::plot_image()
-}
-#>  Coefficient file for this setting not yet present: this is a large file (107MB), download? [y/n] 
-#> Error in check_coef_file("SkyModelDatasetGround.dat"): Input not recognized.
-if(run_documentation()) {
+
+
 generate_sky_latlong(
-  datetime    = as.POSIXct("2025-03-21 12:00:00",tz="EST"),
-  lat         = 38.9072,
-  lon         = -77.0369,
-  number_cores = 2,
+  datetime = as.POSIXct("2025-03-21 12:00:00", tz = "America/New_York"),
+  lat = 38.9072,
+  lon = -77.0369,
+  number_cores = 2
 ) |>
   rayimage::plot_image()
-}
 
-if(run_documentation()) {
+
 generate_sky_latlong(
-  datetime    = as.POSIXct("2025-03-21 18:00:00",tz="EST"),
-  lat         = 38.9072,
-  lon         = -77.0369,
-  number_cores = 2,
+  datetime = as.POSIXct("2025-03-21 18:00:00", tz = "America/New_York"),
+  lat = 38.9072,
+  lon = -77.0369,
+  number_cores = 2
 ) |>
   rayimage::plot_image()
-}
 
-if(run_documentation()) {
+
 generate_sky_latlong(
-  datetime    = as.POSIXct("2025-03-21 18:30:00",tz="EST"),
-  lat         = 38.9072,
-  lon         = -77.0369,
+  datetime = as.POSIXct("2025-03-21 18:30:00", tz = "America/New_York"),
+  lat = 38.9072,
+  lon = -77.0369,
   number_cores = 2,
   hosek = FALSE,
-  verbose=TRUE,
+  verbose = TRUE
 ) |>
-  rayimage::render_exposure(exposure=2) |>
+  rayimage::render_exposure(exposure = 2) |>
   rayimage::plot_image()
-}
-#> Sun: -2.7 elevation, 273.0 azimuth
-#>  Coefficient file for this setting not yet present: this is a large file (107MB), download? [y/n] 
-#> Error in check_coef_file("SkyModelDatasetGround.dat"): Input not recognized.
+#> Sun: 8.9 elevation, 263.5 azimuth
 ```

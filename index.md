@@ -29,6 +29,7 @@ the moon by setting `moon = TRUE` and `stars = TRUE`.
 ## Installation
 
 ``` r
+
 # Latest version from GitHub
 remotes::install_github("tylermorganwall/skymodelr")
 ```
@@ -107,6 +108,7 @@ Washington DC on March 21st. On this day the sun is rising directly east
 the way from the left side of the image.
 
 ``` r
+
 library(skymodelr)
 library(rayimage)
 
@@ -127,6 +129,7 @@ rayimage::render_exposure(env, exposure=-2) |>
 Afternoon in DC:
 
 ``` r
+
 env = generate_sky_latlong(
   datetime   = as.POSIXct("2025-03-21 12:15:00",tz="EST"),
   lat        = 38.9072,
@@ -143,6 +146,7 @@ rayimage::render_exposure(env, exposure=-5) |>
 Evening in DC:
 
 ``` r
+
 env = generate_sky_latlong(
   datetime   = as.POSIXct("2025-03-21 18:15:00",tz="EST"),
   lat        = 38.9072,
@@ -159,6 +163,7 @@ rayimage::render_exposure(env, exposure=-2) |>
 Evening in DC (Hosek model), note the unphysical yellowish tint:
 
 ``` r
+
 env = generate_sky_latlong(
   datetime   = as.POSIXct("2025-03-21 18:15:00",tz="EST"),
   lat        = 38.9072,
@@ -175,6 +180,7 @@ rayimage::render_exposure(env, exposure=-4) |>
 The Prague model supports solar elevations below the horizon:
 
 ``` r
+
 env = generate_sky_latlong(
   datetime   = as.POSIXct("2025-03-21 18:37:00",tz="EST"),
   lat        = 38.9072,
@@ -190,6 +196,7 @@ env = generate_sky_latlong(
 ```
 
 ``` r
+
 rayimage::render_exposure(env, exposure=3) |> 
   rayimage::plot_image()
 ```
@@ -204,6 +211,7 @@ Note that now we’re above a good portion of the atmosphere, so we start
 seeing scattered light *below* us.
 
 ``` r
+
 env = generate_sky_latlong(
   datetime   = as.POSIXct("2025-03-21 12:15:00",tz="EST"),
   lat        = 38.9072,
@@ -224,6 +232,7 @@ High enough altitudes have the majority of the scattered light coming
 from below the viewer.
 
 ``` r
+
 env = generate_sky_latlong(
   filename    = NA,
   datetime   = as.POSIXct("2025-03-21 12:15:00",tz="EST"),
@@ -245,6 +254,7 @@ At high altitudes, the resulting render has almost all the scattered
 light coming from below, resulting in a space-like appearance.
 
 ``` r
+
 env = generate_sky_latlong(
   filename    = NA,
   datetime   = as.POSIXct("2025-03-21 12:15:00",tz="EST"),
@@ -266,6 +276,7 @@ Note the shadow of the Earth in the atmosphere opposite the sun when the
 sun is below the horizon.
 
 ``` r
+
 env = generate_sky_latlong(
   filename    = NA,
   datetime   = as.POSIXct("2025-03-21 18:30:00",tz="EST"),
@@ -284,6 +295,7 @@ rayimage::plot_image(env)
 Full sun + moon + stars (with increased exposure for artistic effect):
 
 ``` r
+
 env = generate_sky_latlong(
   filename = NA,
   datetime   = as.POSIXct("2025-03-21 18:37:00",tz="EST"),
@@ -307,6 +319,7 @@ rayimage::render_exposure(env, exposure = 2)  |>
 included scattered light.
 
 ``` r
+
 sky = generate_sky(
   albedo = 0,
   elevation = 25,
@@ -325,6 +338,7 @@ rayimage::render_exposure(sky, exposure=-6) |>
 ## Moon‑lit atmosphere
 
 ``` r
+
 moon_sky = generate_moon_latlong(
   filename   = NA,
   datetime  = as.POSIXct("2025-03-21 02:15:00",tz="EST"),
@@ -355,6 +369,7 @@ the correct size on the environment map. Here are some of the pre-scaled
 renders.
 
 ``` r
+
 moon_image1 = skymodelr:::generate_moon_image_latlong(datetime  = as.POSIXct("2025-03-21 02:15:00",tz="EST"),
   lat       = 38.9072,
   lon       = -77.0369)
@@ -364,6 +379,7 @@ rayimage::render_exposure(moon_image1$moon_luminance_array, 2, preview = TRUE)
 ![](reference/figures/unnamed-chunk-1-1.png)
 
 ``` r
+
 #Change latitude and our orientation changes
 moon_image2 = skymodelr:::generate_moon_image_latlong(datetime  = as.POSIXct("2025-03-10 02:15:00",tz="EST"),
   lat       = 38.9072,
@@ -374,6 +390,7 @@ rayimage::render_exposure(moon_image2$moon_luminance_array, 2, preview = TRUE)
 ![](reference/figures/unnamed-chunk-1-2.png)
 
 ``` r
+
 moon_image3 = skymodelr:::generate_moon_image_latlong(datetime  = as.POSIXct("2025-03-10 02:15:00",tz="EST"),
   lat       = 0,
   lon       = -77.0369)
@@ -383,6 +400,7 @@ rayimage::render_exposure(moon_image3$moon_luminance_array, 2, preview = TRUE)
 ![](reference/figures/unnamed-chunk-1-3.png)
 
 ``` r
+
 moon_image4 = skymodelr:::generate_moon_image_latlong(datetime  = as.POSIXct("2025-03-10 02:15:00",tz="EST"),
   lat       = -38.9072,
   lon       = -77.0369)
@@ -397,6 +415,7 @@ Stars are rendered using color values derived from the star’s
 temperature.
 
 ``` r
+
 stars = generate_stars(
   datetime  = as.POSIXct("2025-03-21 02:15:00",tz="EST"),
   lat       = 38.9072,
@@ -415,6 +434,7 @@ stars |>
 Now render the entire sphere:
 
 ``` r
+
 stars_full = generate_stars(
   datetime  = as.POSIXct("2025-03-21 02:15:00",tz="EST"),
   lat       = 38.9072,
@@ -433,6 +453,7 @@ stars_full |>
 ## Use the Prague spectral model
 
 ``` r
+
 # Download once (choose variant via args):
 coef_path = download_sky_data(sea_level = TRUE, wide_spectrum = FALSE)
 
@@ -456,6 +477,7 @@ plot_image(sky_prague)
 You can pass these EXR images to rayrender. Here’s a daytime sky:
 
 ``` r
+
 library(rayrender)
 day_exr = tempfile(fileext=".exr")
 generate_sky(
@@ -480,6 +502,7 @@ adjustments to an existing environment map’s orientation using the
 `rotate_env` argument in rayrender.
 
 ``` r
+
 sunset_exr = tempfile(fileext=".exr")
 generate_sky(
   filename=sunset_exr,
@@ -499,6 +522,7 @@ generate_ground(depth = -0.4, material=diffuse(color="grey20", checkercolor = "g
 ![](reference/figures/unnamed-chunk-3-1.png)
 
 ``` r
+
 #Rotate the existing env 225 degrees to come from the southwest.
 generate_ground(depth = -0.4, material=diffuse(color="grey20", checkercolor = "grey50"),spheresize = 10000) |>
   add_object(obj_model(r_obj())) |> 

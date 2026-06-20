@@ -138,18 +138,16 @@ values encoded in the array.
 
 ``` r
 # Moonlit sky (Hosek), mid-evening in DC
-if(run_documentation()) {
 generate_moon_latlong(
-  datetime   = as.POSIXct("2025-09-05 19:30:00",tz="America/New_York"),
-  lat        = 38.9072,
-  lon        = -77.0369,
+  datetime = as.POSIXct("2025-09-05 19:30:00", tz = "America/New_York"),
+  lat = 38.9072,
+  lon = -77.0369,
   resolution = 400,
-  turbidity  = 3,
-  verbose    = TRUE
+  turbidity = 3,
+  verbose = TRUE
 ) |>
   rayimage::render_exposure(15) |>
   rayimage::plot_image()
-}
 #> phi=0.3991, earth_phase=2.7425, E_em=0.002508 W/m^2, emission_intensity=1.929e-06
 #> Moon: 8.1 elevation, 120.6 azimuth, 22.809 phase, 0.064058 lux
 ```

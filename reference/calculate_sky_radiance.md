@@ -83,7 +83,6 @@ Numeric vector of radiance values at the requested wavelength(s).
 ## Examples
 
 ``` r
-if(run_documentation()) {
 lambda_vals = calculate_sky_radiance(
   phi = c(90, 90),
   theta = c(45, 45),
@@ -93,8 +92,7 @@ lambda_vals = calculate_sky_radiance(
   visibility = 80,
   albedo = 0.1
 )
+#> Error: The Prague sky model coefficient file 'SkyModelDataset.dat' is not installed. Run download_sky_data(sea_level = FALSE, wide_spectrum = FALSE) explicitly to download it.
 cbind(altitude = c(0, 10000), radiance = lambda_vals)
-}
-#>  Coefficient file for this setting not yet present: this is a large file (2.4GB), download? [y/n] 
-#> Error in check_coef_file("SkyModelDataset.dat"): Input not recognized.
+#> Error: object 'lambda_vals' not found
 ```

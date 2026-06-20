@@ -46,7 +46,7 @@ generate_planets(
 
 - resolution:
 
-  Default `2048`. Map half-width (image is `2 * resolution` ×
+  Default `2048`. Map half-width (image is `2 * resolution` by
   `resolution`).
 
 - turbidity:
@@ -101,18 +101,16 @@ values encoded in the array.
 
 ``` r
 # Basic star field over Washington, DC at a fixed time
-if(run_documentation()) {
 generate_planets(
-  datetime   = as.POSIXct("2025-03-21 02:20:00", tz = "EST"),
-  lon        = -77.0369,
-  lat        = 38.9072,
+  datetime = as.POSIXct("2025-03-21 02:20:00", tz = "America/New_York"),
+  lon = -77.0369,
+  lat = 38.9072,
   resolution = 400,
-  color      = TRUE,
+  color = TRUE,
   planet_width = 1,
-  atmosphere_effects   = TRUE,
+  atmosphere_effects = TRUE,
   upper_hemisphere_only = TRUE,
   number_cores = 2
 ) |>
   rayimage::plot_image()
-}
 ```

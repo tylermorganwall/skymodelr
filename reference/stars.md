@@ -13,7 +13,7 @@ data(stars)
 
 ## Format
 
-A tibble with 9,110 rows and 8 variables:
+A data.frame with 9,110 rows and 8 variables:
 
 - bsc_number:
 

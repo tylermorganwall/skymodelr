@@ -76,12 +76,11 @@ calculate_sky_values(
 
 ``` r
 # Generate a basic atmosphere with the Prague model
-if(run_documentation()) {
 value_grid = expand.grid(
-  phi = seq(0,360,by=30),
-  theta = seq(0,90,by=10),
-  altitude = c(0,10000)
- )
+  phi = seq(0, 360, by = 30),
+  theta = seq(0, 90, by = 10),
+  altitude = c(0, 10000)
+)
 vals = calculate_sky_values(
   phi = value_grid$phi,
   theta = value_grid$theta,
@@ -89,9 +88,8 @@ vals = calculate_sky_values(
   elevation = 45,
   visibility = 120,
   albedo = 0
- )
- cbind(value_grid, vals)
-}
-#>  Coefficient file for this setting not yet present: this is a large file (2.4GB), download? [y/n] 
-#> Error in check_coef_file("SkyModelDataset.dat"): Input not recognized.
+)
+#> Error: The Prague sky model coefficient file 'SkyModelDataset.dat' is not installed. Run download_sky_data(sea_level = FALSE, wide_spectrum = FALSE) explicitly to download it.
+cbind(value_grid, vals)
+#> Error: object 'vals' not found
 ```
