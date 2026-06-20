@@ -1,3 +1,9 @@
+/*
+This file is included in the skymodelr package, which is distributed as a
+whole under GPL-3. The following upstream copyright and provenance notice is
+preserved for attribution and compliance with upstream notice requirements.
+*/
+
 /**
  * Copyright (c) 2016 Eric Bruneton
  * All rights reserved.

@@ -18,7 +18,12 @@
 #' }
 #'
 #' @source
-#' Bright Star Catalogue, 5th Revised Edition (BSC5), stored in `data-raw/BSC5`.
+#' Derived from the Bright Star Catalogue, 5th Revised Edition (BSC5), also
+#' known as the Yale Bright Star Catalogue. The source catalogue is commonly
+#' identified as Hoffleit, D. and Warren, W. H. Jr. (1991), "The Bright Star
+#' Catalogue, 5th Revised Ed.", Yale University Observatory, and is distributed
+#' as machine-readable catalogue V/50 by the Centre de Donnees astronomiques de
+#' Strasbourg (CDS): <https://cdsarc.cds.unistra.fr/viz-bin/cat/V/50>.
 #'
 #' @usage data(stars)
 #' @keywords datasets internal

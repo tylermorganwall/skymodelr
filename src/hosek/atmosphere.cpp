@@ -1,3 +1,9 @@
+/*
+This file is included in the skymodelr package, which is distributed as a
+whole under GPL-3. The following upstream copyright and provenance notice is
+preserved for attribution and compliance with upstream notice requirements.
+*/
+
 /**
  Copyright (c) 2015 Eric Bruneton
  All rights reserved.
@@ -55,7 +61,7 @@ IrradianceSpectrum NewSolarSpectrum() {
 ScatteringSpectrum NewRayleighScattering() {
   // Values from Table III in Penndorf 1957 "Tables of the Refractive Index for
   // Standard Air and the Rayleigh Scattering Coefficient for the Spectral
-  // Region between 0.2 and 20.0 μ and Their Application to Atmospheric Optics".
+  // Region between 0.2 and 20.0 um and Their Application to Atmospheric Optics".
   static const float kPenndorf[48] = {
     70.45E-6, 62.82E-6, 56.20E-6, 50.43E-6, 45.40E-6, 40.98E-6, 37.08E-6,
     33.65E-6, 30.60E-6, 27.89E-6, 25.48E-6, 23.33E-6, 21.40E-6, 19.66E-6,
@@ -67,7 +73,7 @@ ScatteringSpectrum NewRayleighScattering() {
   };
   std::vector<ScatteringCoefficient> penndorf_samples;
   for (int i = 0; i < 48; ++i) {
-    // The above values are for T_0=0°C. For T=15°C, a correction factor
+    // The above values are for T_0=0 deg C. For T=15 deg C, a correction factor
     // T_0 / T must be applied (Eq. (12) in Penndorf paper).
     constexpr double T_0 = 273.16;
     constexpr double T = T_0 + 15.0;

@@ -268,7 +268,7 @@ Rcpp::NumericVector make_starfield_rcpp(Rcpp::DataFrame stars,
   		int    t0 = (int)std::floor(v);
 
   		// PSF parameters
-  		double sigma = psf_fwhm_pix / 2.355;                   // FWHM→σ
+        double sigma = psf_fwhm_pix / 2.355;                   // FWHM -> sigma
   		int    rad   = (int)std::ceil(psf_trunc_sigma * sigma);
   		double inv_2s2 = 1.0 / (2.0 * sigma * sigma);
 

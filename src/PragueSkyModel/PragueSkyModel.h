@@ -1,3 +1,9 @@
+/*
+This file is included in the skymodelr package, which is distributed as a
+whole under GPL-3. The following upstream copyright and provenance notice is
+preserved for attribution and compliance with upstream notice requirements.
+*/
+
 // Copyright 2022 Charles University
 // SPDX-License-Identifier: Apache-2.0
 

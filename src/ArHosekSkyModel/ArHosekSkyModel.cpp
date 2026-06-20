@@ -1,4 +1,10 @@
 /*
+This file is included in the skymodelr package, which is distributed as a
+whole under GPL-3. The following upstream copyright and provenance notice is
+preserved for attribution and compliance with upstream notice requirements.
+*/
+
+/*
 This source is published under the following 3-clause BSD license.
 
 Copyright (c) 2012 - 2013, Lukas Hosek and Alexander Wilkie

@@ -5,11 +5,11 @@
 #include <cassert>
 #include <cmath>
 
-// Shared CIE table length (360–830 nm inclusive, 1 nm steps).
+// Shared CIE table length (360-830 nm inclusive, 1 nm steps).
 constexpr int CIE_N = 471;
 
 // Full 1 nm sampled CIE 1931 2 color matching functions
-// (lambda, xbar, ybar, zbar) covering 360–830 nm.
+// (lambda, xbar, ybar, zbar) covering 360-830 nm.
 
 static const double cie_lambda_nm[] = {
     360, 361, 362, 363, 364, 365, 366, 367, 368, 369, 370, 371, 372, 373, 374,

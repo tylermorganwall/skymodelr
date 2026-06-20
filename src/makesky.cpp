@@ -70,7 +70,7 @@ static inline void resolve_render_mode(const std::string &render_mode,
   Rcpp::stop("render_mode must be one of \"all\", \"atmosphere\", or \"sun\"");
 }
 
-// Forward conversion to Prague’s tiny Vector3 wrapper
+// Forward conversion to Prague's tiny Vector3 wrapper
 static inline PragueSkyModel::Vector3 toPrague(const Vec3<double> &v) {
   return {double(v.x), double(v.y), double(v.z)};
 }
@@ -213,7 +213,7 @@ makesky_rcpp(double albedo = 0.5, double turbidity = 3.0,
     Rcpp::stop("albedo must be in [0,1]");
   }
   if (resolution == 0) {
-    Rcpp::stop("resolution must be ≥ 1");
+    Rcpp::stop("resolution must be >= 1");
   }
 
   // Nudge zenith by at least half a texel to keep the sun disk sampled at 90
@@ -252,7 +252,7 @@ makesky_rcpp(double albedo = 0.5, double turbidity = 3.0,
 
   if (model == "prague") {
     // Prague sampling is locked to dataset channel centers within CIE bounds
-    // (380–740 nm).
+    // (380-740 nm).
     lambda_values.reserve(avail.channels);
     for (int i = 0; i < avail.channels; ++i) {
       const double lam = avail.channelStart + (i + 0.5) * avail.channelWidth;
@@ -314,7 +314,7 @@ makesky_rcpp(double albedo = 0.5, double turbidity = 3.0,
     }
     hosek = arhosekskymodelstate_alloc_init(elev_rad, turbidity, albedo);
     if (!hosek)
-      Rcpp::stop("Hosek–Wilkie initialisation failed");
+      Rcpp::stop("Hosek-Wilkie initialisation failed");
 
   } else {
     if (elevation < -4.2 || elevation > 90.0) {
@@ -508,7 +508,7 @@ double calculate_sun_brightness_rcpp(
 
   if (model == "prague") {
     // Prague sampling is locked to dataset channel centers within CIE bounds
-    // (380–740 nm).
+    // (380-740 nm).
     lambda_values.reserve(avail.channels);
     for (int i = 0; i < avail.channels; ++i) {
       const double lam = avail.channelStart + (i + 0.5) * avail.channelWidth;
@@ -571,7 +571,7 @@ double calculate_sun_brightness_rcpp(
     ArHosekSkyModelState *hosek =
         arhosekskymodelstate_alloc_init(elev_rad, turbidity, albedo);
     if (!hosek) {
-      Rcpp::stop("Hosek–Wilkie initialisation failed");
+      Rcpp::stop("Hosek-Wilkie initialisation failed");
     }
 
     const double theta = M_PI_2 - elev_rad;
@@ -701,7 +701,7 @@ double calculate_sun_radiance_band_rcpp(
     ArHosekSkyModelState *hosek =
         arhosekskymodelstate_alloc_init(elev_rad, turbidity, albedo);
     if (!hosek) {
-      Rcpp::stop("Hosek–Wilkie initialisation failed");
+      Rcpp::stop("Hosek-Wilkie initialisation failed");
     }
 
     const double theta = M_PI_2 - elev_rad;
@@ -813,7 +813,7 @@ Rcpp::NumericMatrix calculate_raw_prague(
   const auto avail = initialize_prague_model(prg_dataset);
 
   // Spectral sampling: lock to Prague dataset channel centers within CIE range
-  // (380–740 nm).
+  // (380-740 nm).
   std::vector<double> lambda_values;
   lambda_values.reserve(avail.channels);
   for (int i = 0; i < avail.channels; ++i) {

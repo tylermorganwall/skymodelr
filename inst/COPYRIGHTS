@@ -3,25 +3,26 @@ skymodelr package
 
 Copyright (C) 2026 Tyler Morgan-Wall
 
-See the package DESCRIPTION file for package metadata.
+The skymodelr package is distributed as a whole under GPL-3. The following
+upstream copyright and provenance notices are preserved for attribution and
+compliance with upstream notice requirements.
 
-Bundled third-party code
-========================
+Bundled and downloaded third-party materials
+============================================
 
 1. Prague Sky Model implementation
 ----------------------------------
 
 Files derived from, adapted from, or incorporating code from the Prague Sky
-Model implementation by Petr Vevoda and collaborators, including code based on
-the upstream files:
+Model implementation by Petr Vevoda and collaborators:
 
-  src/PragueSkyModel.h
-  src/PragueSkyModel.cpp
+  src/PragueSkyModel/PragueSkyModel.h
+  src/PragueSkyModel/PragueSkyModel.cpp
 
 Upstream project:
   https://github.com/PetrVevoda/pragueskymodel
 
-Copyright:
+Copyright/provenance:
   Copyright (c) Charles University
   Implementation repository and software by Petr Vevoda
 
@@ -36,7 +37,7 @@ clear-sky-models project, including vendored files under:
 Upstream source:
   https://github.com/ebruneton/clear-sky-models
 
-Copyright:
+Copyright/provenance:
   Copyright (c) 2015 Eric Bruneton
   All rights reserved.
 
@@ -44,9 +45,10 @@ Copyright:
 ----------------------------------------
 
 Files derived from, adapted from, or incorporating code from the ArHosek sky
-model, including code based on the upstream files in:
+model, including code based on files in:
 
-  atmosphere/model/hosek/
+  src/ArHosekSkyModel/
+  src/hosek/
 
 Upstream source used:
   https://github.com/ebruneton/clear-sky-models/tree/master/atmosphere/model/hosek
@@ -68,3 +70,50 @@ Bundled file:
 Rights/provenance:
   Derived from NASA Lunar Reconnaissance Orbiter Camera (LROC) lunar image
   data. NASA-origin imagery is public domain in the United States.
+
+5. Star catalogue data
+----------------------
+
+Bundled file:
+  data/stars.rda
+
+Source/provenance:
+  Derived from the Bright Star Catalogue, 5th Revised Edition (BSC5), also
+  known as the Yale Bright Star Catalogue. The source catalogue is commonly
+  identified as Hoffleit, D. and Warren, W. H. Jr. (1991), "The Bright Star
+  Catalogue, 5th Revised Ed.", Yale University Observatory, and is distributed
+  as machine-readable catalogue V/50 by the Centre de Donnees astronomiques de
+  Strasbourg (CDS):
+
+  https://cdsarc.cds.unistra.fr/viz-bin/cat/V/50
+
+  The package data contain derived stellar positions, apparent V magnitudes,
+  spectral type strings, and computed RGB weights used for sky rendering.
+
+6. Downloaded Prague coefficient data
+-------------------------------------
+
+Downloaded files:
+  SkyModelDatasetGround.dat
+  PragueSkyModelDatasetGroundInfra.dat
+  SkyModelDataset.dat
+
+Source/provenance:
+  These files are not bundled in the source package. They are downloaded by
+  download_sky_data() into tools::R_user_dir("skymodelr", "data"). The
+  coefficient files are associated with the same Prague Sky Model project and
+  copyright/provenance as the vendored Prague source implementation described
+  above.
+
+7. Configure helper
+-------------------
+
+Bundled file:
+  tools/config.R
+
+Copyright/provenance:
+  Contains configure helper code from Kevin Ushey.
+
+  Copyright 2017-2021 Kevin Ushey
+
+  The upstream permission notice is preserved in the file header.
