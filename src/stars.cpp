@@ -1,4 +1,3 @@
-// [[Rcpp::depends(RcppThread)]]
 // [[Rcpp::plugins(cpp17)]]
 #include <Rcpp.h>
 #include <RcppThread.h>
