@@ -28,3 +28,4 @@
 ^.+\.af$
 ^\.github$
 ^.*[.]DS_Store$
+^man/figures/startrailscolor[.]jpg$

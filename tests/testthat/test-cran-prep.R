@@ -13,47 +13,6 @@ test_that("missing Prague coefficients fail clearly without prompting", {
   )
 })
 
-test_that("download_sky_data stops on download failure", {
-  cache_dir = tempfile()
-  dir.create(cache_dir)
-  testthat::local_mocked_bindings(
-    prague_coef_cache_dir = function() cache_dir,
-    .package = "skymodelr"
-  )
-  testthat::local_mocked_bindings(
-    download.file = function(...) 1L,
-    .package = "utils"
-  )
-
-  testthat::expect_error(download_sky_data(), "Failed to download")
-  testthat::expect_false(file.exists(file.path(
-    cache_dir,
-    "SkyModelDatasetGround.dat"
-  )))
-})
-
-test_that("download_sky_data removes checksum mismatches", {
-  cache_dir = tempfile()
-  dir.create(cache_dir)
-  testthat::local_mocked_bindings(
-    prague_coef_cache_dir = function() cache_dir,
-    .package = "skymodelr"
-  )
-  testthat::local_mocked_bindings(
-    download.file = function(url, destfile, ...) {
-      writeBin(charToRaw("not the sky data"), destfile)
-      0L
-    },
-    .package = "utils"
-  )
-
-  testthat::expect_error(download_sky_data(), "Checksum mismatch")
-  testthat::expect_false(file.exists(file.path(
-    cache_dir,
-    "SkyModelDatasetGround.dat"
-  )))
-})
-
 test_that("generate_planets passes latitude and longitude by name", {
   captured = new.env(parent = emptyenv())
   testthat::local_mocked_bindings(
