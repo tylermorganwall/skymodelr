@@ -12,6 +12,7 @@ preserved for attribution and compliance with upstream notice requirements.
 #include <cassert>
 #include <limits>
 #include <cstring>
+#include <tuple>
 
 #include "PragueSkyModel.h"
 
