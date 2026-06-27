@@ -567,10 +567,14 @@ Functions for generating different sky models
 
 ## Downloading
 
-Download model data
+Download and manage model data
 
 - [`download_sky_data()`](https://tylermorganwall.github.io/skymodelr/reference/download_sky_data.md)
   : Download Prague Sky Model Coefficient Data
+- [`list_sky_data()`](https://tylermorganwall.github.io/skymodelr/reference/list_sky_data.md)
+  : List cached sky data files
+- [`clear_sky_data()`](https://tylermorganwall.github.io/skymodelr/reference/clear_sky_data.md)
+  : Clear cached sky data files
 
 ## Sample Values
 
