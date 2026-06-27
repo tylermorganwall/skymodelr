@@ -7,10 +7,12 @@ preserved for attribution and compliance with upstream notice requirements.
 // Copyright 2022 Charles University
 // SPDX-License-Identifier: Apache-2.0
 
+#include <array>
+#include <cmath>
+#include <cstdio>
 #include <exception>
 #include <string>
 #include <vector>
-#include <cmath>
 
 double pragueLerp(const double from, const double to, const double factor);
 
