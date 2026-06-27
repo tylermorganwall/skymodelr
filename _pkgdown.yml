@@ -12,8 +12,11 @@ reference:
   desc: Functions for generating different sky models
   contents: starts_with("generate")
 - title: Downloading
-  desc: Download model data
-  contents: starts_with("download")
+  desc: Download and manage model data
+  contents:
+  - starts_with("download")
+  - list_sky_data
+  - clear_sky_data
 - title: Sample Values
   desc: Functions to sample specific values from the atmospheric model
   contents: starts_with("calculate")
