@@ -86,7 +86,8 @@ generate_moon_latlong = function(
   )
   moon_dir = moon_sun_data$moon_dir_topo
   moon_elevation = asin(moon_dir[3]) * 180 / pi
-  moon_azimuth = (180 + atan2(moon_dir[1], moon_dir[2]) * 180 / pi + 360) %% 360
+  moon_azimuth = (180 + atan2(moon_dir[1], moon_dir[2]) * 180 / pi + 360) %%
+    360
   if (hosek) {
     if (moon_elevation < 0.0) {
       if (verbose) {
@@ -96,9 +97,10 @@ generate_moon_latlong = function(
       }
       black_sky = array(0, dim = c(resolution, resolution * 2, 4))
       black_sky[,, 4] = 1
+      black_sky = as_sky_image(black_sky)
       if (!is.na(filename)) {
         warn_precision_loss(filename)
-        rayimage::ray_write_image(black_sky, filename)
+        write_sky_image(black_sky, filename)
         return(invisible(black_sky))
       } else {
         return(black_sky)
@@ -113,9 +115,10 @@ generate_moon_latlong = function(
       }
       black_sky = array(0, dim = c(resolution, resolution * 2, 4))
       black_sky[,, 4] = 1
+      black_sky = as_sky_image(black_sky)
       if (!is.na(filename)) {
         warn_precision_loss(filename)
-        rayimage::ray_write_image(black_sky, filename)
+        write_sky_image(black_sky, filename)
         return(invisible(black_sky))
       } else {
         return(black_sky)
@@ -446,15 +449,11 @@ generate_moon_latlong = function(
       moon_array[,, 2][disk_mask] +
       moon_array[,, 3][disk_mask]
   }
-  moon_array = rayimage::ray_read_image(
-    moon_array,
-    assume_white = "D65",
-    assume_colorspace = rayimage::CS_SRGB
-  )
+  moon_array = as_sky_image(moon_array)
   attr(moon_array, "L_band") = moon_band
   if (!is.na(filename)) {
     warn_precision_loss(filename)
-    rayimage::ray_write_image(moon_array, filename, clamp = FALSE)
+    write_sky_image(moon_array, filename, clamp = FALSE)
     return(invisible(moon_array))
   } else {
     return(moon_array)

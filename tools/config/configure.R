@@ -10,62 +10,62 @@ is_macos = identical(Sys.info()[['sysname']], "Darwin")
 # This script configures Makevars explicitly; disable the helper's
 # post-script auto-configuration pass to avoid regenerating both files.
 options(
-	configure.common = FALSE,
-	configure.platform = FALSE
+  configure.common = FALSE,
+  configure.platform = FALSE
 )
 
 TARGET_ARCH = Sys.info()[["machine"]]
 PACKAGE_BASE_DIR = normalizePath(getwd(), winslash = "/")
 
 IMATH_INCLUDE_DIR = system.file(
-	"include",
-	"Imath",
-	package = "libimath",
-	mustWork = TRUE
+  "include",
+  "Imath",
+  package = "libimath",
+  mustWork = TRUE
 )
 IMATH_LIB_ARCH = normalizePath(
-	sprintf(
-		"%s/%s",
-		system.file(
-			"lib",
-			package = "libimath",
-			mustWork = TRUE
-		),
-		Sys.info()[["machine"]]
-	),
-	winslash = "/"
+  sprintf(
+    "%s/%s",
+    system.file(
+      "lib",
+      package = "libimath",
+      mustWork = TRUE
+    ),
+    Sys.info()[["machine"]]
+  ),
+  winslash = "/"
 )
 
 OPENEXR_INCLUDE_DIR = system.file(
-	"include",
-	"OpenEXR",
-	package = "libopenexr",
-	mustWork = TRUE
+  "include",
+  "OpenEXR",
+  package = "libopenexr",
+  mustWork = TRUE
 )
 OPENEXR_LIB_ARCH = normalizePath(
-	sprintf(
-		"%s/%s",
-		system.file(
-			"lib",
-			package = "libopenexr",
-			mustWork = TRUE
-		),
-		Sys.info()[["machine"]]
-	),
-	winslash = "/"
+  sprintf(
+    "%s/%s",
+    system.file(
+      "lib",
+      package = "libopenexr",
+      mustWork = TRUE
+    ),
+    Sys.info()[["machine"]]
+  ),
+  winslash = "/"
 )
 
 define(
-	PACKAGE_BASE_DIR = PACKAGE_BASE_DIR,
-	TARGET_ARCH = TARGET_ARCH,
-	IMATH_INCLUDE_DIR = IMATH_INCLUDE_DIR,
-	IMATH_LIB_ARCH = IMATH_LIB_ARCH,
-	OPENEXR_INCLUDE_DIR = OPENEXR_INCLUDE_DIR,
-	OPENEXR_LIB_ARCH = OPENEXR_LIB_ARCH
+  PACKAGE_BASE_DIR = PACKAGE_BASE_DIR,
+  TARGET_ARCH = TARGET_ARCH,
+  IMATH_INCLUDE_DIR = IMATH_INCLUDE_DIR,
+  IMATH_LIB_ARCH = IMATH_LIB_ARCH,
+  OPENEXR_INCLUDE_DIR = OPENEXR_INCLUDE_DIR,
+  OPENEXR_LIB_ARCH = OPENEXR_LIB_ARCH
 )
 
 if (!is_windows) {
-	configure_file("src/Makevars.in")
+  configure_file("src/Makevars.in")
 } else {
-	configure_file("src/Makevars.win.in")
+  configure_file("src/Makevars.win.in")
 }

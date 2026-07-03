@@ -116,9 +116,10 @@ generate_sky = function(
       }
       black_sky = array(0, dim = c(resolution, resolution * 2, 4))
       black_sky[,, 4] = 1
+      black_sky = as_sky_image(black_sky)
       if (!is.na(filename)) {
         warn_precision_loss(filename)
-        rayimage::ray_write_image(black_sky, filename)
+        write_sky_image(black_sky, filename)
         return(invisible(black_sky))
       } else {
         return(black_sky)
@@ -133,9 +134,10 @@ generate_sky = function(
       }
       black_sky = array(0, dim = c(resolution, resolution * 2, 4))
       black_sky[,, 4] = 1
+      black_sky = as_sky_image(black_sky)
       if (!is.na(filename)) {
         warn_precision_loss(filename)
-        rayimage::ray_write_image(black_sky, filename)
+        write_sky_image(black_sky, filename)
         return(invisible(black_sky))
       } else {
         return(black_sky)
@@ -168,21 +170,14 @@ generate_sky = function(
   if (!is.null(band)) {
     attr(generated_sky, "L_band") = band
   }
+  generated_sky = as_sky_image(generated_sky)
 
   if (!is.na(filename)) {
     warn_precision_loss(filename)
-    rayimage::ray_write_image(generated_sky, filename)
+    write_sky_image(generated_sky, filename)
     return(invisible(generated_sky))
   } else {
-    converted = rayimage::ray_read_image(
-      generated_sky,
-      assume_white = "D65",
-      assume_colorspace = rayimage::CS_SRGB
-    )
-    if (!is.null(band)) {
-      attr(converted, "L_band") = band
-    }
-    return(converted)
+    return(generated_sky)
   }
 }
 
@@ -429,9 +424,10 @@ generate_sky_latlong = function(
     sky_array = sky_array + planets_array
   }
   sky_array[,, 4] = 1
+  sky_array = as_sky_image(sky_array)
   if (!is.na(filename)) {
     warn_precision_loss(filename)
-    rayimage::ray_write_image(sky_array, filename, clamp = FALSE)
+    write_sky_image(sky_array, filename, clamp = FALSE)
     return(invisible(sky_array))
   } else {
     return(sky_array)

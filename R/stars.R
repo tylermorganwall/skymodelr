@@ -198,7 +198,7 @@ generate_stars = function(
   )
   if (!is.na(filename)) {
     warn_precision_loss(filename)
-    rayimage::ray_write_image(star_array, filename)
+    write_sky_image(star_array, filename)
     return(invisible(star_array))
   } else {
     return(star_array)

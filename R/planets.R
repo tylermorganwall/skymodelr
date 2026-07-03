@@ -96,7 +96,7 @@ generate_planets = function(
   )
   if (!is.na(filename)) {
     warn_precision_loss(filename)
-    rayimage::ray_write_image(planet_array, filename)
+    write_sky_image(planet_array, filename)
     return(invisible(planet_array))
   } else {
     return(planet_array)
