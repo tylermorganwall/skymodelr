@@ -61,13 +61,17 @@ validate_prague_rgb_gain = function(gain) {
 
 #' Prepare Prague RGB correction gain
 #'
-#' @param gain Default `.prague_rgb_correction_gain`. RGB correction gain.
+#' @param gain Default `"auto"`. RGB correction gain.
 #' @param strength Default `1`. Correction strength.
 #' @keywords internal
 prepare_prague_rgb_gain = function(
-  gain = .prague_rgb_correction_gain,
+  gain = "auto",
   strength = 1
 ) {
+  if (identical(gain, "auto")) {
+    gain = .prague_rgb_correction_gain
+  }
+
   gain = validate_prague_rgb_gain(gain)
 
   if (

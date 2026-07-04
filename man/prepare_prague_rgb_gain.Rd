@@ -4,10 +4,10 @@
 \alias{prepare_prague_rgb_gain}
 \title{Prepare Prague RGB correction gain}
 \usage{
-prepare_prague_rgb_gain(gain = .prague_rgb_correction_gain, strength = 1)
+prepare_prague_rgb_gain(gain = "auto", strength = 1)
 }
 \arguments{
-\item{gain}{Default \code{.prague_rgb_correction_gain}. RGB correction gain.}
+\item{gain}{Default \code{"auto"}. RGB correction gain.}
 
 \item{strength}{Default \code{1}. Correction strength.}
 }

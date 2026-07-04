@@ -21,7 +21,7 @@ generate_sky(
   below_horizon = TRUE,
   prague_rgb_correction = TRUE,
   prague_rgb_correction_strength = 1,
-  prague_rgb_correction_gain = .prague_rgb_correction_gain,
+  prague_rgb_correction_gain = "auto",
   exr_adopted_white = "D60",
   exr_metadata = TRUE
 )
@@ -65,9 +65,9 @@ tint correction. This correction is only applied when \code{hosek = FALSE}. Use
 tint correction. Use \code{0} for no correction and \code{1} for the calibrated
 correction.}
 
-\item{prague_rgb_correction_gain}{Default
-\code{c(R = 0.94438727, G = 1.02157200, B = 0.95012063)}. Multiplicative linear
-RGB gain used by the Prague RGB tint correction.}
+\item{prague_rgb_correction_gain}{Default \code{"auto"}. Multiplicative linear RGB
+gain used by the Prague RGB tint correction. \code{"auto"} uses the calibrated
+default \code{c(R = 0.94438727, G = 1.02157200, B = 0.95012063)}.}
 
 \item{exr_adopted_white}{Default \code{"D60"}. Adopted neutral white to write to
 EXR metadata for generated sky maps. Currently supports \code{"D60"}, \code{"D65"},

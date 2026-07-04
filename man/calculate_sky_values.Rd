@@ -17,7 +17,7 @@ calculate_sky_values(
   render_mode = "all",
   prague_rgb_correction = TRUE,
   prague_rgb_correction_strength = 1,
-  prague_rgb_correction_gain = .prague_rgb_correction_gain
+  prague_rgb_correction_gain = "auto"
 )
 }
 \arguments{
@@ -50,9 +50,9 @@ Prague RGB output.}
 tint correction. Use \code{0} for no correction and \code{1} for the calibrated
 correction.}
 
-\item{prague_rgb_correction_gain}{Default
-\code{c(R = 0.94438727, G = 1.02157200, B = 0.95012063)}. Multiplicative linear
-RGB gain used by the Prague RGB tint correction.}
+\item{prague_rgb_correction_gain}{Default \code{"auto"}. Multiplicative linear RGB
+gain used by the Prague RGB tint correction. \code{"auto"} uses the calibrated
+default \code{c(R = 0.94438727, G = 1.02157200, B = 0.95012063)}.}
 }
 \value{
 3-column RGB matrix.

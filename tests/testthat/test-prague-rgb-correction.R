@@ -161,3 +161,20 @@ test_that("invalid Prague RGB correction options error clearly", {
     "finite and positive"
   )
 })
+
+test_that("Prague RGB correction gain uses auto in public signatures", {
+  expect_identical(formals(generate_sky)$prague_rgb_correction_gain, "auto")
+  expect_identical(
+    formals(generate_sky_latlong)$prague_rgb_correction_gain,
+    "auto"
+  )
+  expect_identical(
+    formals(calculate_sky_values)$prague_rgb_correction_gain,
+    "auto"
+  )
+
+  expect_equal(
+    prepare_prague_rgb_gain(),
+    c(R = 0.94438727, G = 1.02157200, B = 0.95012063)
+  )
+})

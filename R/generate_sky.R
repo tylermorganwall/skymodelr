@@ -35,9 +35,9 @@ normalize_render_mode = function(render_mode) {
 #' @param prague_rgb_correction_strength Default `1`. Strength of the Prague RGB
 #' tint correction. Use `0` for no correction and `1` for the calibrated
 #' correction.
-#' @param prague_rgb_correction_gain Default
-#' `c(R = 0.94438727, G = 1.02157200, B = 0.95012063)`. Multiplicative linear
-#' RGB gain used by the Prague RGB tint correction.
+#' @param prague_rgb_correction_gain Default `"auto"`. Multiplicative linear RGB
+#' gain used by the Prague RGB tint correction. `"auto"` uses the calibrated
+#' default `c(R = 0.94438727, G = 1.02157200, B = 0.95012063)`.
 #' @param exr_adopted_white Default `"D60"`. Adopted neutral white to write to
 #' EXR metadata for generated sky maps. Currently supports `"D60"`, `"D65"`,
 #' or a numeric XYZ white with Y = 1. This tags the EXR `adoptedNeutral`
@@ -134,7 +134,7 @@ generate_sky = function(
   below_horizon = TRUE,
   prague_rgb_correction = TRUE,
   prague_rgb_correction_strength = 1,
-  prague_rgb_correction_gain = .prague_rgb_correction_gain,
+  prague_rgb_correction_gain = "auto",
   exr_adopted_white = "D60",
   exr_metadata = TRUE
 ) {
@@ -309,9 +309,9 @@ generate_sky = function(
 #' @param prague_rgb_correction_strength Default `1`. Strength of the Prague RGB
 #' tint correction. Use `0` for no correction and `1` for the calibrated
 #' correction.
-#' @param prague_rgb_correction_gain Default
-#' `c(R = 0.94438727, G = 1.02157200, B = 0.95012063)`. Multiplicative linear
-#' RGB gain used by the Prague RGB tint correction.
+#' @param prague_rgb_correction_gain Default `"auto"`. Multiplicative linear RGB
+#' gain used by the Prague RGB tint correction. `"auto"` uses the calibrated
+#' default `c(R = 0.94438727, G = 1.02157200, B = 0.95012063)`.
 #' @param exr_adopted_white Default `"D60"`. Adopted neutral white to write to
 #' EXR metadata for generated sky maps. Currently supports `"D60"`, `"D65"`,
 #' or a numeric XYZ white with Y = 1. This tags the EXR `adoptedNeutral`
@@ -405,7 +405,7 @@ generate_sky_latlong = function(
   below_horizon = TRUE,
   prague_rgb_correction = TRUE,
   prague_rgb_correction_strength = 1,
-  prague_rgb_correction_gain = .prague_rgb_correction_gain,
+  prague_rgb_correction_gain = "auto",
   exr_adopted_white = "D60",
   exr_metadata = TRUE,
   verbose = FALSE,
@@ -576,9 +576,9 @@ generate_sky_latlong = function(
 #' @param prague_rgb_correction_strength Default `1`. Strength of the Prague RGB
 #' tint correction. Use `0` for no correction and `1` for the calibrated
 #' correction.
-#' @param prague_rgb_correction_gain Default
-#' `c(R = 0.94438727, G = 1.02157200, B = 0.95012063)`. Multiplicative linear
-#' RGB gain used by the Prague RGB tint correction.
+#' @param prague_rgb_correction_gain Default `"auto"`. Multiplicative linear RGB
+#' gain used by the Prague RGB tint correction. `"auto"` uses the calibrated
+#' default `c(R = 0.94438727, G = 1.02157200, B = 0.95012063)`.
 #'
 #' @return 3-column RGB matrix.
 #' @export
@@ -611,7 +611,7 @@ calculate_sky_values = function(
   render_mode = "all",
   prague_rgb_correction = TRUE,
   prague_rgb_correction_strength = 1,
-  prague_rgb_correction_gain = .prague_rgb_correction_gain
+  prague_rgb_correction_gain = "auto"
 ) {
   render_mode = normalize_render_mode(render_mode)
   stopifnot(all(phi <= 360 & phi >= 0))
