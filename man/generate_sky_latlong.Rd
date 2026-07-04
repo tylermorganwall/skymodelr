@@ -25,6 +25,9 @@ generate_sky_latlong(
   moon_hosek = TRUE,
   render_mode = "all",
   below_horizon = TRUE,
+  prague_rgb_correction = TRUE,
+  prague_rgb_correction_strength = 1,
+  prague_rgb_correction_gain = .prague_rgb_correction_gain,
   verbose = FALSE,
   stars_exposure = 0,
   ...
@@ -76,6 +79,18 @@ that the light scattered from the moon is much less intense than the sun, and th
 Use \code{"all"} for atmosphere + solar disk, \code{"atmosphere"} for atmospheric radiance only, or \code{"sun"} for the solar disk only.}
 
 \item{below_horizon}{Default \code{TRUE}. Whether to sample atmospheric scattering below the horizon, which is non-zero when altitude > 0.}
+
+\item{prague_rgb_correction}{Default \code{TRUE}. Whether to apply the Prague RGB
+tint correction. This correction is only applied when \code{hosek = FALSE}. Use
+\code{FALSE} for raw Prague RGB output.}
+
+\item{prague_rgb_correction_strength}{Default \code{1}. Strength of the Prague RGB
+tint correction. Use \code{0} for no correction and \code{1} for the calibrated
+correction.}
+
+\item{prague_rgb_correction_gain}{Default
+\code{c(R = 0.94438727, G = 1.02157200, B = 0.95012063)}. Multiplicative linear
+RGB gain used by the Prague RGB tint correction.}
 
 \item{verbose}{Default \code{FALSE}. Whether to print progress bars/diagnostic info.}
 

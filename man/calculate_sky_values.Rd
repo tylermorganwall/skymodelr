@@ -14,7 +14,10 @@ calculate_sky_values(
   azimuth = 90,
   number_cores = 1,
   wide_spectrum = FALSE,
-  render_mode = "all"
+  render_mode = "all",
+  prague_rgb_correction = TRUE,
+  prague_rgb_correction_strength = 1,
+  prague_rgb_correction_gain = .prague_rgb_correction_gain
 )
 }
 \arguments{
@@ -38,6 +41,18 @@ calculate_sky_values(
 
 \item{render_mode}{Default \code{"all"}. One of \code{"all"}, \code{"atmosphere"}, or \code{"sun"}.
 Use \code{"all"} for atmosphere + solar disk, \code{"atmosphere"} for atmospheric radiance only, or \code{"sun"} for the solar disk only.}
+
+\item{prague_rgb_correction}{Default \code{TRUE}. Whether to apply the Prague RGB
+tint correction to returned RGB values. This correction is only applied to
+Prague RGB output.}
+
+\item{prague_rgb_correction_strength}{Default \code{1}. Strength of the Prague RGB
+tint correction. Use \code{0} for no correction and \code{1} for the calibrated
+correction.}
+
+\item{prague_rgb_correction_gain}{Default
+\code{c(R = 0.94438727, G = 1.02157200, B = 0.95012063)}. Multiplicative linear
+RGB gain used by the Prague RGB tint correction.}
 }
 \value{
 3-column RGB matrix.

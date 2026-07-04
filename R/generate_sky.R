@@ -29,6 +29,22 @@ normalize_render_mode = function(render_mode) {
 #' @param render_mode        Default `"all"`. One of `"all"`, `"atmosphere"`, or `"sun"`.
 #'   Use `"all"` for atmosphere + solar disk, `"atmosphere"` for atmospheric radiance only, or `"sun"` for the solar disk only.
 #' @param below_horizon      Default `TRUE`. Whether to sample atmospheric scattering below the horizon, which is non-zero when altitude > 0.
+#' @param prague_rgb_correction Default `TRUE`. Whether to apply the Prague RGB
+#' tint correction. This correction is only applied when `hosek = FALSE`. Use
+#' `FALSE` for raw Prague RGB output.
+#' @param prague_rgb_correction_strength Default `1`. Strength of the Prague RGB
+#' tint correction. Use `0` for no correction and `1` for the calibrated
+#' correction.
+#' @param prague_rgb_correction_gain Default
+#' `c(R = 0.94438727, G = 1.02157200, B = 0.95012063)`. Multiplicative linear
+#' RGB gain used by the Prague RGB tint correction.
+#'
+#' @details
+#' For Prague RGB output, `prague_rgb_correction = TRUE` applies a fixed linear
+#' RGB gain to reduce the small magenta / negative-green tint observed in the
+#' RGB projection of Prague sky maps. Set `prague_rgb_correction = FALSE` to
+#' recover raw Prague RGB output. The correction is not a white balance and is
+#' not applied to wavelength-specific spectral radiance.
 #'
 #' @return Either the image array, or the array is invisibly returned if a file
 #'   is written. The array has dimensions `(resolution, 2 * resolution, 4)`.
@@ -78,6 +94,14 @@ normalize_render_mode = function(render_mode) {
 #'   number_cores = 2
 #' ) |>
 #'   rayimage::plot_image()
+#'
+#' generate_sky(
+#'   "raw_prague.exr",
+#'   elevation = 60,
+#'   azimuth = 315,
+#'   hosek = FALSE,
+#'   prague_rgb_correction = FALSE
+#' )
 generate_sky = function(
   filename = NA,
   albedo = 0.1,
@@ -92,7 +116,10 @@ generate_sky = function(
   visibility = 50,
   verbose = FALSE,
   render_mode = "all",
-  below_horizon = TRUE
+  below_horizon = TRUE,
+  prague_rgb_correction = TRUE,
+  prague_rgb_correction_strength = 1,
+  prague_rgb_correction_gain = .prague_rgb_correction_gain
 ) {
   render_mode = normalize_render_mode(render_mode)
   coef_file = ""
@@ -164,6 +191,26 @@ generate_sky = function(
   )
   band = attr(generated_rgb, "L_band")
 
+  applied_prague_rgb_gain = NULL
+
+  if (!hosek) {
+    prague_rgb_correction = normalize_prague_rgb_correction(
+      prague_rgb_correction
+    )
+  }
+
+  if (!hosek && prague_rgb_correction == "constant") {
+    applied_prague_rgb_gain = prepare_prague_rgb_gain(
+      gain = prague_rgb_correction_gain,
+      strength = prague_rgb_correction_strength
+    )
+
+    generated_rgb = apply_prague_rgb_gain(
+      generated_rgb,
+      gain = applied_prague_rgb_gain
+    )
+  }
+
   generated_sky = array(0, dim = c(resolution, resolution * 2, 4))
   generated_sky[,, 1:3] = generated_rgb
   generated_sky[,, 4] = 1
@@ -171,6 +218,12 @@ generate_sky = function(
     attr(generated_sky, "L_band") = band
   }
   generated_sky = as_sky_image(generated_sky)
+  if (!is.null(applied_prague_rgb_gain)) {
+    attr(generated_sky, "prague_rgb_correction") = "constant"
+    attr(generated_sky, "prague_rgb_correction_gain") = applied_prague_rgb_gain
+    attr(generated_sky, "prague_rgb_correction_strength") =
+      prague_rgb_correction_strength
+  }
 
   if (!is.na(filename)) {
     warn_precision_loss(filename)
@@ -215,6 +268,15 @@ generate_sky = function(
 #' @param render_mode        Default `"all"`. One of `"all"`, `"atmosphere"`, or `"sun"`.
 #'   Use `"all"` for atmosphere + solar disk, `"atmosphere"` for atmospheric radiance only, or `"sun"` for the solar disk only.
 #' @param below_horizon      Default `TRUE`. Whether to sample atmospheric scattering below the horizon, which is non-zero when altitude > 0.
+#' @param prague_rgb_correction Default `TRUE`. Whether to apply the Prague RGB
+#' tint correction. This correction is only applied when `hosek = FALSE`. Use
+#' `FALSE` for raw Prague RGB output.
+#' @param prague_rgb_correction_strength Default `1`. Strength of the Prague RGB
+#' tint correction. Use `0` for no correction and `1` for the calibrated
+#' correction.
+#' @param prague_rgb_correction_gain Default
+#' `c(R = 0.94438727, G = 1.02157200, B = 0.95012063)`. Multiplicative linear
+#' RGB gain used by the Prague RGB tint correction.
 #' @param stars_exposure     Default `0`. Increases star exposure by `2^exposure`. Non-physical, this just controls adjustments for artistic effect.
 #' @param verbose            Default `FALSE`. Whether to print progress bars/diagnostic info.
 #' @param ...                Additional **named** arguments forwarded to [generate_stars()], and when enabled, [generate_planets()] and [generate_moon_latlong()].
@@ -299,6 +361,9 @@ generate_sky_latlong = function(
   moon_hosek = TRUE,
   render_mode = "all",
   below_horizon = TRUE,
+  prague_rgb_correction = TRUE,
+  prague_rgb_correction_strength = 1,
+  prague_rgb_correction_gain = .prague_rgb_correction_gain,
   verbose = FALSE,
   stars_exposure = 0,
   ...
@@ -356,7 +421,10 @@ generate_sky_latlong = function(
     visibility = visibility,
     verbose = verbose,
     render_mode = render_mode,
-    below_horizon = below_horizon
+    below_horizon = below_horizon,
+    prague_rgb_correction = prague_rgb_correction,
+    prague_rgb_correction_strength = prague_rgb_correction_strength,
+    prague_rgb_correction_gain = prague_rgb_correction_gain
   )
 
   if (moon) {
@@ -450,6 +518,15 @@ generate_sky_latlong = function(
 #' @param wide_spectrum      Default `FALSE`. Whether to use the wide-spectrum (55-channel, polarised) coefficients.
 #' @param render_mode        Default `"all"`. One of `"all"`, `"atmosphere"`, or `"sun"`.
 #'   Use `"all"` for atmosphere + solar disk, `"atmosphere"` for atmospheric radiance only, or `"sun"` for the solar disk only.
+#' @param prague_rgb_correction Default `TRUE`. Whether to apply the Prague RGB
+#' tint correction to returned RGB values. This correction is only applied to
+#' Prague RGB output.
+#' @param prague_rgb_correction_strength Default `1`. Strength of the Prague RGB
+#' tint correction. Use `0` for no correction and `1` for the calibrated
+#' correction.
+#' @param prague_rgb_correction_gain Default
+#' `c(R = 0.94438727, G = 1.02157200, B = 0.95012063)`. Multiplicative linear
+#' RGB gain used by the Prague RGB tint correction.
 #'
 #' @return 3-column RGB matrix.
 #' @export
@@ -479,7 +556,10 @@ calculate_sky_values = function(
   azimuth = 90,
   number_cores = 1,
   wide_spectrum = FALSE,
-  render_mode = "all"
+  render_mode = "all",
+  prague_rgb_correction = TRUE,
+  prague_rgb_correction_strength = 1,
+  prague_rgb_correction_gain = .prague_rgb_correction_gain
 ) {
   render_mode = normalize_render_mode(render_mode)
   stopifnot(all(phi <= 360 & phi >= 0))
@@ -514,6 +594,26 @@ calculate_sky_values = function(
     render_mode
   )
   colnames(vals) = c("r", "g", "b")
+  prague_rgb_correction = normalize_prague_rgb_correction(
+    prague_rgb_correction
+  )
+
+  if (prague_rgb_correction == "constant") {
+    applied_prague_rgb_gain = prepare_prague_rgb_gain(
+      gain = prague_rgb_correction_gain,
+      strength = prague_rgb_correction_strength
+    )
+
+    vals = apply_prague_rgb_gain(
+      vals,
+      gain = applied_prague_rgb_gain
+    )
+
+    attr(vals, "prague_rgb_correction") = "constant"
+    attr(vals, "prague_rgb_correction_gain") = applied_prague_rgb_gain
+    attr(vals, "prague_rgb_correction_strength") =
+      prague_rgb_correction_strength
+  }
   return(vals)
 }
 

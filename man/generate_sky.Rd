@@ -18,7 +18,10 @@ generate_sky(
   visibility = 50,
   verbose = FALSE,
   render_mode = "all",
-  below_horizon = TRUE
+  below_horizon = TRUE,
+  prague_rgb_correction = TRUE,
+  prague_rgb_correction_strength = 1,
+  prague_rgb_correction_gain = .prague_rgb_correction_gain
 )
 }
 \arguments{
@@ -51,6 +54,18 @@ snow will have an albedo of 1.0.}
 Use \code{"all"} for atmosphere + solar disk, \code{"atmosphere"} for atmospheric radiance only, or \code{"sun"} for the solar disk only.}
 
 \item{below_horizon}{Default \code{TRUE}. Whether to sample atmospheric scattering below the horizon, which is non-zero when altitude > 0.}
+
+\item{prague_rgb_correction}{Default \code{TRUE}. Whether to apply the Prague RGB
+tint correction. This correction is only applied when \code{hosek = FALSE}. Use
+\code{FALSE} for raw Prague RGB output.}
+
+\item{prague_rgb_correction_strength}{Default \code{1}. Strength of the Prague RGB
+tint correction. Use \code{0} for no correction and \code{1} for the calibrated
+correction.}
+
+\item{prague_rgb_correction_gain}{Default
+\code{c(R = 0.94438727, G = 1.02157200, B = 0.95012063)}. Multiplicative linear
+RGB gain used by the Prague RGB tint correction.}
 }
 \value{
 Either the image array, or the array is invisibly returned if a file
@@ -60,6 +75,13 @@ is written. The array has dimensions \verb{(resolution, 2 * resolution, 4)}.
 Evaluate either the Hosek-Wilkie or Prague analytic sky models
 and return a high-dynamic-range image array for the given solar
 configuration. An image file is written only when \code{filename} is supplied.
+}
+\details{
+For Prague RGB output, \code{prague_rgb_correction = TRUE} applies a fixed linear
+RGB gain to reduce the small magenta / negative-green tint observed in the
+RGB projection of Prague sky maps. Set \code{prague_rgb_correction = FALSE} to
+recover raw Prague RGB output. The correction is not a white balance and is
+not applied to wavelength-specific spectral radiance.
 }
 \note{
 Writing to non-EXR formats will introduce precision loss because HDR
@@ -108,5 +130,13 @@ generate_sky(
   number_cores = 2
 ) |>
   rayimage::plot_image()
+
+generate_sky(
+  "raw_prague.exr",
+  elevation = 60,
+  azimuth = 315,
+  hosek = FALSE,
+  prague_rgb_correction = FALSE
+)
 \dontshow{\}) # examplesIf}
 }

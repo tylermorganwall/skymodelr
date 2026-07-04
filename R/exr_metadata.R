@@ -5,6 +5,17 @@
 as_sky_image = function(image) {
   l_band = attr(image, "L_band", exact = TRUE)
   exr_metadata = attr(image, "exr", exact = TRUE)
+  prague_rgb_correction = attr(image, "prague_rgb_correction", exact = TRUE)
+  prague_rgb_correction_gain = attr(
+    image,
+    "prague_rgb_correction_gain",
+    exact = TRUE
+  )
+  prague_rgb_correction_strength = attr(
+    image,
+    "prague_rgb_correction_strength",
+    exact = TRUE
+  )
   image = rayimage::ray_read_image(
     image,
     assume_white = "D65",
@@ -12,6 +23,16 @@ as_sky_image = function(image) {
   )
   if (!is.null(l_band)) {
     attr(image, "L_band") = l_band
+  }
+  if (!is.null(prague_rgb_correction)) {
+    attr(image, "prague_rgb_correction") = prague_rgb_correction
+  }
+  if (!is.null(prague_rgb_correction_gain)) {
+    attr(image, "prague_rgb_correction_gain") = prague_rgb_correction_gain
+  }
+  if (!is.null(prague_rgb_correction_strength)) {
+    attr(image, "prague_rgb_correction_strength") =
+      prague_rgb_correction_strength
   }
   if (!is.list(exr_metadata)) {
     exr_metadata = list()
