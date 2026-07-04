@@ -28,6 +28,8 @@ generate_sky_latlong(
   prague_rgb_correction = TRUE,
   prague_rgb_correction_strength = 1,
   prague_rgb_correction_gain = .prague_rgb_correction_gain,
+  exr_adopted_white = "D60",
+  exr_metadata = TRUE,
   verbose = FALSE,
   stars_exposure = 0,
   ...
@@ -91,6 +93,15 @@ correction.}
 \item{prague_rgb_correction_gain}{Default
 \code{c(R = 0.94438727, G = 1.02157200, B = 0.95012063)}. Multiplicative linear
 RGB gain used by the Prague RGB tint correction.}
+
+\item{exr_adopted_white}{Default \code{"D60"}. Adopted neutral white to write to
+EXR metadata for generated sky maps. Currently supports \code{"D60"}, \code{"D65"},
+or a numeric XYZ white with Y = 1. This tags the EXR \code{adoptedNeutral}
+metadata and does not change pixel values.}
+
+\item{exr_metadata}{Default \code{TRUE}. Whether to attach skymodelr EXR metadata
+before writing EXR output. Metadata includes sRGB/Rec.709 chromaticities and
+the selected adopted neutral white.}
 
 \item{verbose}{Default \code{FALSE}. Whether to print progress bars/diagnostic info.}
 

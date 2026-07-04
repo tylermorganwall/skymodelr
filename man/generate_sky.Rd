@@ -21,7 +21,9 @@ generate_sky(
   below_horizon = TRUE,
   prague_rgb_correction = TRUE,
   prague_rgb_correction_strength = 1,
-  prague_rgb_correction_gain = .prague_rgb_correction_gain
+  prague_rgb_correction_gain = .prague_rgb_correction_gain,
+  exr_adopted_white = "D60",
+  exr_metadata = TRUE
 )
 }
 \arguments{
@@ -66,6 +68,15 @@ correction.}
 \item{prague_rgb_correction_gain}{Default
 \code{c(R = 0.94438727, G = 1.02157200, B = 0.95012063)}. Multiplicative linear
 RGB gain used by the Prague RGB tint correction.}
+
+\item{exr_adopted_white}{Default \code{"D60"}. Adopted neutral white to write to
+EXR metadata for generated sky maps. Currently supports \code{"D60"}, \code{"D65"},
+or a numeric XYZ white with Y = 1. This tags the EXR \code{adoptedNeutral}
+metadata and does not change pixel values.}
+
+\item{exr_metadata}{Default \code{TRUE}. Whether to attach skymodelr EXR metadata
+before writing EXR output. Metadata includes sRGB/Rec.709 chromaticities and
+the selected adopted neutral white.}
 }
 \value{
 Either the image array, or the array is invisibly returned if a file
@@ -82,6 +93,14 @@ RGB gain to reduce the small magenta / negative-green tint observed in the
 RGB projection of Prague sky maps. Set \code{prague_rgb_correction = FALSE} to
 recover raw Prague RGB output. The correction is not a white balance and is
 not applied to wavelength-specific spectral radiance.
+
+EXR metadata: Generated sky maps are linear RGB. When \code{exr_metadata = TRUE},
+skymodelr tags the image with sRGB/Rec.709 chromaticities and an EXR
+\code{adoptedNeutral} white. The default adopted neutral is D60. This metadata
+does not convert pixel values; it informs downstream readers how to treat the
+scene neutral. Use \code{exr_adopted_white = "D65"} for D65 adopted neutral, or
+\code{exr_metadata = FALSE} to omit skymodelr EXR metadata. The RGB encoding
+remains linear sRGB / Rec.709 even when the adopted neutral is D60.
 }
 \note{
 Writing to non-EXR formats will introduce precision loss because HDR

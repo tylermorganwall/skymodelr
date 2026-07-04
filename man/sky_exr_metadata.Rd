@@ -4,7 +4,10 @@
 \alias{sky_exr_metadata}
 \title{Build EXR metadata for skymodelr RGB output}
 \usage{
-sky_exr_metadata()
+sky_exr_metadata(image = NULL)
+}
+\arguments{
+\item{image}{Default \code{NULL}. Image to read colorspace and white metadata from.}
 }
 \description{
 Build EXR metadata for skymodelr RGB output

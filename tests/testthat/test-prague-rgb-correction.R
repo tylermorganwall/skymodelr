@@ -44,10 +44,10 @@ test_that("Prague RGB correction is multiplicative for generate_sky", {
   gain = attr(corrected, "prague_rgb_correction_gain")
 
   expect_equal(default_corrected, corrected)
-  expect_equal(corrected[,, 1], raw[,, 1] * gain[["R"]])
-  expect_equal(corrected[,, 2], raw[,, 2] * gain[["G"]])
-  expect_equal(corrected[,, 3], raw[,, 3] * gain[["B"]])
-  expect_equal(corrected[,, 4], raw[,, 4])
+  expect_equal(as.numeric(corrected[,, 1]), as.numeric(raw[,, 1] * gain[["R"]]))
+  expect_equal(as.numeric(corrected[,, 2]), as.numeric(raw[,, 2] * gain[["G"]]))
+  expect_equal(as.numeric(corrected[,, 3]), as.numeric(raw[,, 3] * gain[["B"]]))
+  expect_equal(as.numeric(corrected[,, 4]), as.numeric(raw[,, 4]))
   expect_equal(attr(corrected, "L_band"), attr(raw, "L_band"))
 
   expect_equal(attr(corrected, "prague_rgb_correction"), "constant")
@@ -82,10 +82,10 @@ test_that("Prague RGB correction strength interpolates logarithmically", {
 
   gain = attr(half, "prague_rgb_correction_gain")
 
-  expect_equal(half[,, 1], raw[,, 1] * gain[["R"]])
-  expect_equal(half[,, 2], raw[,, 2] * gain[["G"]])
-  expect_equal(half[,, 3], raw[,, 3] * gain[["B"]])
-  expect_equal(half[,, 4], raw[,, 4])
+  expect_equal(as.numeric(half[,, 1]), as.numeric(raw[,, 1] * gain[["R"]]))
+  expect_equal(as.numeric(half[,, 2]), as.numeric(raw[,, 2] * gain[["G"]]))
+  expect_equal(as.numeric(half[,, 3]), as.numeric(raw[,, 3] * gain[["B"]]))
+  expect_equal(as.numeric(half[,, 4]), as.numeric(raw[,, 4]))
 })
 
 test_that("Prague RGB correction is ignored for Hosek generate_sky output", {

@@ -38,6 +38,13 @@ normalize_render_mode = function(render_mode) {
 #' @param prague_rgb_correction_gain Default
 #' `c(R = 0.94438727, G = 1.02157200, B = 0.95012063)`. Multiplicative linear
 #' RGB gain used by the Prague RGB tint correction.
+#' @param exr_adopted_white Default `"D60"`. Adopted neutral white to write to
+#' EXR metadata for generated sky maps. Currently supports `"D60"`, `"D65"`,
+#' or a numeric XYZ white with Y = 1. This tags the EXR `adoptedNeutral`
+#' metadata and does not change pixel values.
+#' @param exr_metadata Default `TRUE`. Whether to attach skymodelr EXR metadata
+#' before writing EXR output. Metadata includes sRGB/Rec.709 chromaticities and
+#' the selected adopted neutral white.
 #'
 #' @details
 #' For Prague RGB output, `prague_rgb_correction = TRUE` applies a fixed linear
@@ -45,6 +52,14 @@ normalize_render_mode = function(render_mode) {
 #' RGB projection of Prague sky maps. Set `prague_rgb_correction = FALSE` to
 #' recover raw Prague RGB output. The correction is not a white balance and is
 #' not applied to wavelength-specific spectral radiance.
+#'
+#' EXR metadata: Generated sky maps are linear RGB. When `exr_metadata = TRUE`,
+#' skymodelr tags the image with sRGB/Rec.709 chromaticities and an EXR
+#' `adoptedNeutral` white. The default adopted neutral is D60. This metadata
+#' does not convert pixel values; it informs downstream readers how to treat the
+#' scene neutral. Use `exr_adopted_white = "D65"` for D65 adopted neutral, or
+#' `exr_metadata = FALSE` to omit skymodelr EXR metadata. The RGB encoding
+#' remains linear sRGB / Rec.709 even when the adopted neutral is D60.
 #'
 #' @return Either the image array, or the array is invisibly returned if a file
 #'   is written. The array has dimensions `(resolution, 2 * resolution, 4)`.
@@ -119,7 +134,9 @@ generate_sky = function(
   below_horizon = TRUE,
   prague_rgb_correction = TRUE,
   prague_rgb_correction_strength = 1,
-  prague_rgb_correction_gain = .prague_rgb_correction_gain
+  prague_rgb_correction_gain = .prague_rgb_correction_gain,
+  exr_adopted_white = "D60",
+  exr_metadata = TRUE
 ) {
   render_mode = normalize_render_mode(render_mode)
   coef_file = ""
@@ -144,6 +161,12 @@ generate_sky = function(
       black_sky = array(0, dim = c(resolution, resolution * 2, 4))
       black_sky[,, 4] = 1
       black_sky = as_sky_image(black_sky)
+      black_sky = tag_generated_sky_exr_metadata(
+        black_sky,
+        hosek = hosek,
+        exr_metadata = exr_metadata,
+        exr_adopted_white = exr_adopted_white
+      )
       if (!is.na(filename)) {
         warn_precision_loss(filename)
         write_sky_image(black_sky, filename)
@@ -162,6 +185,12 @@ generate_sky = function(
       black_sky = array(0, dim = c(resolution, resolution * 2, 4))
       black_sky[,, 4] = 1
       black_sky = as_sky_image(black_sky)
+      black_sky = tag_generated_sky_exr_metadata(
+        black_sky,
+        hosek = hosek,
+        exr_metadata = exr_metadata,
+        exr_adopted_white = exr_adopted_white
+      )
       if (!is.na(filename)) {
         warn_precision_loss(filename)
         write_sky_image(black_sky, filename)
@@ -224,6 +253,12 @@ generate_sky = function(
     attr(generated_sky, "prague_rgb_correction_strength") =
       prague_rgb_correction_strength
   }
+  generated_sky = tag_generated_sky_exr_metadata(
+    generated_sky,
+    hosek = hosek,
+    exr_metadata = exr_metadata,
+    exr_adopted_white = exr_adopted_white
+  )
 
   if (!is.na(filename)) {
     warn_precision_loss(filename)
@@ -277,6 +312,13 @@ generate_sky = function(
 #' @param prague_rgb_correction_gain Default
 #' `c(R = 0.94438727, G = 1.02157200, B = 0.95012063)`. Multiplicative linear
 #' RGB gain used by the Prague RGB tint correction.
+#' @param exr_adopted_white Default `"D60"`. Adopted neutral white to write to
+#' EXR metadata for generated sky maps. Currently supports `"D60"`, `"D65"`,
+#' or a numeric XYZ white with Y = 1. This tags the EXR `adoptedNeutral`
+#' metadata and does not change pixel values.
+#' @param exr_metadata Default `TRUE`. Whether to attach skymodelr EXR metadata
+#' before writing EXR output. Metadata includes sRGB/Rec.709 chromaticities and
+#' the selected adopted neutral white.
 #' @param stars_exposure     Default `0`. Increases star exposure by `2^exposure`. Non-physical, this just controls adjustments for artistic effect.
 #' @param verbose            Default `FALSE`. Whether to print progress bars/diagnostic info.
 #' @param ...                Additional **named** arguments forwarded to [generate_stars()], and when enabled, [generate_planets()] and [generate_moon_latlong()].
@@ -364,6 +406,8 @@ generate_sky_latlong = function(
   prague_rgb_correction = TRUE,
   prague_rgb_correction_strength = 1,
   prague_rgb_correction_gain = .prague_rgb_correction_gain,
+  exr_adopted_white = "D60",
+  exr_metadata = TRUE,
   verbose = FALSE,
   stars_exposure = 0,
   ...
@@ -424,7 +468,9 @@ generate_sky_latlong = function(
     below_horizon = below_horizon,
     prague_rgb_correction = prague_rgb_correction,
     prague_rgb_correction_strength = prague_rgb_correction_strength,
-    prague_rgb_correction_gain = prague_rgb_correction_gain
+    prague_rgb_correction_gain = prague_rgb_correction_gain,
+    exr_adopted_white = exr_adopted_white,
+    exr_metadata = exr_metadata
   )
 
   if (moon) {
@@ -493,6 +539,12 @@ generate_sky_latlong = function(
   }
   sky_array[,, 4] = 1
   sky_array = as_sky_image(sky_array)
+  sky_array = tag_generated_sky_exr_metadata(
+    sky_array,
+    hosek = hosek,
+    exr_metadata = exr_metadata,
+    exr_adopted_white = exr_adopted_white
+  )
   if (!is.na(filename)) {
     warn_precision_loss(filename)
     write_sky_image(sky_array, filename, clamp = FALSE)
