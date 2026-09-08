@@ -63,14 +63,25 @@ airmass_rozenberg1966 = function(zenith_deg) {
   1 / (c + 0.025 * exp(-11 * c))
 }
 
-apply_airmass_extinction = function(lux_top_atm, alt_deg, kV = 0.172) {
-  # No direct-beam moonlight below (or at) the horizon
-  if (!is.finite(lux_top_atm) || !is.finite(alt_deg) || alt_deg <= 0) {
+#' @keywords internal
+apply_airmass_extinction = function(
+  lux_top_atm,
+  alt_deg,
+  kV = 0.172,
+  clip_horizon = FALSE
+) {
+  if (
+    !is.finite(lux_top_atm) ||
+      !is.finite(alt_deg) ||
+      (clip_horizon && alt_deg <= 0)
+  ) {
     return(0)
   }
 
-  # Rozenberg is for 0 <= Z <= 90 deg; clamp tiny numerical overshoots
-  alt_deg = min(alt_deg, 90)
+  # Disk consumers clip individual directions. Continue the finite horizon
+  # value below zero instead of switching off an extended source at its center.
+  # Rozenberg is only defined over the upper hemisphere.
+  alt_deg = max(0, min(alt_deg, 90))
   zenith_deg = 90 - alt_deg
 
   X = airmass_rozenberg1966(zenith_deg)
@@ -193,7 +204,8 @@ swe_dirs_topo_moon_sun = function(
     local_up_geo = enu_to_ecef %*% c(0, 0, 1),
     moon_diameter_degrees = moon_diameter_degrees,
     moon_brightness_magnitude = moon_brightness_magnitude,
-    moon_brightness_lux = moon_brightness_lux, #lux
+    moon_brightness_lux = moon_brightness_lux, #lux for the complete attenuated disk
+    moon_brightness_lux_unattenuated = moon_brightness_lux_raw, #lux, before atmospheric attenuation
     moon_phase = moon_phase,
     sun_diameter_degrees = sun_diameter_degrees,
     sun_brightness_magnitude = sun_brightness_magnitude,

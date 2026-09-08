@@ -10,6 +10,18 @@ sun_solid_angle_sr = function(diameter_deg = 0.533) {
 #' along with the increase in luminosity around a full moon (known as opposition surge). Moonlight
 #' attenuation uses the Rozenberg/Krisciunas-Schaefer airmass approximation with configurable `moon_extinction_kV`.
 #'
+#' @details The complete lunar disk is calibrated before directions below the
+#' horizontal horizon are clipped. The upper limb remains visible after the
+#' center sets, with the finite horizon attenuation and tint retained below zero
+#' center elevation. The visible segment is not renormalized to the full Moon's
+#' brightness. Finite sky-map resolution limits how finely this edge is resolved.
+#'
+#' Disk visibility is independent of the atmospheric model's elevation domain:
+#' the optional atmospheric component requires center elevation at least zero
+#' for Hosek or -4.2 degrees for Prague. Below that domain it is omitted, while
+#' any visible lunar limb is still drawn. Horizon depression and refraction are
+#' not modeled.
+#'
 #' @param datetime           POSIX-compatible date-time.
 #' @param lat                Observer latitude (degrees N).
 #' @param lon                Observer longitude (degrees E; west < 0).
@@ -88,47 +100,12 @@ generate_moon_latlong = function(
   moon_elevation = asin(moon_dir[3]) * 180 / pi
   moon_azimuth = (180 + atan2(moon_dir[1], moon_dir[2]) * 180 / pi + 360) %%
     360
-  if (hosek) {
-    if (moon_elevation < 0.0) {
-      if (verbose) {
-        message(
-          "Drawing black image as Hosek model does not produce valid output for elevation < 0."
-        )
-      }
-      black_sky = array(0, dim = c(resolution, resolution * 2, 4))
-      black_sky[,, 4] = 1
-      black_sky = as_sky_image(black_sky)
-      if (!is.na(filename)) {
-        warn_precision_loss(filename)
-        write_sky_image(black_sky, filename)
-        return(invisible(black_sky))
-      } else {
-        return(black_sky)
-      }
-    }
-  } else {
-    if (moon_elevation < -4.2) {
-      if (verbose) {
-        message(
-          "Drawing black image as Prague model does not produce valid output for elevation < -4.2."
-        )
-      }
-      black_sky = array(0, dim = c(resolution, resolution * 2, 4))
-      black_sky[,, 4] = 1
-      black_sky = as_sky_image(black_sky)
-      if (!is.na(filename)) {
-        warn_precision_loss(filename)
-        write_sky_image(black_sky, filename)
-        return(invisible(black_sky))
-      } else {
-        return(black_sky)
-      }
-    }
-  }
   # Sample sun colour so the moon inherits the same atmospheric tint.
   sun_rgb_ratio = c(1, 1, 1)
-  tint_min_elevation = if (hosek) 0 else -4.2
-  if (is.finite(moon_elevation) && moon_elevation >= tint_min_elevation) {
+  # Disk visibility is evaluated per direction below. Keep a finite tint for
+  # the visible upper limb even after the center passes the horizon.
+  tint_elevation = max(0, moon_elevation)
+  if (is.finite(moon_elevation)) {
     sample_resolution = max(256, min(1024, resolution))
     sun_sample = tryCatch(
       {
@@ -136,7 +113,7 @@ generate_moon_latlong = function(
           albedo = albedo,
           turbidity = turbidity,
           altitude = altitude,
-          elevation = moon_elevation,
+          elevation = tint_elevation,
           visibility = visibility,
           azimuth = moon_azimuth,
           resolution = sample_resolution,
@@ -176,6 +153,8 @@ generate_moon_latlong = function(
     moon_irradiance = 0
   }
 
+  old_options = options(cores = number_cores)
+  on.exit(options(old_options), add = TRUE)
   moon_info_list = generate_moon_image_latlong(
     datetime = datetime,
     lat = lat,
@@ -202,7 +181,10 @@ generate_moon_latlong = function(
       moon_lux
     ))
   }
-  if (moon_atmosphere) {
+  # The atmospheric component still follows its model's supported domain;
+  # this must not determine whether the independent lunar disk is rendered.
+  atmosphere_min_elevation = if (hosek) 0 else -4.2
+  if (moon_atmosphere && moon_elevation >= atmosphere_min_elevation) {
     coef_file = ""
     stopifnot(all(altitude >= 0 & altitude <= 15000))
     if (!hosek) {
@@ -245,12 +227,6 @@ generate_moon_latlong = function(
     } else {
       0
     }
-    moon_luminance_array[,, 1:3] = sweep(
-      moon_luminance_array[,, 1:3] * scale_sun_to_moon,
-      3,
-      sun_rgb_ratio,
-      "*"
-    )
     # Apply radiometric scaling and atmospheric tint
     moon_array[,, 1:3] = sweep(
       moon_array[,, 1:3] * scale_sun_to_moon,
@@ -367,6 +343,11 @@ generate_moon_latlong = function(
   n_hat = n_hat / sqrt(sum(n_hat * n_hat)) # local north
 
   tan_r = tan(r) # r = moon_angular_diameter_rad/2
+  # Normalize the full projected disk, including its hidden portion. Using only
+  # visible texels would concentrate the entire Moon's power into its last limb.
+  dphi = 2 * pi / nPhi
+  dtheta = pi / nTheta
+  full_disk_integral = 0
 
   for (j in seq(j_min, j_max)) {
     for (i in seq_len(nPhi)) {
@@ -375,15 +356,10 @@ generate_moon_latlong = function(
         sin_theta[j],
         sin_phi[i] * cos_theta[j]
       )
-      if (sample_dir_vec[2] < 0) {
-        next
-      }
       dot = sum(moon_dir_vec * sample_dir_vec)
       if (dot < cos_r) {
         next
       }
-
-      disk_mask[j, i] = TRUE
 
       # Camera (tangent) components of the sample direction
       vx = sum(sample_dir_vec * e_hat)
@@ -397,49 +373,25 @@ generate_moon_latlong = function(
       u_i = clamp_value(round(u_px), 1, resize_moon_dim)
       v_i = clamp_value(round(v_px), 1, resize_moon_dim)
 
-      moon_array[j, i, 1] = resized_moon_luminance_array[v_i, u_i, 1]
-      moon_array[j, i, 2] = resized_moon_luminance_array[v_i, u_i, 2]
-      moon_array[j, i, 3] = resized_moon_luminance_array[v_i, u_i, 3]
+      pixel = resized_moon_luminance_array[v_i, u_i, 1:3]
+      full_disk_integral = full_disk_integral +
+        sum(pixel) * dphi * dtheta * cos_theta[j]
+      if (sample_dir_vec[2] < 0) {
+        next
+      }
+      disk_mask[j, i] = TRUE
+      moon_array[j, i, 1:3] = pixel
     }
   }
 
-  dphi = 2 * pi / nPhi
-  dtheta = pi / nTheta
-  thetas = seq(pi / 2, -pi / 2, length.out = nTheta) # you already have this
-  domega_row = dphi * dtheta * cos(thetas) # cos(latitude) = sin(colatitude)
-  domega = matrix(domega_row, nrow = nTheta, ncol = nPhi, byrow = FALSE)
-  omega_disk = sum(domega[disk_mask])
-  if (is.finite(omega_disk) && omega_disk > 0) {
-    texture_sum = moon_array[,, 1] + moon_array[,, 2] + moon_array[,, 3]
-    texture_mean_env = sum(
-      texture_sum[disk_mask] * domega[disk_mask],
-      na.rm = TRUE
-    ) /
-      omega_disk
-    if (is.finite(texture_mean_env) && texture_mean_env > 0) {
-      moon_array[,, 1][disk_mask] = moon_array[,, 1][disk_mask] /
-        texture_mean_env
-      moon_array[,, 2][disk_mask] = moon_array[,, 2][disk_mask] /
-        texture_mean_env
-      moon_array[,, 3][disk_mask] = moon_array[,, 3][disk_mask] /
-        texture_mean_env
-    }
-  }
-  omega_moon = moon_solid_angle_sr(moon_angular_diameter_deg)
-  omega_used = if (is.finite(omega_disk) && omega_disk > 0) {
-    omega_disk
-  } else {
-    omega_moon
-  }
-  L_e = if (is.finite(omega_used) && omega_used > 0) {
-    moon_irradiance / omega_used
+  disk_scale = if (is.finite(full_disk_integral) && full_disk_integral > 0) {
+    moon_irradiance / full_disk_integral
   } else {
     0
   }
-  if (L_e > 0) {
-    moon_array[,, 1][disk_mask] = moon_array[,, 1][disk_mask] * L_e
-    moon_array[,, 2][disk_mask] = moon_array[,, 2][disk_mask] * L_e
-    moon_array[,, 3][disk_mask] = moon_array[,, 3][disk_mask] * L_e
+  for (channel in 1:3) {
+    moon_array[,, channel][disk_mask] = moon_array[,, channel][disk_mask] *
+      disk_scale
   }
   moon_band = attr(moon_array, "L_band")
   if (is.null(moon_band)) {

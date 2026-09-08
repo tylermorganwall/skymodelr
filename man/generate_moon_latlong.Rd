@@ -83,6 +83,19 @@ of the moon as compared to the sun. This function takes the phase of the moon in
 along with the increase in luminosity around a full moon (known as opposition surge). Moonlight
 attenuation uses the Rozenberg/Krisciunas-Schaefer airmass approximation with configurable \code{moon_extinction_kV}.
 }
+\details{
+The complete lunar disk is calibrated before directions below the
+horizontal horizon are clipped. The upper limb remains visible after the
+center sets, with the finite horizon attenuation and tint retained below zero
+center elevation. The visible segment is not renormalized to the full Moon's
+brightness. Finite sky-map resolution limits how finely this edge is resolved.
+
+Disk visibility is independent of the atmospheric model's elevation domain:
+the optional atmospheric component requires center elevation at least zero
+for Hosek or -4.2 degrees for Prague. Below that domain it is omitted, while
+any visible lunar limb is still drawn. Horizon depression and refraction are
+not modeled.
+}
 \note{
 Writing to non-EXR formats will introduce precision loss because HDR
 data are quantised to the destination format, and low dynamic range outputs like PNG
