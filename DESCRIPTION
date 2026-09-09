@@ -66,3 +66,4 @@ Config/testthat/edition: 3
 URL: https://www.skymodelr.com
 BugReports: https://github.com/tylermorganwall/skymodelr/issues
 Config/roxygen2/version: 8.0.0
+Remotes: tylermorganwall/rayimage
