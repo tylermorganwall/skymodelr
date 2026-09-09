@@ -17,7 +17,8 @@ generate_sun_disk(
   wide_spectrum = FALSE,
   prague_rgb_correction = TRUE,
   prague_rgb_correction_strength = 1,
-  prague_rgb_correction_gain = "auto"
+  prague_rgb_correction_gain = "auto",
+  atmospheric_attenuation = TRUE
 )
 
 generate_moon_disk(
@@ -36,7 +37,8 @@ generate_moon_disk(
   earthshine = TRUE,
   earthshine_albedo = 0.19,
   solar_irradiance_w_m2 = 1300,
-  moon_extinction_kV = 0.172
+  moon_extinction_kV = 0.172,
+  atmospheric_attenuation = TRUE
 )
 }
 \arguments{
@@ -71,6 +73,12 @@ strength passed to \code{\link[=calculate_sky_values]{calculate_sky_values()}}.}
 \item{prague_rgb_correction_gain}{Default \code{"auto"}. Automatic correction or
 three positive RGB gains, as in \code{\link[=calculate_sky_values]{calculate_sky_values()}}.}
 
+\item{atmospheric_attenuation}{Default \code{TRUE}. Include atmospheric extinction
+and tint for the specified observer. Set \code{FALSE} to return radiance before
+it enters Earth's atmosphere; the consuming renderer must apply atmospheric
+transport and horizon visibility. Lunar phase, surface detail, and earthshine
+are retained. \code{moon_extinction_kV} is ignored when this is \code{FALSE}.}
+
 \item{earthshine}{Default \code{TRUE}. Include Earth-reflected light on the Moon.}
 
 \item{earthshine_albedo}{Default \code{0.19}. Nonnegative Earth albedo used for
@@ -92,6 +100,7 @@ Out-of-gamut solar RGB values may be negative and should be preserved.
 \item \code{azimuth_deg}: disk-center azimuth, clockwise from true north, in [0, 360).
 \item \code{elevation_deg}: disk-center elevation above the local horizon, in degrees.
 \item \code{angular_diameter_deg}: topocentric apparent angular diameter in degrees.
+\item \code{atmospheric_attenuation}: whether atmospheric filtering is included.
 \item \code{projection}: \code{"rectilinear"}, using the disk mapping described below.
 }
 }
@@ -103,7 +112,12 @@ earthshine, photometry, and atmospheric extinction.
 }
 \details{
 Prague data must be installed with \code{\link[=download_sky_data]{download_sky_data()}}. The atmosphere is
-evaluated for one observer altitude and time; this is a static light image.
+evaluated for one observer altitude and time when \code{atmospheric_attenuation}
+is \code{TRUE}. With \code{FALSE}, solar radiance comes from the model's intrinsic
+solar spectrum and lunar radiance uses unattenuated photometry without the
+atmospheric tint. Solar texture values are then independent of altitude and
+solar elevation; ephemeris placement and lunar phase still use the requested
+location and time. Neither mode clips the texture to a geometric horizon.
 Pair these images with an atmosphere-only sky and disable the corresponding
 rasterized celestial bodies in that sky to avoid counting their light twice.
 
@@ -119,9 +133,9 @@ There is no image reprojection or implicit rotation in the return value.
 
 The solar model has a fixed angular profile, mapped here to the apparent
 ephemeris diameter without changing radiance. Lunar radiance is normalized
-over disk solid angle to the existing phase-dependent, atmosphere-attenuated
-irradiance, with the solar spectral RGB distribution and Prague atmospheric
-tint. Lunar attenuation and tint are evaluated at the disk center. At or
+over disk solid angle to the existing phase-dependent irradiance, with the
+solar spectral RGB distribution. With \code{atmospheric_attenuation = TRUE},
+lunar attenuation and Prague tint are evaluated at the disk center. At or
 below zero center elevation, their finite horizon values are retained so the
 upper limb does not disappear prematurely. This continuation preserves a full
 disk texture; it is not a model of below-horizon visibility or horizon
@@ -137,5 +151,8 @@ To save an EXR without changing radiance, tag \code{image} with
 time = as.POSIXct("2026-01-28 21:00:00", tz = "Pacific/Auckland")
 moon = generate_moon_disk(time, lat = -36.87593, lon = 174.7647)
 moon[c("azimuth_deg", "elevation_deg", "angular_diameter_deg")]
+# Let a renderer evaluate Earth's atmosphere at each interaction instead.
+intrinsic_moon = generate_moon_disk(time, lat = -36.87593, lon = 174.7647,
+  atmospheric_attenuation = FALSE)
 \dontshow{\}) # examplesIf}
 }

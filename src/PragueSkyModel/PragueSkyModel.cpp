@@ -13,8 +13,13 @@ preserved for attribution and compliance with upstream notice requirements.
 #include <limits>
 #include <cstring>
 #include <tuple>
+#include <memory>
 
 #include "PragueSkyModel.h"
+
+namespace skymodelr_prague {
+
+
 
 /////////////////////////////////////////////////////////////////////////////////////
 // Constants
@@ -321,6 +326,17 @@ double nonlerp(const double a, const double b, const double w, const double p) {
 // Data reading
 /////////////////////////////////////////////////////////////////////////////////////
 
+// skymodelr: full-altitude datasets exceed 2 GB. Windows long/fseek offsets are
+// only 32 bits; use the platform's 64-bit seek and report a failed skip.
+static void skipDatasetBytes(FILE* handle, size_t bytes) {
+#ifdef _WIN32
+    int status = _fseeki64(handle, static_cast<__int64>(bytes), SEEK_CUR);
+#else
+    int status = fseeko(handle, static_cast<off_t>(bytes), SEEK_CUR);
+#endif
+    if (status != 0) throw PragueSkyModel::DatasetReadException("coefficient offset");
+}
+
 void PragueSkyModel::readRadiance(FILE* handle, const double singleVisibility) {
     // Read metadata.
 
@@ -498,7 +514,7 @@ void PragueSkyModel::readRadiance(FILE* handle, const double singleVisibility) {
 
     // If a single visibility was requested, skip all configurations from the beginning till those needed for
     // the requested visibility.
-    fseek(handle, oneConfigByteCount * skippedConfigsBegin, SEEK_CUR);
+    skipDatasetBytes(handle, oneConfigByteCount * skippedConfigsBegin);
 
     // Read configurations needed for the requested visibility (or all if none requested).
     for (int con = 0; con < totalConfigs; ++con) {
@@ -542,7 +558,7 @@ void PragueSkyModel::readRadiance(FILE* handle, const double singleVisibility) {
     }
 
     // Skip remaining configurations till the end.
-    fseek(handle, oneConfigByteCount * skippedConfigsEnd, SEEK_CUR);
+    skipDatasetBytes(handle, oneConfigByteCount * skippedConfigsEnd);
 }
 
 void PragueSkyModel::readTransmittance(FILE* handle) {
@@ -676,7 +692,7 @@ void PragueSkyModel::readPolarisation(FILE* handle) {
 
     // If a single visibility was requested, skip all configurations from the beginning till those needed for
     // the requested visibility.
-    fseek(handle, oneConfigByteCount * skippedConfigsBegin, SEEK_CUR);
+    skipDatasetBytes(handle, oneConfigByteCount * skippedConfigsBegin);
 
     for (int con = 0; con < totalConfigs; ++con) {
         for (int r = 0; r < metadataPol.rank; ++r) {
@@ -702,16 +718,29 @@ void PragueSkyModel::readPolarisation(FILE* handle) {
 
 void PragueSkyModel::initialize(const std::string& filename, const double singleVisibility) {
     if (FILE* handle = fopen(filename.c_str(), "rb")) {
+        // skymodelr: close the file if a truncated dataset throws while loading.
+        std::unique_ptr<FILE, decltype(&fclose)> file(handle, fclose);
         initialized = false;
         // Read data
         readRadiance(handle, singleVisibility);
         readTransmittance(handle);
         readPolarisation(handle);
-        fclose(handle);
         initialized = true;
     } else {
         throw DatasetNotFoundException(filename);
     }
+}
+
+size_t PragueSkyModel::memoryUsage() const {
+    size_t bytes = sizeof(*this);
+    for (const auto* values : {&dataRad, &dataPol, &dataTransU, &dataTransV})
+        bytes += values->capacity() * sizeof(float);
+    for (const auto* values : {&visibilitiesRad, &albedosRad, &altitudesRad, &elevationsRad,
+                              &altitudesTrans, &visibilitiesTrans, &metadataRad.sunBreaks,
+                              &metadataRad.zenithBreaks, &metadataRad.emphBreaks,
+                              &metadataPol.sunBreaks, &metadataPol.zenithBreaks, &metadataPol.emphBreaks})
+        bytes += values->capacity() * sizeof(double);
+    return bytes;
 }
 
 PragueSkyModel::AvailableData PragueSkyModel::getAvailableData() const {
@@ -747,7 +776,7 @@ PragueSkyModel::Parameters PragueSkyModel::computeParameters(const Vector3& view
                                                              const double   groundLevelSolarAzimuthAtOrigin,
                                                              const double   visibility,
                                                              const double   albedo) const {
-    assert(viewpoint.z >= 0.0);
+    // The caller validates radial altitude in the planet-centered frame.
     assert(magnitude(viewDirection) > 0.0);
     assert(visibility >= 0.0);
     assert(albedo >= 0.0 && albedo <= 1.0);
@@ -783,7 +812,7 @@ PragueSkyModel::Parameters PragueSkyModel::computeParameters(const Vector3& view
     // on the ground directly below viewpoint)
 
     const double dotZenithSun = dot(toViewpointN, directionToSunN);
-    params.elevation          = 0.5 * PI - acos(dotZenithSun);
+    params.elevation          = 0.5 * PI - acos(std::clamp(dotZenithSun, -1.0, 1.0));
 
     // Altitude-corrected view direction
 
@@ -806,7 +835,7 @@ PragueSkyModel::Parameters PragueSkyModel::computeParameters(const Vector3& view
     // Sun angle (gamma) - no correction
 
     double dotProductSun = dot(viewDirectionN, directionToSunN);
-    params.gamma         = acos(dotProductSun);
+    params.gamma         = acos(std::clamp(dotProductSun, -1.0, 1.0));
 
     // Shadow angle - requires correction
 
@@ -819,18 +848,18 @@ PragueSkyModel::Parameters PragueSkyModel::computeParameters(const Vector3& view
                                        sin(shadowAngle));
 
     const double dotProductShadow = dot(correctViewN, shadowDirectionN);
-    params.shadow                 = acos(dotProductShadow);
+    params.shadow                 = acos(std::clamp(dotProductShadow, -1.0, 1.0));
 
     // Zenith angle (theta) - corrected version stored in otherwise unused zero
     // angle
 
     double cosThetaCor = dot(correctViewN, toViewpointN);
-    params.zero        = acos(cosThetaCor);
+    params.zero        = acos(std::clamp(cosThetaCor, -1.0, 1.0));
 
     // Zenith angle (theta) - uncorrected version goes outside
 
     double cosTheta = dot(viewDirectionN, toViewpointN);
-    params.theta    = acos(cosTheta);
+    params.theta    = acos(std::clamp(cosTheta, -1.0, 1.0));
 
     return params;
 }
@@ -982,6 +1011,68 @@ double PragueSkyModel::evaluateModel(const Parameters&         params,
 // Sky radiance
 /////////////////////////////////////////////////////////////////////////////////////
 
+// skymodelr: reuse wavelength-independent lookup work for a whole spectrum.
+void PragueSkyModel::skyRadianceSpectrum(const Parameters& params, const double* wavelengths,
+                                         size_t count, double* values) const {
+    if (!initialized) throw NotInitializedException();
+    const auto& metadata = metadataRad;
+    const auto& data = dataRad;
+    // Translate angle values to indices and interpolation factors.
+    AngleParameters angleParameters;
+    angleParameters.gamma = getInterpolationParameter(params.gamma, metadata.sunBreaks);
+    if (!metadata.emphBreaks.empty()) { // for radiance
+        angleParameters.alpha =
+            getInterpolationParameter(params.elevation < 0.0 ? params.shadow : params.zero,
+                                      metadata.zenithBreaks);
+        angleParameters.zero = getInterpolationParameter(params.zero, metadata.emphBreaks);
+    } else { // for polarisation
+        angleParameters.alpha = getInterpolationParameter(params.zero, metadata.zenithBreaks);
+    }
+
+    // Translate configuration values to indices and interpolation factors.
+    const InterpolationParameter visibilityParam =
+        getInterpolationParameter(params.visibility, visibilitiesRad);
+    const InterpolationParameter albedoParam   = getInterpolationParameter(params.albedo, albedosRad);
+    const InterpolationParameter altitudeParam = getInterpolationParameter(params.altitude, altitudesRad);
+    const InterpolationParameter elevationParam =
+        getInterpolationParameter(radiansToDegrees(params.elevation), elevationsRad);
+
+    // Prepare parameters controlling the interpolation.
+    ControlParameters controlParameters;
+    for (int i = 0; i < 16; ++i) {
+        const int visibilityIndex = std::min(visibilityParam.index + i / 8, int(visibilitiesRad.size() - 1));
+        const int albedoIndex     = std::min(albedoParam.index + (i % 8) / 4, int(albedosRad.size() - 1));
+        const int altitudeIndex   = std::min(altitudeParam.index + (i % 4) / 2, int(altitudesRad.size() - 1));
+        const int elevationIndex  = std::min(elevationParam.index + i % 2, int(elevationsRad.size() - 1));
+
+        controlParameters.coefficients[i] = getCoefficients(data,
+                                                            metadata.totalCoefsSingleConfig,
+                                                            elevationIndex,
+                                                            altitudeIndex,
+                                                            visibilityIndex,
+                                                            albedoIndex,
+                                                            0);
+    }
+    controlParameters.interpolationFactor[0] = visibilityParam.factor;
+    controlParameters.interpolationFactor[1] = albedoParam.factor;
+    controlParameters.interpolationFactor[2] = altitudeParam.factor;
+    controlParameters.interpolationFactor[3] = elevationParam.factor;
+
+
+    const ControlParameters base = controlParameters;
+    for (size_t channel = 0; channel < count; ++channel) {
+        const double wavelength = wavelengths[channel];
+        if (wavelength < channelStart || wavelength >= channelStart + channels * channelWidth) {
+            values[channel] = 0;
+            continue;
+        }
+        const int index = int(floor((wavelength - channelStart) / channelWidth));
+        for (int i = 0; i < 16; ++i)
+            controlParameters.coefficients[i] = base.coefficients[i] + index * metadata.totalCoefsSingleConfig;
+        values[channel] = interpolate<0, 0>(angleParameters, controlParameters, metadata);
+    }
+}
+
 double PragueSkyModel::skyRadiance(const Parameters& params, const double wavelength) const {
     if (!initialized) {
         throw NotInitializedException();
@@ -995,7 +1086,8 @@ double PragueSkyModel::skyRadiance(const Parameters& params, const double wavele
 // Sun radiance
 /////////////////////////////////////////////////////////////////////////////////////
 
-double PragueSkyModel::sunRadiance(const Parameters& params, const double wavelength) const {
+double PragueSkyModel::sunRadiance(const Parameters& params, const double wavelength,
+                                   const bool atmosphericAttenuation) const {
     if (!initialized) {
         throw NotInitializedException();
     }
@@ -1020,6 +1112,9 @@ double PragueSkyModel::sunRadiance(const Parameters& params, const double wavele
     const double sunRadiance =
         SUN_RAD_TABLE[idxInt] * (1.0 - idxFloat) + SUN_RAD_TABLE[idxInt + 1] * idxFloat;
     assert(sunRadiance > 0.0);
+
+    // skymodelr: retain the intrinsic spectrum for unattenuated textured disks.
+    if (!atmosphericAttenuation) return sunRadiance;
 
     // Compute transmittance towards the sun.
     const double tau = PragueSkyModel::transmittance(params, wavelength, std::numeric_limits<double>::max());
@@ -1283,3 +1378,31 @@ double PragueSkyModel::transmittance(const Parameters& params,
 
     return trans;
 }
+
+// skymodelr: the geometry and interpolation coordinates do not depend on wavelength.
+void PragueSkyModel::transmittanceSpectrum(const Parameters& params, const double* wavelengths,
+                                           size_t count, double distance, double* values) const {
+    assert(distance > 0.0);
+    if (!initialized) throw NotInitializedException();
+    const auto visibilityParam = getInterpolationParameter(params.visibility, visibilitiesTrans);
+    const auto altitudeParam = getInterpolationParameter(params.altitude, altitudesTrans);
+    const auto transParams = toTransmittanceParams(params.theta, distance, params.altitude);
+    for (size_t channel = 0; channel < count; ++channel) {
+        const double wavelength = wavelengths[channel];
+        if (wavelength < channelStart || wavelength >= channelStart + channels * channelWidth) {
+            values[channel] = 0;
+            continue;
+        }
+        const int index = int(floor((wavelength - channelStart) / channelWidth));
+        double trans = interpolateTrans(visibilityParam.index, altitudeParam, transParams, index);
+        if (visibilityParam.factor > 0.0) {
+            const double high = interpolateTrans(visibilityParam.index + 1, altitudeParam, transParams, index);
+            trans = pragueLerp(trans, high, visibilityParam.factor);
+        }
+        values[channel] = trans * trans;
+    }
+}
+
+
+
+} // namespace skymodelr_prague

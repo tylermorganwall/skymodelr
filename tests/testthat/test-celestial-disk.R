@@ -31,6 +31,10 @@ test_that("disk inputs are validated before model or raster work", {
       list(wide_spectrum = NA),
       list(datetime = as.Date(time)),
       list(prague_rgb_correction = NA),
+      list(atmospheric_attenuation = NA),
+      list(atmospheric_attenuation = 0),
+      list(atmospheric_attenuation = c(TRUE, FALSE)),
+      list(atmospheric_attenuation = logical()),
       list(prague_rgb_correction_gain = c(1, -1, 1))
     )) {
       expect_error(do.call(f, utils::modifyList(defaults, update)))
@@ -78,6 +82,7 @@ test_that("Sun export provides ephemeris geometry and directional solar radiance
   expect_equal(disk$elevation_deg, 30)
   expect_equal(disk$angular_diameter_deg, 0.53)
   expect_identical(disk$projection, "rectilinear")
+  expect_true(disk$atmospheric_attenuation)
   expect_equal(seen$render_mode, "sun")
   expect_equal(seen$elevation, 30)
   expect_true(diff(range(seen$theta)) > 0.4)
@@ -144,6 +149,7 @@ test_that("Moon export preserves phase, radiometry, coverage, and thread options
   expect_equal(seen$cores, 2)
   expect_equal(seen$elev_m, 100)
   expect_equal(seen$width, 32)
+  expect_true(disk$atmospheric_attenuation)
   expect_false(seen$earthshine)
   expect_identical(dim(disk$image), c(16L, 16L, 3L))
   expect_true(all(disk$image >= 0))
@@ -256,4 +262,126 @@ test_that("extended-source attenuation has a finite horizon limit", {
     expected,
     tolerance = 1e-6
   )
+})
+
+test_that("intrinsic Sun pixels use the native spectrum without a terrestrial horizon", {
+  seen = NULL
+  local_mocked_bindings(
+    swe_dirs_topo_moon_sun = function(...) {
+      list(
+        sun_dir_topo = c(0, -cospi(1 / 6), -sinpi(1 / 6)),
+        sun_diameter_degrees = 0.53
+      )
+    },
+    resolve_prague_coef_file = function(...) "unused.dat",
+    calculate_sky_values = function(...) stop("attenuated query must not run"),
+    calculate_raw_prague = function(
+      phi,
+      theta,
+      elevation,
+      albedo,
+      altitude,
+      visibility,
+      azimuth,
+      num_threads,
+      filename,
+      render_mode,
+      atmospheric_attenuation = TRUE
+    ) {
+      seen <<- list(
+        elevation = elevation,
+        altitude = altitude,
+        mode = render_mode,
+        attenuation = atmospheric_attenuation
+      )
+      matrix(rep(c(3, 2, 1), each = length(phi)), ncol = 3)
+    }
+  )
+  disk = generate_sun_disk(
+    as.POSIXct("2026-01-28", tz = "UTC"),
+    0,
+    0,
+    altitude = 5000,
+    resolution = 16,
+    atmospheric_attenuation = FALSE,
+    prague_rgb_correction_gain = c(1, 2, 3)
+  )
+  expect_false(disk$atmospheric_attenuation)
+  expect_false(seen$attenuation)
+  expect_equal(seen$mode, "sun")
+  expect_true(all(seen$elevation == 90))
+  expect_true(all(seen$altitude == 0))
+  expect_equal(disk$elevation_deg, -30)
+  expect_equal(disk$image[8, 8, ], c(3, 4, 3))
+})
+
+test_that("intrinsic Moon radiometry preserves the phase texture and ignores extinction", {
+  phase = array(1, c(16, 16, 4))
+  for (channel in 1:3) {
+    phase[1:8, , channel] = 0.1
+  }
+  seen = NULL
+  local_mocked_bindings(
+    swe_dirs_topo_moon_sun = function(...) {
+      list(
+        moon_dir_topo = c(0, -cospi(1 / 6), -sinpi(1 / 6)),
+        moon_diameter_degrees = 0.53,
+        moon_brightness_lux_unattenuated = 0.3
+      )
+    },
+    generate_moon_image_latlong = function(...) {
+      seen <<- list(...)
+      list(moon_luminance_array = phase)
+    },
+    apply_airmass_extinction = function(...) stop("extinction must not run"),
+    calculate_sky_values = function(...) stop("atmospheric tint must not run"),
+    compute_K_eff = function(...) 100,
+    compute_spd_rgb_unit = function(...) c(.4, .35, .25),
+    lux_to_radiometric_irradiance = function(lux, efficacy) lux / efficacy
+  )
+  args = list(
+    datetime = as.POSIXct("2026-01-28", tz = "UTC"),
+    lat = 0,
+    lon = 0,
+    resolution = 16,
+    atmospheric_attenuation = FALSE,
+    earthshine = TRUE
+  )
+  a = do.call(generate_moon_disk, c(args, list(moon_extinction_kV = 0)))
+  b = do.call(generate_moon_disk, c(args, list(moon_extinction_kV = 4)))
+  expect_false(a$atmospheric_attenuation)
+  expect_equal(a$image, b$image)
+  expect_equal(a$elevation_deg, -30)
+  expect_true(seen$earthshine)
+  expect_equal(a$image[4, 8, ] / a$image[12, 8, ], rep(.1, 3))
+  expect_equal(a$image[12, 8, ] / sum(a$image[12, 8, ]), c(.4, .35, .25))
+  expect_gt(sum(a$image), 0)
+})
+
+test_that("native intrinsic Sun queries preserve defaults and remain bright below sunset", {
+  filename = tryCatch(
+    resolve_prague_coef_file(0, allow_download = FALSE),
+    error = function(e) ""
+  )
+  skip_if(!file.exists(filename), "Prague ground dataset is not installed")
+  time = as.POSIXct("2026-06-21 20:35:00", tz = "America/New_York")
+  args = list(datetime = time, lat = 40.7, lon = -74, resolution = 16)
+  intrinsic = do.call(
+    generate_sun_disk,
+    c(args, list(atmospheric_attenuation = FALSE))
+  )
+  elevated = do.call(
+    generate_sun_disk,
+    c(args, list(atmospheric_attenuation = FALSE, altitude = 5000))
+  )
+  legacy = do.call(generate_sun_disk, args)
+  explicit = do.call(
+    generate_sun_disk,
+    c(args, list(atmospheric_attenuation = TRUE))
+  )
+  expect_equal(legacy, explicit)
+  expect_equal(intrinsic$image, elevated$image)
+  expect_gt(sum(intrinsic$image), sum(legacy$image))
+  expect_gt(min(intrinsic$image[8, 8, ]), 0)
+  expect_lt(intrinsic$elevation_deg, 0)
 })

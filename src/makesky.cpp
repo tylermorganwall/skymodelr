@@ -805,7 +805,8 @@ Rcpp::NumericMatrix calculate_raw_prague(
     Rcpp::NumericVector elevation, Rcpp::NumericVector albedo,
     Rcpp::NumericVector altitude, Rcpp::NumericVector visibility,
     Rcpp::NumericVector azimuth, unsigned int number_cores = 1,
-    std::string prg_dataset = "", std::string render_mode = "all") {
+    std::string prg_dataset = "", std::string render_mode = "all",
+    bool atmospheric_attenuation = true) {
   bool render_atmosphere = true;
   bool render_sun = true;
   resolve_render_mode(render_mode, render_atmosphere, render_sun);
@@ -872,7 +873,7 @@ Rcpp::NumericMatrix calculate_raw_prague(
             Li = prague_model.skyRadiance(P, lam);
           }
           if (render_sun && view_above_horizon) {
-            const double sun = prague_model.sunRadiance(P, lam);
+            const double sun = prague_model.sunRadiance(P, lam, atmospheric_attenuation);
             Li = render_atmosphere ? (Li + sun) : sun;
           }
           const double d_lambda = lambda_weights[c];

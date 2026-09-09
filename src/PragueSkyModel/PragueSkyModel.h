@@ -1,3 +1,5 @@
+#ifndef SKYMODELR_PRAGUE_SKY_MODEL_H
+#define SKYMODELR_PRAGUE_SKY_MODEL_H
 /*
 This file is included in the skymodelr package, which is distributed as a
 whole under GPL-3. The following upstream copyright and provenance notice is
@@ -13,6 +15,10 @@ preserved for attribution and compliance with upstream notice requirements.
 #include <exception>
 #include <string>
 #include <vector>
+
+
+
+namespace skymodelr_prague {
 
 double pragueLerp(const double from, const double to, const double factor);
 
@@ -324,6 +330,9 @@ public:
     /// Throws NotInitializedException if called without initializing the model first.
     AvailableData getAvailableData() const;
 
+    // skymodelr: report immutable coefficient storage for scene memory accounting.
+    size_t memoryUsage() const;
+
     /// Computes all the parameters in the Parameters structure necessary for querying the model.
     ///
     /// Expects view point and direction, sun elevation and azimuth at origin, ground level visibility and
@@ -344,6 +353,9 @@ public:
     ///
     /// Throws NotInitializedException if called without initializing the model first.
     double skyRadiance(const Parameters& params, const double wavelength) const;
+    // skymodelr: exact spectral batch; shares wavelength-independent lookups.
+    void skyRadianceSpectrum(const Parameters& params, const double* wavelengths,
+                             size_t count, double* values) const;
 
     /// Computes sun radiance only (without radiance inscattered from the sky) for given parameters and
     /// wavelength (full dataset supports wavelengths from 280 nm to 2480 nm).
@@ -351,7 +363,8 @@ public:
     /// Checks whether the parameters correspond to view direction hitting the sun and returns 0 if not.
     ///
     /// Throws NotInitializedException if called without initializing the model first.
-    double sunRadiance(const Parameters& params, const double wavelength) const;
+    double sunRadiance(const Parameters& params, const double wavelength,
+                       const bool atmosphericAttenuation = true) const;
 
     /// Computes degree of polarisation for given parameters and wavelength (full
     /// dataset supports wavelengths from 280 nm to 2480 nm). Can be negative.
@@ -371,6 +384,8 @@ public:
     ///
     /// Throws NotInitializedException if called without initializing the model first.
     double transmittance(const Parameters& params, const double wavelength, const double distance) const;
+    void transmittanceSpectrum(const Parameters& params, const double* wavelengths,
+                               size_t count, double distance, double* values) const;
 
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -495,3 +510,10 @@ private:
                                                   const double distance,
                                                   const double altitude) const;
 };
+
+
+} // namespace skymodelr_prague
+
+// Internal source compatibility for skymodelr's existing R entry points.
+using PragueSkyModel = skymodelr_prague::PragueSkyModel;
+#endif

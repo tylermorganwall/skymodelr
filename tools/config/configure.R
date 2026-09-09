@@ -6,6 +6,7 @@
 # and find CMake.
 is_windows = identical(.Platform$OS.type, "windows")
 is_macos = identical(Sys.info()[['sysname']], "Darwin")
+is_linux = identical(Sys.info()[["sysname"]], "Linux")
 
 # This script configures Makevars explicitly; disable the helper's
 # post-script auto-configuration pass to avoid regenerating both files.
@@ -13,6 +14,72 @@ options(
   configure.common = FALSE,
   configure.platform = FALSE
 )
+
+check_atomic_libs = function() {
+  # Keep this workaround restricted to Linux.
+  if (!identical(Sys.info()[["sysname"]], "Linux")) {
+    return("")
+  }
+
+  build_dir = tempfile("skymodelr-atomic-check-")
+  if (!dir.create(build_dir)) {
+    stop(
+      "Cannot create temporary directory for libatomic check.",
+      call. = FALSE
+    )
+  }
+
+  old_wd = getwd()
+  on.exit(
+    {
+      setwd(old_wd)
+      unlink(build_dir, recursive = TRUE)
+    },
+    add = TRUE
+  )
+  setwd(build_dir)
+
+  # Test library availability, not whether a particular atomic operation
+  # happens to require an external runtime call.
+  writeLines(
+    'extern "C" int atomic_link_probe(void) { return 0; }',
+    "atomic_link_probe.cpp"
+  )
+
+  dll = paste0("atomic_link_probe", .Platform$dynlib.ext)
+  log_file = "atomic-check.log"
+
+  status = system2(
+    command = file.path(R.home("bin"), "R"),
+    args = c(
+      "CMD",
+      "SHLIB",
+      "--preclean",
+      "-o",
+      shQuote(dll),
+      "atomic_link_probe.cpp",
+      "-latomic"
+    ),
+    stdout = log_file,
+    stderr = log_file
+  )
+
+  available = identical(status, 0L) && file.exists(dll)
+
+  message(
+    "checking whether -latomic can be linked... ",
+    if (available) "yes" else "no"
+  )
+
+  if (!available) {
+    message(paste(readLines(log_file, warn = FALSE), collapse = "\n"))
+    return("")
+  }
+
+  "-latomic"
+}
+
+define(ATOMIC_LIBS = check_atomic_libs())
 
 TARGET_ARCH = Sys.info()[["machine"]]
 PACKAGE_BASE_DIR = normalizePath(getwd(), winslash = "/")

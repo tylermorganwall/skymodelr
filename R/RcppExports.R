@@ -17,8 +17,8 @@ calculate_raw_prague_radiance <- function(phi, theta, lambda_nm, elevation, albe
     .Call(`_skymodelr_calculate_raw_prague_radiance`, phi, theta, lambda_nm, elevation, albedo, altitude, visibility, azimuth, number_cores, prg_dataset, render_mode)
 }
 
-calculate_raw_prague <- function(phi, theta, elevation, albedo, altitude, visibility, azimuth, number_cores = 1L, prg_dataset = "", render_mode = "all") {
-    .Call(`_skymodelr_calculate_raw_prague`, phi, theta, elevation, albedo, altitude, visibility, azimuth, number_cores, prg_dataset, render_mode)
+calculate_raw_prague <- function(phi, theta, elevation, albedo, altitude, visibility, azimuth, number_cores = 1L, prg_dataset = "", render_mode = "all", atmospheric_attenuation = TRUE) {
+    .Call(`_skymodelr_calculate_raw_prague`, phi, theta, elevation, albedo, altitude, visibility, azimuth, number_cores, prg_dataset, render_mode, atmospheric_attenuation)
 }
 
 cie_1931_2deg_rcpp <- function() {

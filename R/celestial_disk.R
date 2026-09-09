@@ -29,6 +29,11 @@
 #'   earthshine.
 #' @param solar_irradiance_w_m2 Default `1300`. Positive solar irradiance in
 #'   watts per square meter used to illuminate the lunar surface.
+#' @param atmospheric_attenuation Default `TRUE`. Include atmospheric extinction
+#'   and tint for the specified observer. Set `FALSE` to return radiance before
+#'   it enters Earth's atmosphere; the consuming renderer must apply atmospheric
+#'   transport and horizon visibility. Lunar phase, surface detail, and earthshine
+#'   are retained. `moon_extinction_kV` is ignored when this is `FALSE`.
 #' @param moon_extinction_kV Default `0.172`. Nonnegative lunar atmospheric
 #'   extinction coefficient in magnitudes per airmass.
 #'
@@ -40,11 +45,17 @@
 #' * `azimuth_deg`: disk-center azimuth, clockwise from true north, in [0, 360).
 #' * `elevation_deg`: disk-center elevation above the local horizon, in degrees.
 #' * `angular_diameter_deg`: topocentric apparent angular diameter in degrees.
+#' * `atmospheric_attenuation`: whether atmospheric filtering is included.
 #' * `projection`: `"rectilinear"`, using the disk mapping described below.
 #'
 #' @details
 #' Prague data must be installed with [download_sky_data()]. The atmosphere is
-#' evaluated for one observer altitude and time; this is a static light image.
+#' evaluated for one observer altitude and time when `atmospheric_attenuation`
+#' is `TRUE`. With `FALSE`, solar radiance comes from the model's intrinsic
+#' solar spectrum and lunar radiance uses unattenuated photometry without the
+#' atmospheric tint. Solar texture values are then independent of altitude and
+#' solar elevation; ephemeris placement and lunar phase still use the requested
+#' location and time. Neither mode clips the texture to a geometric horizon.
 #' Pair these images with an atmosphere-only sky and disable the corresponding
 #' rasterized celestial bodies in that sky to avoid counting their light twice.
 #'
@@ -60,14 +71,14 @@
 #'
 #' The solar model has a fixed angular profile, mapped here to the apparent
 #' ephemeris diameter without changing radiance. Lunar radiance is normalized
-#' over disk solid angle to the existing phase-dependent, atmosphere-attenuated
-#' irradiance, with the solar spectral RGB distribution and Prague atmospheric
-#' tint. Lunar attenuation and tint are evaluated at the disk center. At or
+#' over disk solid angle to the existing phase-dependent irradiance, with the
+#' solar spectral RGB distribution. With `atmospheric_attenuation = TRUE`,
+#' lunar attenuation and Prague tint are evaluated at the disk center. At or
 #' below zero center elevation, their finite horizon values are retained so the
 #' upper limb does not disappear prematurely. This continuation preserves a full
 #' disk texture; it is not a model of below-horizon visibility or horizon
 #' depression at altitude. Geometric horizon clipping is the consumer's
-#' responsibility; sample the full disk and discard directions below the 
+#' responsibility; sample the full disk and discard directions below the
 #' horizon when appropriate.
 #'
 #' To save an EXR without changing radiance, tag `image` with
@@ -79,6 +90,9 @@
 #' time = as.POSIXct("2026-01-28 21:00:00", tz = "Pacific/Auckland")
 #' moon = generate_moon_disk(time, lat = -36.87593, lon = 174.7647)
 #' moon[c("azimuth_deg", "elevation_deg", "angular_diameter_deg")]
+#' # Let a renderer evaluate Earth's atmosphere at each interaction instead.
+#' intrinsic_moon = generate_moon_disk(time, lat = -36.87593, lon = 174.7647,
+#'   atmospheric_attenuation = FALSE)
 generate_sun_disk = function(
   datetime,
   lat,
@@ -91,8 +105,10 @@ generate_sun_disk = function(
   wide_spectrum = FALSE,
   prague_rgb_correction = TRUE,
   prague_rgb_correction_strength = 1,
-  prague_rgb_correction_gain = "auto"
+  prague_rgb_correction_gain = "auto",
+  atmospheric_attenuation = TRUE
 ) {
+  validate_disk_logical(atmospheric_attenuation, "atmospheric_attenuation")
   settings = celestial_disk_settings(
     datetime,
     lat,
@@ -109,8 +125,15 @@ generate_sun_disk = function(
   )
   ephemeris = swe_dirs_topo_moon_sun(datetime, lat, lon, elev_m = altitude)
   d = ephemeris$sun_dir_topo
-  image = celestial_sun_pixels(c(d[1], d[3], -d[2]), resolution, settings)
-  celestial_disk_result(image, d, ephemeris$sun_diameter_degrees)
+  image = celestial_sun_pixels(
+    c(d[1], d[3], -d[2]),
+    resolution,
+    settings,
+    atmospheric_attenuation
+  )
+  result = celestial_disk_result(image, d, ephemeris$sun_diameter_degrees)
+  result$atmospheric_attenuation = atmospheric_attenuation
+  result
 }
 
 #' @rdname generate_sun_disk
@@ -131,8 +154,10 @@ generate_moon_disk = function(
   earthshine = TRUE,
   earthshine_albedo = 0.19,
   solar_irradiance_w_m2 = 1300,
-  moon_extinction_kV = 0.172
+  moon_extinction_kV = 0.172,
+  atmospheric_attenuation = TRUE
 ) {
+  validate_disk_logical(atmospheric_attenuation, "atmospheric_attenuation")
   settings = celestial_disk_settings(
     datetime,
     lat,
@@ -174,13 +199,16 @@ generate_moon_disk = function(
     resolution,
     args,
     ephemeris,
-    settings
+    settings,
+    atmospheric_attenuation
   )
-  celestial_disk_result(
+  result = celestial_disk_result(
     image,
     ephemeris$moon_dir_topo,
     ephemeris$moon_diameter_degrees
   )
+  result$atmospheric_attenuation = atmospheric_attenuation
+  result
 }
 
 #' @keywords internal
@@ -311,7 +339,17 @@ celestial_frame = function(direction) {
 }
 
 #' @keywords internal
-celestial_sun_pixels = function(direction, n, settings) {
+celestial_sun_pixels = function(
+  direction,
+  n,
+  settings,
+  atmospheric_attenuation = TRUE
+) {
+  # The intrinsic solar disk is independent of the terrestrial horizon. Query
+  # its angular profile at the zenith even when the actual Sun is below it.
+  if (!atmospheric_attenuation) {
+    direction = c(0, 1, 0)
+  }
   elevation = asin(direction[2]) * 180 / pi
   if (elevation < -4.2) {
     return(array(0, c(n, n, 3)))
@@ -331,19 +369,54 @@ celestial_sun_pixels = function(direction, n, settings) {
   dirs = dirs / sqrt(rowSums(dirs^2))
   phi = (atan2(-dirs[, 1], dirs[, 3]) * 180 / pi) %% 360
   theta = asin(pmax(-1, pmin(1, dirs[, 2]))) * 180 / pi
-  values = do.call(
-    calculate_sky_values,
-    c(
-      list(
-        phi = phi,
-        theta = theta,
-        elevation = elevation,
-        azimuth = azimuth,
-        render_mode = "sun"
-      ),
-      settings
+  values = if (atmospheric_attenuation) {
+    do.call(
+      calculate_sky_values,
+      c(
+        list(
+          phi = phi,
+          theta = theta,
+          elevation = elevation,
+          azimuth = azimuth,
+          render_mode = "sun"
+        ),
+        settings
+      )
     )
-  )
+  } else {
+    filename = resolve_prague_coef_file(
+      altitude = 0,
+      wide_spectrum = settings$wide_spectrum,
+      allow_download = FALSE
+    )
+    count = length(phi)
+    values = calculate_raw_prague(
+      phi,
+      theta,
+      rep(elevation, count),
+      rep(settings$albedo, count),
+      rep(0, count),
+      rep(settings$visibility, count),
+      rep(azimuth, count),
+      settings$number_cores,
+      filename,
+      "sun",
+      atmospheric_attenuation = FALSE
+    )
+    if (
+      normalize_prague_rgb_correction(settings$prague_rgb_correction) ==
+        "constant"
+    ) {
+      values = apply_prague_rgb_gain(
+        values,
+        prepare_prague_rgb_gain(
+          settings$prague_rgb_correction_gain,
+          settings$prague_rgb_correction_strength
+        )
+      )
+    }
+    values
+  }
   array(as.numeric(values), c(n, n, 3))
 }
 
@@ -355,7 +428,8 @@ celestial_moon_pixels = function(
   resolution,
   args,
   ephemeris,
-  settings
+  settings,
+  atmospheric_attenuation = TRUE
 ) {
   # skymodelr rasterizes a padded patch using rayvertex. Scope its thread count;
   # preparation happens before the path tracer's worker pool starts.
@@ -399,12 +473,16 @@ celestial_moon_pixels = function(
   elevation = asin(pmax(-1, pmin(1, direction[2]))) * 180 / pi
   # Calibrate a complete disk. Its center may be below zero while the upper
   # limb remains visible; horizon visibility belongs to the consuming renderer.
-  illuminance = apply_airmass_extinction(
-    ephemeris$moon_brightness_lux_unattenuated,
-    elevation,
-    kV = args$moon_extinction_kV,
-    clip_horizon = FALSE
-  )
+  illuminance = if (atmospheric_attenuation) {
+    apply_airmass_extinction(
+      ephemeris$moon_brightness_lux_unattenuated,
+      elevation,
+      kV = args$moon_extinction_kV,
+      clip_horizon = FALSE
+    )
+  } else {
+    ephemeris$moon_brightness_lux_unattenuated
+  }
   irradiance = lux_to_radiometric_irradiance(
     illuminance,
     compute_K_eff("BB5778")
@@ -414,21 +492,23 @@ celestial_moon_pixels = function(
   # when the center crosses zero. This remains a disk-wide approximation.
   tint_elevation = max(0, elevation)
   azimuth = (atan2(-direction[1], direction[3]) * 180 / pi) %% 360
-  tint = do.call(
-    calculate_sky_values,
-    c(
-      list(
-        phi = azimuth,
-        theta = tint_elevation,
-        elevation = tint_elevation,
-        azimuth = azimuth,
-        render_mode = "sun"
-      ),
-      settings
+  if (atmospheric_attenuation) {
+    tint = do.call(
+      calculate_sky_values,
+      c(
+        list(
+          phi = azimuth,
+          theta = tint_elevation,
+          elevation = tint_elevation,
+          azimuth = azimuth,
+          render_mode = "sun"
+        ),
+        settings
+      )
     )
-  )
-  if (all(is.finite(tint)) && sum(tint) > 0) {
-    rgb = rgb * pmax(as.numeric(tint), 0)
+    if (all(is.finite(tint)) && sum(tint) > 0) {
+      rgb = rgb * pmax(as.numeric(tint), 0)
+    }
   }
   rgb = rgb / sum(rgb)
   n = dim(pixels)

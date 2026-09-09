@@ -95,8 +95,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // calculate_raw_prague
-Rcpp::NumericMatrix calculate_raw_prague(Rcpp::NumericVector phi, Rcpp::NumericVector theta, Rcpp::NumericVector elevation, Rcpp::NumericVector albedo, Rcpp::NumericVector altitude, Rcpp::NumericVector visibility, Rcpp::NumericVector azimuth, unsigned int number_cores, std::string prg_dataset, std::string render_mode);
-RcppExport SEXP _skymodelr_calculate_raw_prague(SEXP phiSEXP, SEXP thetaSEXP, SEXP elevationSEXP, SEXP albedoSEXP, SEXP altitudeSEXP, SEXP visibilitySEXP, SEXP azimuthSEXP, SEXP number_coresSEXP, SEXP prg_datasetSEXP, SEXP render_modeSEXP) {
+Rcpp::NumericMatrix calculate_raw_prague(Rcpp::NumericVector phi, Rcpp::NumericVector theta, Rcpp::NumericVector elevation, Rcpp::NumericVector albedo, Rcpp::NumericVector altitude, Rcpp::NumericVector visibility, Rcpp::NumericVector azimuth, unsigned int number_cores, std::string prg_dataset, std::string render_mode, bool atmospheric_attenuation);
+RcppExport SEXP _skymodelr_calculate_raw_prague(SEXP phiSEXP, SEXP thetaSEXP, SEXP elevationSEXP, SEXP albedoSEXP, SEXP altitudeSEXP, SEXP visibilitySEXP, SEXP azimuthSEXP, SEXP number_coresSEXP, SEXP prg_datasetSEXP, SEXP render_modeSEXP, SEXP atmospheric_attenuationSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -110,7 +110,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< unsigned int >::type number_cores(number_coresSEXP);
     Rcpp::traits::input_parameter< std::string >::type prg_dataset(prg_datasetSEXP);
     Rcpp::traits::input_parameter< std::string >::type render_mode(render_modeSEXP);
-    rcpp_result_gen = Rcpp::wrap(calculate_raw_prague(phi, theta, elevation, albedo, altitude, visibility, azimuth, number_cores, prg_dataset, render_mode));
+    Rcpp::traits::input_parameter< bool >::type atmospheric_attenuation(atmospheric_attenuationSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_raw_prague(phi, theta, elevation, albedo, altitude, visibility, azimuth, number_cores, prg_dataset, render_mode, atmospheric_attenuation));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -166,14 +167,16 @@ static const R_CallMethodDef CallEntries[] = {
     {"_skymodelr_calculate_sun_brightness_rcpp", (DL_FUNC) &_skymodelr_calculate_sun_brightness_rcpp, 9},
     {"_skymodelr_calculate_sun_radiance_band_rcpp", (DL_FUNC) &_skymodelr_calculate_sun_radiance_band_rcpp, 9},
     {"_skymodelr_calculate_raw_prague_radiance", (DL_FUNC) &_skymodelr_calculate_raw_prague_radiance, 11},
-    {"_skymodelr_calculate_raw_prague", (DL_FUNC) &_skymodelr_calculate_raw_prague, 10},
+    {"_skymodelr_calculate_raw_prague", (DL_FUNC) &_skymodelr_calculate_raw_prague, 11},
     {"_skymodelr_cie_1931_2deg_rcpp", (DL_FUNC) &_skymodelr_cie_1931_2deg_rcpp, 0},
     {"_skymodelr_spd_values_rcpp", (DL_FUNC) &_skymodelr_spd_values_rcpp, 2},
     {"_skymodelr_make_starfield_rcpp", (DL_FUNC) &_skymodelr_make_starfield_rcpp, 14},
     {NULL, NULL, 0}
 };
 
+void skymodelr_register_prague_api(DllInfo *dll);
 RcppExport void R_init_skymodelr(DllInfo *dll) {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
+    skymodelr_register_prague_api(dll);
 }
