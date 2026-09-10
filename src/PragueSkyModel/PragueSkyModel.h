@@ -247,6 +247,15 @@ private:
 
     bool initialized;
 
+    // Exact reuse. A generation changes whenever coefficients load,
+    // so thread-local caches cannot mistake a reused object address for old data.
+    unsigned long long cacheGeneration = 0;
+    bool cacheSky = false;
+    std::vector<double> expandedTrans;
+    int expandedVisibilityFirst = 0, expandedVisibilityCount = 0;
+    void expandTransmission(double singleVisibility, double maxMiB);
+
+
 	// Total number of configurations
 	int totalConfigs;
 
@@ -321,7 +330,11 @@ public:
     /// Throws:
     /// - DatasetNotFoundException: if the specified dataset file could not be found
     /// - DatasetReadException: if an error occurred while reading the dataset file
-    void initialize(const std::string& filename, const double singleVisibility = 0.0);
+    // Native consumers can opt into exact reuse without changing the legacy
+    // evaluator's loading policy. Neither option introduces a new model grid.
+    void initialize(const std::string& filename, const double singleVisibility = 0.0,
+                    bool cacheSpectra = false, bool transmissionTable = false,
+                    double transmissionTableMaxMiB = 512);
 
     bool isInitialized() const { return initialized; }
 

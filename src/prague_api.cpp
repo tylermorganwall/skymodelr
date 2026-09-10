@@ -9,7 +9,7 @@
 #include <memory>
 #include <stdexcept>
 
-struct skymodelr_prague_handle_v1 { PragueSkyModel model; };
+struct skymodelr_prague_handle { PragueSkyModel model; };
 namespace {
 void error_message(char *output, size_t capacity, const char *message) noexcept {
     if (!output || !capacity) return;
@@ -22,7 +22,7 @@ template <typename F> int guarded(F fn, char *error, size_t capacity) noexcept {
     catch (...) { error_message(error, capacity, "Unknown error in skymodelr Prague model."); }
     return 0;
 }
-const PragueSkyModel &model(const skymodelr_prague_handle_v1 *handle) {
+const PragueSkyModel &model(const skymodelr_prague_handle *handle) {
     if (!handle) throw std::invalid_argument("Prague model is not initialized.");
     return handle->model;
 }
@@ -34,7 +34,7 @@ void atmosphere(double visibility, double albedo) {
     if (visibility < 0 || albedo < 0 || albedo > 1)
         throw std::invalid_argument("Invalid Prague visibility or ground albedo.");
 }
-PragueSkyModel::Parameters parameters(const skymodelr_prague_parameters_v1 *p) {
+PragueSkyModel::Parameters parameters(const skymodelr_prague_parameters *p) {
     if (!p) throw std::invalid_argument("Missing Prague query parameters.");
     for (double angle : {p->theta, p->gamma, p->shadow, p->zero}) {
         validate_finite(angle);
@@ -49,23 +49,30 @@ PragueSkyModel::Parameters parameters(const skymodelr_prague_parameters_v1 *p) {
 }
 
 extern "C" {
-static skymodelr_prague_handle_v1 *create_model(const char *filename, double visibility,
-                                               char *error, size_t capacity) noexcept {
-    std::unique_ptr<skymodelr_prague_handle_v1> result;
+static skymodelr_prague_handle *create_model(const char *filename, double visibility,
+                                                          int cache_spectra, int transmission_table,
+                                                          double max_mib,
+                                                          char *error, size_t capacity) noexcept {
+    std::unique_ptr<skymodelr_prague_handle> result;
     if (!guarded([&] {
         if (!filename || !*filename) throw std::invalid_argument("Missing Prague coefficient filename.");
         validate_finite(visibility);
         if (visibility < 0) throw std::invalid_argument("Prague visibility must be nonnegative.");
-        result.reset(new skymodelr_prague_handle_v1);
-        result->model.initialize(filename, visibility);
+        if ((cache_spectra != 0 && cache_spectra != 1) ||
+            (transmission_table != 0 && transmission_table != 1))
+            throw std::invalid_argument("Prague cache options must be zero or one.");
+        if (std::isnan(max_mib) || max_mib < 0)
+            throw std::invalid_argument("Prague transmission table limit must be nonnegative MiB or infinity.");
+        result.reset(new skymodelr_prague_handle);
+        result->model.initialize(filename, visibility, cache_spectra != 0, transmission_table != 0, max_mib);
     }, error, capacity)) return nullptr;
     return result.release();
 }
-static void destroy_model(skymodelr_prague_handle_v1 *handle) noexcept { delete handle; }
-static size_t memory_usage(const skymodelr_prague_handle_v1 *handle) noexcept {
+static void destroy_model(skymodelr_prague_handle *handle) noexcept { delete handle; }
+static size_t memory_usage(const skymodelr_prague_handle *handle) noexcept {
     return handle ? handle->model.memoryUsage() : 0;
 }
-static int available(const skymodelr_prague_handle_v1 *handle, skymodelr_prague_available_v1 *out,
+static int available(const skymodelr_prague_handle *handle, skymodelr_prague_available *out,
                       char *error, size_t capacity) noexcept {
     return guarded([&] {
         if (!out) throw std::invalid_argument("Missing Prague metadata output.");
@@ -75,10 +82,10 @@ static int available(const skymodelr_prague_handle_v1 *handle, skymodelr_prague_
                 a.polarisation ? 1 : 0, a.channels, a.channelStart, a.channelWidth};
     }, error, capacity);
 }
-static int compute_parameters(const skymodelr_prague_handle_v1 *handle,
+static int compute_parameters(const skymodelr_prague_handle *handle,
                                const double *position, const double *direction,
                                double elevation, double azimuth, double visibility, double albedo,
-                               skymodelr_prague_parameters_v1 *out, char *error, size_t capacity) noexcept {
+                               skymodelr_prague_parameters *out, char *error, size_t capacity) noexcept {
     return guarded([&] {
         if (!position || !direction || !out) throw std::invalid_argument("Missing Prague position, direction, or output.");
         validate_finite(elevation); validate_finite(azimuth); atmosphere(visibility, albedo);
@@ -94,8 +101,8 @@ static int compute_parameters(const skymodelr_prague_handle_v1 *handle,
         *out = {p.theta, p.gamma, p.shadow, p.zero, p.elevation, p.altitude, p.visibility, p.albedo};
     }, error, capacity);
 }
-static int spectrum(const skymodelr_prague_handle_v1 *handle, int quantity,
-                     const skymodelr_prague_parameters_v1 *input, const double *wavelengths,
+static int spectrum(const skymodelr_prague_handle *handle, int quantity,
+                     const skymodelr_prague_parameters *input, const double *wavelengths,
                      size_t count, double distance, int attenuate_sun, double *out,
                      char *error, size_t capacity) noexcept {
     return guarded([&] {
@@ -121,8 +128,8 @@ static int spectrum(const skymodelr_prague_handle_v1 *handle, int quantity,
         }
     }, error, capacity);
 }
-static const skymodelr_prague_api_v1 *get_api_v1() noexcept {
-    static const skymodelr_prague_api_v1 api = {1, sizeof(skymodelr_prague_api_v1),
+static const skymodelr_prague_api *get_api() noexcept {
+    static const skymodelr_prague_api api = {SKYMODELR_PRAGUE_ABI_VERSION, sizeof(skymodelr_prague_api),
         create_model, destroy_model, available, memory_usage, compute_parameters, spectrum};
     return &api;
 }
@@ -131,5 +138,5 @@ static const skymodelr_prague_api_v1 *get_api_v1() noexcept {
 // [[Rcpp::init]]
 void skymodelr_register_prague_api(DllInfo *dll) {
     (void)dll;
-    R_RegisterCCallable("skymodelr", "prague_get_api_v1", reinterpret_cast<DL_FUNC>(&get_api_v1));
+    R_RegisterCCallable("skymodelr", "prague_get_api", reinterpret_cast<DL_FUNC>(&get_api));
 }

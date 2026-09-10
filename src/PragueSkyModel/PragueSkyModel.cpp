@@ -14,6 +14,7 @@ preserved for attribution and compliance with upstream notice requirements.
 #include <cstring>
 #include <tuple>
 #include <memory>
+#include <atomic>
 
 #include "PragueSkyModel.h"
 
@@ -716,15 +717,24 @@ void PragueSkyModel::readPolarisation(FILE* handle) {
 // Initialization
 /////////////////////////////////////////////////////////////////////////////////////
 
-void PragueSkyModel::initialize(const std::string& filename, const double singleVisibility) {
+void PragueSkyModel::initialize(const std::string& filename, const double singleVisibility,
+                                bool cacheSpectra, bool transmissionTable, double transmissionTableMaxMiB) {
+    if (std::isnan(transmissionTableMaxMiB) || transmissionTableMaxMiB < 0)
+        throw std::invalid_argument("Prague transmission table limit must be nonnegative MiB or infinity.");
     if (FILE* handle = fopen(filename.c_str(), "rb")) {
         // skymodelr: close the file if a truncated dataset throws while loading.
         std::unique_ptr<FILE, decltype(&fclose)> file(handle, fclose);
         initialized = false;
+        static std::atomic<unsigned long long> nextGeneration{1};
+        cacheGeneration = nextGeneration.fetch_add(1, std::memory_order_relaxed);
+        cacheSky = cacheSpectra;
+        std::vector<double>().swap(expandedTrans);
+        expandedVisibilityCount = 0;
         // Read data
         readRadiance(handle, singleVisibility);
         readTransmittance(handle);
         readPolarisation(handle);
+        if (transmissionTable) expandTransmission(singleVisibility, transmissionTableMaxMiB);
         initialized = true;
     } else {
         throw DatasetNotFoundException(filename);
@@ -732,7 +742,7 @@ void PragueSkyModel::initialize(const std::string& filename, const double single
 }
 
 size_t PragueSkyModel::memoryUsage() const {
-    size_t bytes = sizeof(*this);
+    size_t bytes = sizeof(*this) + expandedTrans.capacity() * sizeof(double);
     for (const auto* values : {&dataRad, &dataPol, &dataTransU, &dataTransV})
         bytes += values->capacity() * sizeof(float);
     for (const auto* values : {&visibilitiesRad, &albedosRad, &altitudesRad, &elevationsRad,
@@ -1015,6 +1025,26 @@ double PragueSkyModel::evaluateModel(const Parameters&         params,
 void PragueSkyModel::skyRadianceSpectrum(const Parameters& params, const double* wavelengths,
                                          size_t count, double* values) const {
     if (!initialized) throw NotInitializedException();
+    struct SkyEntry {
+        unsigned long long generation = 0;
+        Parameters parameters{};
+        size_t count = 0;
+        std::array<double, 16> wavelengths{}, values{};
+    };
+    struct SkyCache { std::array<SkyEntry, 16> entries{}; size_t next = 0; };
+    static thread_local SkyCache cache;
+    const bool eligible = cacheSky && count > 0 && count <= 16;
+    if (eligible) {
+        for (size_t offset = 0; offset < cache.entries.size(); ++offset) {
+            const auto &entry = cache.entries[(cache.next + 15 - offset) % 16];
+            if (entry.generation == cacheGeneration && entry.count == count &&
+                std::memcmp(&entry.parameters, &params, sizeof(Parameters)) == 0 &&
+                std::equal(wavelengths, wavelengths + count, entry.wavelengths.begin())) {
+                std::copy_n(entry.values.begin(), count, values);
+                return;
+            }
+        }
+    }
     const auto& metadata = metadataRad;
     const auto& data = dataRad;
     // Translate angle values to indices and interpolation factors.
@@ -1070,6 +1100,15 @@ void PragueSkyModel::skyRadianceSpectrum(const Parameters& params, const double*
         for (int i = 0; i < 16; ++i)
             controlParameters.coefficients[i] = base.coefficients[i] + index * metadata.totalCoefsSingleConfig;
         values[channel] = interpolate<0, 0>(angleParameters, controlParameters, metadata);
+    }
+    if (eligible) {
+        auto &entry = cache.entries[cache.next];
+        entry.generation = cacheGeneration;
+        entry.parameters = params;
+        entry.count = count;
+        std::copy_n(wavelengths, count, entry.wavelengths.begin());
+        std::copy_n(values, count, entry.values.begin());
+        cache.next = (cache.next + 1) % cache.entries.size();
     }
 }
 
@@ -1278,6 +1317,56 @@ PragueSkyModel::TransmittanceParameters PragueSkyModel::toTransmittanceParams(co
     return params;
 }
 
+// Spend memory at initialization to remove repeated rank reconstruction.
+// A single-visibility model still accepts transmission queries at other
+// visibilities: those retain the original compressed evaluator as a fallback.
+void PragueSkyModel::expandTransmission(double singleVisibility, double maxMiB) {
+    expandedVisibilityFirst = 0;
+    expandedVisibilityCount = int(visibilitiesTrans.size());
+    if (singleVisibility > 0) {
+        auto parameter = getInterpolationParameter(singleVisibility, visibilitiesTrans);
+        expandedVisibilityFirst = parameter.index;
+        expandedVisibilityCount = parameter.factor > 0 ? 2 : 1;
+    }
+    // Check before multiplying, including when the caller requests no cap.
+    // Saturate at the addressable vector size before converting to size_t;
+    // fractional budgets round down, and zero disables expansion.
+    size_t limit = std::min(expandedTrans.max_size(),
+                            std::numeric_limits<size_t>::max() / sizeof(double));
+    long double requested = static_cast<long double>(maxMiB) * (1024 * 1024 / sizeof(double));
+    if (requested < static_cast<long double>(limit)) limit = static_cast<size_t>(requested);
+    size_t count = 1;
+    for (size_t dimension : {size_t(expandedVisibilityCount), altitudesTrans.size(),
+                             size_t(channels), size_t(aDim), size_t(dDim)}) {
+        if (!dimension || dimension > limit / count) {
+            expandedVisibilityCount = 0;
+            return;
+        }
+        count *= dimension;
+    }
+    try {
+        expandedTrans.resize(count);
+    } catch (const std::bad_alloc &) {
+        expandedVisibilityCount = 0;
+        return;
+    }
+    for (int v = 0; v < expandedVisibilityCount; ++v)
+        for (int h = 0; h < int(altitudesTrans.size()); ++h)
+            for (int c = 0; c < channels; ++c) {
+                auto coefficients = getCoefficientsTrans(v + expandedVisibilityFirst, h, c);
+                for (int d = 0; d < dDim; ++d)
+                    for (int a = 0; a < aDim; ++a) {
+                        auto base = getCoefficientsTransBase(h, a, d);
+                        double value = 0;
+                        for (int r = 0; r < rankTrans; ++r)
+                            value += double(base[r]) * double(coefficients[r]);
+                        size_t offset = (((size_t(v) * altitudesTrans.size() + h) * channels + c) *
+                                         dDim + d) * aDim + a;
+                        expandedTrans[offset] = value;
+                    }
+            }
+}
+
 double PragueSkyModel::reconstructTrans(const int                     visibilityIndex,
                                         const int                     altitudeIndex,
                                         const TransmittanceParameters transParams,
@@ -1294,9 +1383,17 @@ double PragueSkyModel::reconstructTrans(const int                     visibility
                 if (d < dDim) {
                     const std::vector<float>::const_iterator baseCoefs =
                         getCoefficientsTransBase(altitudeIndex, a, d);
-                    for (int i = 0; i < rankTrans; ++i) {
-                        // Reconstruct transmittance value
-                        transmittance[index] += double(baseCoefs[i]) * double(coefs[i]);
+                    if (visibilityIndex >= expandedVisibilityFirst &&
+                        visibilityIndex < expandedVisibilityFirst + expandedVisibilityCount) {
+                        size_t offset = (((size_t(visibilityIndex - expandedVisibilityFirst) *
+                            altitudesTrans.size() + altitudeIndex) * channels + channelIndex) *
+                            dDim + d) * aDim + a;
+                        transmittance[index] = expandedTrans[offset];
+                    } else {
+                        for (int i = 0; i < rankTrans; ++i) {
+                            // Same accumulation order as the pre-expanded knots.
+                            transmittance[index] += double(baseCoefs[i]) * double(coefs[i]);
+                        }
                     }
                     index++;
                 }
