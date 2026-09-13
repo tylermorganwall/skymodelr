@@ -4,7 +4,7 @@ PKG_CPPFLAGS = -I@OPENEXR_INCLUDE_DIR@ -I@IMATH_INCLUDE_DIR@ -I@PACKAGE_BASE_DIR
 AR_SOURCES=ArHosekSkyModel/ArHosekSkyModel.cpp 
 HOSEK_SOURCES=hosek/hosek.cpp hosek/cie.cpp hosek/atmosphere.cpp 
 PRAGUE_SOURCES=PragueSkyModel/PragueSkyModel.cpp
-SRC_SOURCES=makesky.cpp radiometry.cpp stars.cpp RcppExports.cpp
+SRC_SOURCES=prague_api.cpp makesky.cpp radiometry.cpp stars.cpp RcppExports.cpp
 
 AR_OBJECTS=$(AR_SOURCES:.cpp=.o)
 HOSEK_OBJECTS=$(HOSEK_SOURCES:.cpp=.o)

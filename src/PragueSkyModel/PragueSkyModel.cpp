@@ -362,7 +362,7 @@ void PragueSkyModel::readRadiance(FILE* handle, const double singleVisibility) {
     std::vector<double> visibilitiesRadInFile;
     visibilitiesRadInFile.resize(visibilityCount);
     valsRead = fread(visibilitiesRadInFile.data(), sizeof(double), visibilityCount, handle);
-    if (valsRead != visibilityCount)
+    if (valsRead != visibilitiesRadInFile.size())
         throw DatasetReadException("visibilitesRad");
 
     int skippedVisibilities = 0;
@@ -401,7 +401,7 @@ void PragueSkyModel::readRadiance(FILE* handle, const double singleVisibility) {
 
     albedosRad.resize(albedoCount);
     valsRead = fread(albedosRad.data(), sizeof(double), albedoCount, handle);
-    if (valsRead != albedoCount)
+    if (valsRead != albedosRad.size())
         throw DatasetReadException("albedosRad");
 
     int altitudeCount = 0;
@@ -411,7 +411,7 @@ void PragueSkyModel::readRadiance(FILE* handle, const double singleVisibility) {
 
     altitudesRad.resize(altitudeCount);
     valsRead = fread(altitudesRad.data(), sizeof(double), altitudeCount, handle);
-    if (valsRead != altitudeCount)
+    if (valsRead != altitudesRad.size())
         throw DatasetReadException("altitudesRad");
 
     int elevationCount = 0;
@@ -421,7 +421,7 @@ void PragueSkyModel::readRadiance(FILE* handle, const double singleVisibility) {
 
     elevationsRad.resize(elevationCount);
     valsRead = fread(elevationsRad.data(), sizeof(double), elevationCount, handle);
-    if (valsRead != elevationCount)
+    if (valsRead != elevationsRad.size())
         throw DatasetReadException("elevationsRad");
 
     valsRead = fread(&channels, sizeof(int), 1, handle);
@@ -456,7 +456,7 @@ void PragueSkyModel::readRadiance(FILE* handle, const double singleVisibility) {
 
     metadataRad.sunBreaks.resize(sunBreaksCount);
     valsRead = fread(metadataRad.sunBreaks.data(), sizeof(double), sunBreaksCount, handle);
-    if (valsRead != sunBreaksCount)
+    if (valsRead != metadataRad.sunBreaks.size())
         throw DatasetReadException("sunBreaksRad");
 
     int zenitBreaksCount = 0;
@@ -466,7 +466,7 @@ void PragueSkyModel::readRadiance(FILE* handle, const double singleVisibility) {
 
     metadataRad.zenithBreaks.resize(zenitBreaksCount);
     valsRead = fread(metadataRad.zenithBreaks.data(), sizeof(double), zenitBreaksCount, handle);
-    if (valsRead != zenitBreaksCount)
+    if (valsRead != metadataRad.zenithBreaks.size())
         throw DatasetReadException("zenithBreaksRad");
 
     int emphBreaksCount = 0;
@@ -476,7 +476,7 @@ void PragueSkyModel::readRadiance(FILE* handle, const double singleVisibility) {
 
     metadataRad.emphBreaks.resize(emphBreaksCount);
     valsRead = fread(metadataRad.emphBreaks.data(), sizeof(double), emphBreaksCount, handle);
-    if (valsRead != emphBreaksCount)
+    if (valsRead != metadataRad.emphBreaks.size())
         throw DatasetReadException("emphBreaksRad");
 
     // Calculate offsets and strides.
@@ -526,7 +526,7 @@ void PragueSkyModel::readRadiance(FILE* handle, const double singleVisibility) {
                 throw DatasetReadException("sunCoefsRad");
 
             // Unpack sun params from half.
-            for (int i = 0; i < metadataRad.sunBreaks.size(); ++i) {
+            for (size_t i = 0; i < metadataRad.sunBreaks.size(); ++i) {
                 dataRad[offset++] = float(doubleFromHalf(radianceTemp[i]));
             }
 
@@ -542,7 +542,7 @@ void PragueSkyModel::readRadiance(FILE* handle, const double singleVisibility) {
                 throw DatasetReadException("zenithCoefsRad");
 
             // Unpack zenith params from half (these need additional rescaling).
-            for (int i = 0; i < metadataRad.zenithBreaks.size(); ++i) {
+            for (size_t i = 0; i < metadataRad.zenithBreaks.size(); ++i) {
                 dataRad[offset++] = float(doubleFromHalf(radianceTemp[i]) / zenithScale);
             }
         }
@@ -553,7 +553,7 @@ void PragueSkyModel::readRadiance(FILE* handle, const double singleVisibility) {
             throw DatasetReadException("emphCoefsRad");
 
         // Unpack emphasize params from half.
-        for (int i = 0; i < metadataRad.emphBreaks.size(); ++i) {
+        for (size_t i = 0; i < metadataRad.emphBreaks.size(); ++i) {
             dataRad[offset++] = float(doubleFromHalf(radianceTemp[i]));
         }
     }
@@ -594,7 +594,7 @@ void PragueSkyModel::readTransmittance(FILE* handle) {
 
     altitudesTrans.resize(altitudesCount);
     valsRead = fread(temp.data(), sizeof(float), altitudesCount, handle);
-    if (valsRead != altitudesCount)
+    if (valsRead != altitudesTrans.size())
         throw DatasetReadException("altitudesTrans");
     for (int i = 0; i < altitudesCount; i++) {
         altitudesTrans[i] = double(temp[i]);
@@ -602,7 +602,7 @@ void PragueSkyModel::readTransmittance(FILE* handle) {
 
     visibilitiesTrans.resize(visibilitiesCount);
     valsRead = fread(temp.data(), sizeof(float), visibilitiesCount, handle);
-    if (valsRead != visibilitiesCount)
+    if (valsRead != visibilitiesTrans.size())
         throw DatasetReadException("visibilitiesTrans");
     for (int i = 0; i < visibilitiesCount; i++) {
         visibilitiesTrans[i] = double(temp[i]);
@@ -648,7 +648,7 @@ void PragueSkyModel::readPolarisation(FILE* handle) {
 
     metadataPol.sunBreaks.resize(sunBreaksCount);
     valsRead = fread(metadataPol.sunBreaks.data(), sizeof(double), sunBreaksCount, handle);
-    if (valsRead != sunBreaksCount)
+    if (valsRead != metadataPol.sunBreaks.size())
         throw DatasetReadException("sunBreaksPol");
 
     int zenithBreaksCount = 0;
@@ -658,7 +658,7 @@ void PragueSkyModel::readPolarisation(FILE* handle) {
 
     metadataPol.zenithBreaks.resize(zenithBreaksCount);
     valsRead = fread(metadataPol.zenithBreaks.data(), sizeof(double), zenithBreaksCount, handle);
-    if (valsRead != zenithBreaksCount)
+    if (valsRead != metadataPol.zenithBreaks.size())
         throw DatasetReadException("zenithBreaksPol");
 
     metadataPol.emphBreaks.clear();
