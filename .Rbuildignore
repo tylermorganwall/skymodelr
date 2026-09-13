@@ -29,3 +29,5 @@
 ^\.github$
 ^.*[.]DS_Store$
 ^man/figures/startrailscolor[.]jpg$
+^air\.toml$
+^Rplots\.pdf$

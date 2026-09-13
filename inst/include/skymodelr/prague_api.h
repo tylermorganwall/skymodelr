@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-/* Only this ABI is provided. Bump the version for incompatible layout or
+/* Bump the version for incompatible layout or
  * signature changes; consumers check it and struct_size before using the table.
  * Resolve prague_get_api through R_GetCCallable("skymodelr", ...) on R's
  * main thread after loading the namespace. All table functions are native,

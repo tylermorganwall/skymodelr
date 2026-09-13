@@ -1,6 +1,6 @@
 # Native Prague atmosphere interface
 
-Skymodelr 0.6.1 supplies a versioned native interface for packages that
+Skymodelr 0.6.2 supplies one native interface for packages that
 query the Prague model from C or C++. The implementation is compiled once, in
 skymodelr. Consumers include the installed headers and obtain a function table
 through R's registered C-callable mechanism. 
@@ -14,8 +14,8 @@ A consuming package needs both a runtime import and header dependency in its
 `DESCRIPTION`:
 
 ```
-Imports: skymodelr (>= 0.6.1)
-LinkingTo: skymodelr (>= 0.6.1)
+Imports: skymodelr (>= 0.6.3)
+LinkingTo: skymodelr (>= 0.6.3)
 ```
 
 Keep any other dependencies already present in those fields. Import a public R
@@ -72,6 +72,30 @@ without atmospheric attenuation. `memoryUsage()` reports model storage.
 Initialization can load one visibility subset or all visibilities (zero).
 A failed reinitialization leaves an existing model usable.
 
+The C++ wrapper enables two exact accelerations. `initialize(filename, visibility, cache_spectra, transmission_table)`
+and the corresponding constructor accept two optional booleans, both defaulting
+to `true`. The spectral cache stores 16 exact queries per thread for batches of
+up to 16 wavelengths. Model generations invalidate entries on reinitialization.
+Other queries use the ordinary evaluator.
+
+The transmission table precomputes the compressed rank reconstruction at the
+dataset's native knots in double precision. It preserves the native interpolation,
+clamps, and final square; it introduces no new model approximation. For a single
+visibility it expands only the needed one or two slices. At 50 km visibility on
+the full visible dataset this adds about 128 MiB per model, shared by threads.
+Queries outside those slices use the compressed evaluator. Expansion is skipped
+if it would exceed the memory budget or allocation fails. Pass `false` for the
+table option to avoid this memory cost. Options are fixed before workers start.
+
+A fifth constructor/initialization argument,
+`transmission_table_max_mib`, controls the extra table memory budget per model.
+It defaults to 512 MiB, accepts nonnegative fractional values, and accepts zero
+to skip expansion or positive infinity to remove the cap. The entire required
+table must fit; the fallback retains exact compressed evaluation. For example,
+`PragueSkyModel model(filename, 50, true, true, 1024)` permits up to 1 GiB. A
+55-channel extended-spectrum table needs about 641.5 MiB for two visibility
+slices, so that table fits with this limit but not with the default.
+
 ## Threading, lifetime, and errors
 
 Construct wrappers on R's main thread, after loading skymodelr: construction
@@ -93,11 +117,14 @@ the native boundary.
 
 `skymodelr/prague_api.h` is a C-compatible header describing the opaque handle,
 plain parameter records and immutable function table. On the R main thread,
-resolve `R_GetCCallable("skymodelr", "prague_get_api_v1")` and cast the result to
-`skymodelr_prague_get_api_v1_fn`. Call the getter and check `abi_version == 1`
-and `struct_size >= sizeof(skymodelr_prague_api_v1)` before use.
+resolve `R_GetCCallable("skymodelr", "prague_get_api")` and cast the result to
+`skymodelr_prague_get_api_fn`. Call the getter and check
+`abi_version == SKYMODELR_PRAGUE_ABI_VERSION` (currently 3) and
+`struct_size >= sizeof(skymodelr_prague_api)` before using any function pointer.
 
-Create a handle with `create()`, issue `parameters()` and `spectrum()` queries,
+Create a handle with
+`create(filename, visibility, cache_spectra, transmission_table, max_mib, error, error_capacity)`,
+issue `parameters()` and `spectrum()` queries,
 and release it with `destroy()`. `spectrum()` accepts an array of wavelengths
 and a matching output buffer for all four quantities. Status-returning functions
 return one on success and zero on error; `create()` returns null on error.
@@ -105,11 +132,20 @@ An optional error buffer receives a terminated message on failure when its
 capacity is positive. Output buffers should only be read on success. Use
 `DBL_MAX` for an infinite transmission distance (`+Inf` is also accepted).
 
-The version-one table, records, function signatures and callable name are
-frozen. An incompatible change must publish a new versioned callable while
-retaining version one for existing consumers. The registration hook uses
-`Rcpp::init` so `Rcpp::compileAttributes()` preserves it. There is no need to
-export implementation symbols from the DLL.
+There is one flat function table and one creation function. Both cache flags
+must be zero or one, and the table budget is in MiB. Creation options are fixed
+before threads can query the model. To compare against the original evaluator,
+create another handle through the same API with both cache flags set to zero.
+
+This development interface replaces the earlier experimental tables and getter
+names. Cleanly rebuild skymodelr first and then all consumers, and restart R to
+unload older DLLs. No compatibility tables or aliases are retained. The ABI
+identifier and structure-size checks detect mismatched SDKs and providers;
+incompatible future changes must increment the ABI identifier. The registration
+hook uses `Rcpp::init` so `Rcpp::compileAttributes()` preserves it. There is no
+need to export implementation symbols from the DLL.
 
 The installed-header integration test compiles a separate consumer, exercises
-parallel queries and checks error containment. 
+parallel queries and error containment, and compares accelerated and unaccelerated
+handles through this one interface. Memory-budget tests cover allocation thresholds,
+zero, infinity, and the extended-spectrum dataset.

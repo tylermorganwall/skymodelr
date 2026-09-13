@@ -1,7 +1,7 @@
 Package: skymodelr
 Type: Package
 Title: Generates and Samples Realistic Terrestrial Atmospheres
-Version: 0.6.2
+Version: 0.6.3
 Authors@R: c(
     person(
       "Tyler", "Morgan-Wall",
@@ -55,15 +55,16 @@ LinkingTo:
     Rcpp,
     RcppThread,
     libimath,
-    libopenexr
+    libopenexr (>= 3.4.12-6)
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
 Config/build/compilation-database: true
-Suggests: testthat (>= 3.0.0),
+Suggests: 
+    testthat (>= 3.0.0),
+    libopenexr (>= 3.4.12-6),
     rayrender (>= 0.40.1)
 Config/testthat/edition: 3
 URL: https://www.skymodelr.com
 BugReports: https://github.com/tylermorganwall/skymodelr/issues
 Config/roxygen2/version: 8.0.0
-Remotes: tylermorganwall/rayimage
