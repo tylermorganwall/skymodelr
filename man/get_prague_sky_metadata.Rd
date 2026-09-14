@@ -57,8 +57,11 @@ RGB calibration through a public interface.
 Install the data explicitly with
 \code{download_sky_data(sea_level = FALSE)}. This function never downloads files
 or prompts. It supports the visible-spectrum, full-altitude dataset and
-checks the Prague solar-elevation range of -4.2 to 90 degrees. It does not
-evaluate radiance, attenuation, or atmospheric refraction.
+returns the actual Sun position even below the Prague model's minimum
+elevation of -4.2 degrees. Native consumers should use zero solar radiance
+below that limit while retaining transmission for other light sources.
+This function does not evaluate radiance, attenuation, or atmospheric
+refraction.
 }
 \examples{
 \dontshow{if (interactive()) withAutoprint(\{ # examplesIf}

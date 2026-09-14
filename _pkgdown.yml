@@ -17,6 +17,9 @@ reference:
   - starts_with("download")
   - list_sky_data
   - clear_sky_data
+- title: Model Metadata
+  desc: Prepare location, time, and model settings for native Prague sky queries
+  contents: get_prague_sky_metadata
 - title: Sample Values
   desc: Functions to sample specific values from the atmospheric model
   contents: starts_with("calculate")

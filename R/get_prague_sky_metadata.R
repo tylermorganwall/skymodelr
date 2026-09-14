@@ -29,8 +29,11 @@
 #' @details Install the data explicitly with
 #'   `download_sky_data(sea_level = FALSE)`. This function never downloads files
 #'   or prompts. It supports the visible-spectrum, full-altitude dataset and
-#'   checks the Prague solar-elevation range of -4.2 to 90 degrees. It does not
-#'   evaluate radiance, attenuation, or atmospheric refraction.
+#'   returns the actual Sun position even below the Prague model's minimum
+#'   elevation of -4.2 degrees. Native consumers should use zero solar radiance
+#'   below that limit while retaining transmission for other light sources.
+#'   This function does not evaluate radiance, attenuation, or atmospheric
+#'   refraction.
 #' @export
 #' @examplesIf interactive()
 #' info = get_prague_sky_metadata(
@@ -38,7 +41,7 @@
 #'   lat = 40.7, lon = -74
 #' )
 #' info[c("elevation_deg", "azimuth_deg", "rgb_gain")]
-get_prague_sky_metadata <- function(
+get_prague_sky_metadata = function(
   datetime,
   lat,
   lon,
@@ -63,20 +66,14 @@ get_prague_sky_metadata <- function(
     prague_rgb_correction_strength,
     prague_rgb_correction_gain
   )
-  filename <- resolve_prague_coef_file(altitude = 1, allow_download = FALSE)
-  ephemeris <- swe_dirs_topo_moon_sun(datetime, lat, lon, elev_m = altitude)
-  disk <- celestial_disk_result(
+  filename = resolve_prague_coef_file(altitude = 1, allow_download = FALSE)
+  ephemeris = swe_dirs_topo_moon_sun(datetime, lat, lon, elev_m = altitude)
+  disk = celestial_disk_result(
     NULL,
     ephemeris$sun_dir_topo,
     ephemeris$sun_diameter_degrees
   )
-  if (disk$elevation_deg < -4.2 || disk$elevation_deg > 90) {
-    stop(
-      "The Prague model supports Sun elevations from -4.2 to 90 degrees.",
-      call. = FALSE
-    )
-  }
-  gain <- if (
+  gain = if (
     normalize_prague_rgb_correction(prague_rgb_correction) == "constant"
   ) {
     prepare_prague_rgb_gain(

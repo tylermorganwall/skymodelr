@@ -1,5 +1,9 @@
 # skymodelr (development version)
 
+* Return nighttime Sun positions from `get_prague_sky_metadata()` below
+  -4.2 degrees so native renderers can suppress solar radiance while retaining
+  atmospheric transmission for celestial lights.
+
 * Keep Moon disk radiance and color continuous as its center crosses the
   horizon. Disk generation retains the finite horizon attenuation/tint and
   leaves partial visibility to the renderer, so the upper limb remains visible

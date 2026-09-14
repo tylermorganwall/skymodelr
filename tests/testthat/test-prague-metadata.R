@@ -1,6 +1,6 @@
-time <- as.POSIXct('2026-06-21 19:00:00', tz = 'America/New_York')
+time = as.POSIXct('2026-06-21 19:00:00', tz = 'America/New_York')
 test_that('metadata agrees with the existing public Sun and calibration APIs', {
-  files <- vapply(
+  files = vapply(
     c(0, 1),
     function(altitude) {
       tryCatch(
@@ -14,12 +14,12 @@ test_that('metadata agrees with the existing public Sun and calibration APIs', {
     anyNA(files) || !all(file.exists(files)),
     'Prague coefficient datasets are not installed'
   )
-  info <- get_prague_sky_metadata(time, 40.7, -74)
-  disk <- generate_sun_disk(time, 40.7, -74, resolution = 16)
+  info = get_prague_sky_metadata(time, 40.7, -74)
+  disk = generate_sun_disk(time, 40.7, -74, resolution = 16)
   for (key in c('elevation_deg', 'azimuth_deg', 'angular_diameter_deg')) {
     expect_equal(info[[key]], disk[[key]])
   }
-  calibration <- calculate_sky_values(
+  calibration = calculate_sky_values(
     0,
     60,
     elevation = info$elevation_deg,
@@ -57,13 +57,13 @@ test_that('metadata agrees with the existing public Sun and calibration APIs', {
     'altitude'
   )
   expect_error(get_prague_sky_metadata('time', 40.7, -74), 'POSIXct')
-  expect_error(
+  expect_lt(
     get_prague_sky_metadata(
       as.POSIXct('2026-06-21 00:00:00', tz = 'America/New_York'),
       40.7,
       -74
-    ),
-    'Sun elevations'
+    )$elevation_deg,
+    -4.2
   )
   expect_identical(unserialize(serialize(info, NULL)), info)
 })
