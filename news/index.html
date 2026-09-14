@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">skymodelr</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,14 +31,23 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="development version" id="skymodelr-development-version">skymodelr (development version)<a class="anchor" aria-label="anchor" href="#skymodelr-development-version"></a></h2>
+<ul><li><p>Return nighttime Sun positions from <code><a href="../reference/get_prague_sky_metadata.html">get_prague_sky_metadata()</a></code> below -4.2 degrees so native renderers can suppress solar radiance while retaining atmospheric transmission for celestial lights.</p></li>
+<li><p>Keep Moon disk radiance and color continuous as its center crosses the horizon. Disk generation retains the finite horizon attenuation/tint and leaves partial visibility to the renderer, so the upper limb remains visible until it sets. The legacy <code><a href="../reference/generate_moon_latlong.html">generate_moon_latlong()</a></code> path now does the same: attenuation defaults to no center cutoff, and normalization uses the complete disk before clipping so the remaining limb does not become artificially bright. Disk visibility is independent of the optional atmosphere model’s domain.</p></li>
+<li><p>Add <code><a href="../reference/generate_sun_disk.html">generate_sun_disk()</a></code> and <code><a href="../reference/generate_sun_disk.html">generate_moon_disk()</a></code> for detailed celestial light textures without an intermediate sky map. Both return linear RGB radiance, true-north azimuth, elevation, apparent diameter, and an explicit rectilinear projection. Lunar edge coverage is applied once; no alpha channel is returned. The Moon reuses existing phase, surface texture, earthshine, photometry, and atmospheric extinction routines.</p></li>
+</ul></div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.3.0" id="skymodelr-030">skymodelr 0.3.0<a class="anchor" aria-label="anchor" href="#skymodelr-030"></a></h2>
-<ul><li>Prepared package metadata and source packaging for CRAN release.</li>
+<ul><li>Added EXR metadata tagging for generated sky maps. EXR output is tagged with sRGB/Rec.709 chromaticities and an adopted neutral white, defaulting to D60. This records the intended daylight neutral without converting pixel values. This complements the Prague RGB tint correction by recording the intended D60 adopted neutral in EXR metadata.</li>
+<li>Added <code>prague_rgb_correction</code>, a Prague-only linear RGB output correction that reduces the small magenta / negative-green tint observed in generated Prague RGB sky maps. The correction is enabled by default for Prague RGB output and can be disabled with <code>prague_rgb_correction = FALSE</code> to recover raw Prague model RGB values.</li>
+<li>Prepared package metadata and source packaging for CRAN release.</li>
 <li>Switched to single GPL-3 package license metadata.</li>
 <li>Added helpers to list and clear cached sky data downloads.</li>
 <li>Improved bundled data and third-party provenance notices.</li>
 <li>Added minimal CRAN-safe tests.</li>
 </ul></div>
-  </main></div>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside></div>
 
 
     <footer><div class="pkgdown-footer-left">
@@ -46,7 +55,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

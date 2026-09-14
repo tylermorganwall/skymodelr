@@ -127,6 +127,21 @@ generate_moon_latlong(
 Either the image array, or the array is invisibly returned if a file is
 written. The array has dimensions `(resolution, 2 * resolution, 4)`.
 
+## Details
+
+The complete lunar disk is calibrated before directions below the
+horizontal horizon are clipped. The upper limb remains visible after the
+center sets, with the finite horizon attenuation and tint retained below
+zero center elevation. The visible segment is not renormalized to the
+full Moon's brightness. Finite sky-map resolution limits how finely this
+edge is resolved.
+
+Disk visibility is independent of the atmospheric model's elevation
+domain: the optional atmospheric component requires center elevation at
+least zero for Hosek or -4.2 degrees for Prague. Below that domain it is
+omitted, while any visible lunar limb is still drawn. Horizon depression
+and refraction are not modeled.
+
 ## Note
 
 Writing to non-EXR formats will introduce precision loss because HDR

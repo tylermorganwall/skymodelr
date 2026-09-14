@@ -13,7 +13,7 @@ attenuation uses the Rozenberg/Krisciunas-Schaefer airmass approximation with co
 
     <a class="navbar-brand me-2" href="../index.html">skymodelr</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -165,6 +165,19 @@ coefficient for direct moonlight attenuation.</p></dd>
 is written. The array has dimensions <code>(resolution, 2 * resolution, 4)</code>.</p>
     </div>
     <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>The complete lunar disk is calibrated before directions below the
+horizontal horizon are clipped. The upper limb remains visible after the
+center sets, with the finite horizon attenuation and tint retained below zero
+center elevation. The visible segment is not renormalized to the full Moon's
+brightness. Finite sky-map resolution limits how finely this edge is resolved.</p>
+<p>Disk visibility is independent of the atmospheric model's elevation domain:
+the optional atmospheric component requires center elevation at least zero
+for Hosek or -4.2 degrees for Prague. Below that domain it is omitted, while
+any visible lunar limb is still drawn. Horizon depression and refraction are
+not modeled.</p>
+    </div>
+    <div class="section level2">
     <h2 id="note">Note<a class="anchor" aria-label="anchor" href="#note"></a></h2>
     <p>Writing to non-EXR formats will introduce precision loss because HDR
 data are quantised to the destination format, and low dynamic range outputs like PNG
@@ -198,7 +211,7 @@ and JPEG files will not represent the true luminosity values encoded in the arra
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

@@ -22,7 +22,12 @@ generate_sky(
   visibility = 50,
   verbose = FALSE,
   render_mode = "all",
-  below_horizon = TRUE
+  below_horizon = TRUE,
+  prague_rgb_correction = TRUE,
+  prague_rgb_correction_strength = 1,
+  prague_rgb_correction_gain = "auto",
+  exr_adopted_white = "D60",
+  exr_metadata = TRUE
 )
 ```
 
@@ -93,10 +98,58 @@ generate_sky(
   Default `TRUE`. Whether to sample atmospheric scattering below the
   horizon, which is non-zero when altitude \> 0.
 
+- prague_rgb_correction:
+
+  Default `TRUE`. Whether to apply the Prague RGB tint correction. This
+  correction is only applied when `hosek = FALSE`. Use `FALSE` for raw
+  Prague RGB output.
+
+- prague_rgb_correction_strength:
+
+  Default `1`. Strength of the Prague RGB tint correction. Use `0` for
+  no correction and `1` for the calibrated correction.
+
+- prague_rgb_correction_gain:
+
+  Default `"auto"`. Multiplicative linear RGB gain used by the Prague
+  RGB tint correction. `"auto"` uses the calibrated default
+  `c(R = 0.94438727, G = 1.02157200, B = 0.95012063)`.
+
+- exr_adopted_white:
+
+  Default `"D60"`. Adopted neutral white to write to EXR metadata for
+  generated sky maps. Currently supports `"D60"`, `"D65"`, or a numeric
+  XYZ white with Y = 1. This tags the EXR `adoptedNeutral` metadata and
+  does not change pixel values.
+
+- exr_metadata:
+
+  Default `TRUE`. Whether to attach skymodelr EXR metadata before
+  writing EXR output. Metadata includes sRGB/Rec.709 chromaticities and
+  the selected adopted neutral white.
+
 ## Value
 
 Either the image array, or the array is invisibly returned if a file is
 written. The array has dimensions `(resolution, 2 * resolution, 4)`.
+
+## Details
+
+For Prague RGB output, `prague_rgb_correction = TRUE` applies a fixed
+linear RGB gain to reduce the small magenta / negative-green tint
+observed in the RGB projection of Prague sky maps. Set
+`prague_rgb_correction = FALSE` to recover raw Prague RGB output. The
+correction is not a white balance and is not applied to
+wavelength-specific spectral radiance.
+
+EXR metadata: Generated sky maps are linear RGB. When
+`exr_metadata = TRUE`, skymodelr tags the image with sRGB/Rec.709
+chromaticities and an EXR `adoptedNeutral` white. The default adopted
+neutral is D60. This metadata does not convert pixel values; it informs
+downstream readers how to treat the scene neutral. Use
+`exr_adopted_white = "D65"` for D65 adopted neutral, or
+`exr_metadata = FALSE` to omit skymodelr EXR metadata. The RGB encoding
+remains linear sRGB / Rec.709 even when the adopted neutral is D60.
 
 ## Note
 
@@ -151,4 +204,13 @@ generate_sky(
   number_cores = 2
 ) |>
   rayimage::plot_image()
+
+
+generate_sky(
+  "raw_prague.exr",
+  elevation = 60,
+  azimuth = 315,
+  hosek = FALSE,
+  prague_rgb_correction = FALSE
+)
 ```

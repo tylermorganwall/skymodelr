@@ -4,6 +4,8 @@
 <url><loc>https://tylermorganwall.github.io/skymodelr/index.html</loc></url>
 <url><loc>https://tylermorganwall.github.io/skymodelr/news/index.html</loc></url>
 <url><loc>https://tylermorganwall.github.io/skymodelr/reference/altaz_to_enu.html</loc></url>
+<url><loc>https://tylermorganwall.github.io/skymodelr/reference/apply_prague_rgb_gain.html</loc></url>
+<url><loc>https://tylermorganwall.github.io/skymodelr/reference/as_sky_image.html</loc></url>
 <url><loc>https://tylermorganwall.github.io/skymodelr/reference/bv_to_temperature_K.html</loc></url>
 <url><loc>https://tylermorganwall.github.io/skymodelr/reference/calculate_sky_radiance.html</loc></url>
 <url><loc>https://tylermorganwall.github.io/skymodelr/reference/calculate_sky_values.html</loc></url>
@@ -12,12 +14,16 @@
 <url><loc>https://tylermorganwall.github.io/skymodelr/reference/compute_K_eff.html</loc></url>
 <url><loc>https://tylermorganwall.github.io/skymodelr/reference/compute_spd_rgb_unit.html</loc></url>
 <url><loc>https://tylermorganwall.github.io/skymodelr/reference/download_sky_data.html</loc></url>
+<url><loc>https://tylermorganwall.github.io/skymodelr/reference/filter_supported_exr_metadata.html</loc></url>
 <url><loc>https://tylermorganwall.github.io/skymodelr/reference/generate_moon_image_latlong.html</loc></url>
 <url><loc>https://tylermorganwall.github.io/skymodelr/reference/generate_moon_latlong.html</loc></url>
 <url><loc>https://tylermorganwall.github.io/skymodelr/reference/generate_planets.html</loc></url>
 <url><loc>https://tylermorganwall.github.io/skymodelr/reference/generate_sky.html</loc></url>
 <url><loc>https://tylermorganwall.github.io/skymodelr/reference/generate_sky_latlong.html</loc></url>
 <url><loc>https://tylermorganwall.github.io/skymodelr/reference/generate_stars.html</loc></url>
+<url><loc>https://tylermorganwall.github.io/skymodelr/reference/generate_sun_disk.html</loc></url>
+<url><loc>https://tylermorganwall.github.io/skymodelr/reference/get_prague_sky_metadata.html</loc></url>
+<url><loc>https://tylermorganwall.github.io/skymodelr/reference/get_skymodelr_adopted_white.html</loc></url>
 <url><loc>https://tylermorganwall.github.io/skymodelr/reference/index.html</loc></url>
 <url><loc>https://tylermorganwall.github.io/skymodelr/reference/jd_utc.html</loc></url>
 <url><loc>https://tylermorganwall.github.io/skymodelr/reference/list_sky_data.html</loc></url>
@@ -26,12 +32,20 @@
 <url><loc>https://tylermorganwall.github.io/skymodelr/reference/moon_mag.html</loc></url>
 <url><loc>https://tylermorganwall.github.io/skymodelr/reference/moon_solid_angle_sr.html</loc></url>
 <url><loc>https://tylermorganwall.github.io/skymodelr/reference/normalize.html</loc></url>
+<url><loc>https://tylermorganwall.github.io/skymodelr/reference/normalize_prague_rgb_correction.html</loc></url>
+<url><loc>https://tylermorganwall.github.io/skymodelr/reference/prepare_prague_rgb_gain.html</loc></url>
+<url><loc>https://tylermorganwall.github.io/skymodelr/reference/sky_exr_metadata.html</loc></url>
 <url><loc>https://tylermorganwall.github.io/skymodelr/reference/star_radiometric_amplitude.html</loc></url>
 <url><loc>https://tylermorganwall.github.io/skymodelr/reference/stars.html</loc></url>
 <url><loc>https://tylermorganwall.github.io/skymodelr/reference/swe_dirs_topo_moon_sun.html</loc></url>
 <url><loc>https://tylermorganwall.github.io/skymodelr/reference/swe_dirs_topo_planets_df.html</loc></url>
 <url><loc>https://tylermorganwall.github.io/skymodelr/reference/swe_dirs_topo_sunmoon_df.html</loc></url>
 <url><loc>https://tylermorganwall.github.io/skymodelr/reference/sweph_info_to_stars_df.html</loc></url>
+<url><loc>https://tylermorganwall.github.io/skymodelr/reference/tag_generated_sky_exr_metadata.html</loc></url>
+<url><loc>https://tylermorganwall.github.io/skymodelr/reference/tag_skymodelr_exr_metadata.html</loc></url>
+<url><loc>https://tylermorganwall.github.io/skymodelr/reference/validate_prague_rgb_gain.html</loc></url>
 <url><loc>https://tylermorganwall.github.io/skymodelr/reference/vmag_to_ev_lux.html</loc></url>
+<url><loc>https://tylermorganwall.github.io/skymodelr/reference/write_sky_image.html</loc></url>
+<url><loc>https://tylermorganwall.github.io/skymodelr/reference/xy_to_xyz_y1.html</loc></url>
 </urlset>
 

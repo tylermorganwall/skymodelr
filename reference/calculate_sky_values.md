@@ -16,7 +16,10 @@ calculate_sky_values(
   azimuth = 90,
   number_cores = 1,
   wide_spectrum = FALSE,
-  render_mode = "all"
+  render_mode = "all",
+  prague_rgb_correction = TRUE,
+  prague_rgb_correction_strength = 1,
+  prague_rgb_correction_gain = "auto"
 )
 ```
 
@@ -67,6 +70,23 @@ calculate_sky_values(
   Default `"all"`. One of `"all"`, `"atmosphere"`, or `"sun"`. Use
   `"all"` for atmosphere + solar disk, `"atmosphere"` for atmospheric
   radiance only, or `"sun"` for the solar disk only.
+
+- prague_rgb_correction:
+
+  Default `TRUE`. Whether to apply the Prague RGB tint correction to
+  returned RGB values. This correction is only applied to Prague RGB
+  output.
+
+- prague_rgb_correction_strength:
+
+  Default `1`. Strength of the Prague RGB tint correction. Use `0` for
+  no correction and `1` for the calibrated correction.
+
+- prague_rgb_correction_gain:
+
+  Default `"auto"`. Multiplicative linear RGB gain used by the Prague
+  RGB tint correction. `"auto"` uses the calibrated default
+  `c(R = 0.94438727, G = 1.02157200, B = 0.95012063)`.
 
 ## Value
 

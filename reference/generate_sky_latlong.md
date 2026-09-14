@@ -38,6 +38,11 @@ generate_sky_latlong(
   moon_hosek = TRUE,
   render_mode = "all",
   below_horizon = TRUE,
+  prague_rgb_correction = TRUE,
+  prague_rgb_correction_strength = 1,
+  prague_rgb_correction_gain = "auto",
+  exr_adopted_white = "D60",
+  exr_metadata = TRUE,
   verbose = FALSE,
   stars_exposure = 0,
   ...
@@ -139,6 +144,36 @@ generate_sky_latlong(
 
   Default `TRUE`. Whether to sample atmospheric scattering below the
   horizon, which is non-zero when altitude \> 0.
+
+- prague_rgb_correction:
+
+  Default `TRUE`. Whether to apply the Prague RGB tint correction. This
+  correction is only applied when `hosek = FALSE`. Use `FALSE` for raw
+  Prague RGB output.
+
+- prague_rgb_correction_strength:
+
+  Default `1`. Strength of the Prague RGB tint correction. Use `0` for
+  no correction and `1` for the calibrated correction.
+
+- prague_rgb_correction_gain:
+
+  Default `"auto"`. Multiplicative linear RGB gain used by the Prague
+  RGB tint correction. `"auto"` uses the calibrated default
+  `c(R = 0.94438727, G = 1.02157200, B = 0.95012063)`.
+
+- exr_adopted_white:
+
+  Default `"D60"`. Adopted neutral white to write to EXR metadata for
+  generated sky maps. Currently supports `"D60"`, `"D65"`, or a numeric
+  XYZ white with Y = 1. This tags the EXR `adoptedNeutral` metadata and
+  does not change pixel values.
+
+- exr_metadata:
+
+  Default `TRUE`. Whether to attach skymodelr EXR metadata before
+  writing EXR output. Metadata includes sRGB/Rec.709 chromaticities and
+  the selected adopted neutral white.
 
 - verbose:
 

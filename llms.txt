@@ -565,6 +565,10 @@ Functions for generating different sky models
   Generate a star-field array aligned with
   [`generate_sky()`](https://tylermorganwall.github.io/skymodelr/reference/generate_sky.md)
 
+- [`generate_sun_disk()`](https://tylermorganwall.github.io/skymodelr/reference/generate_sun_disk.md)
+  [`generate_moon_disk()`](https://tylermorganwall.github.io/skymodelr/reference/generate_sun_disk.md)
+  : Generate Sun and Moon Disk Radiance Images
+
 ## Downloading
 
 Download and manage model data
@@ -575,6 +579,13 @@ Download and manage model data
   : List cached sky data files
 - [`clear_sky_data()`](https://tylermorganwall.github.io/skymodelr/reference/clear_sky_data.md)
   : Clear cached sky data files
+
+## Model Metadata
+
+Prepare location, time, and model settings for native Prague sky queries
+
+- [`get_prague_sky_metadata()`](https://tylermorganwall.github.io/skymodelr/reference/get_prague_sky_metadata.md)
+  : Prepare Location and Time Metadata for Native Prague Sky Queries
 
 ## Sample Values
 

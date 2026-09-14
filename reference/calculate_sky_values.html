@@ -9,7 +9,7 @@ directions without writing an image, returning radiance-only samples."></head><b
 
     <a class="navbar-brand me-2" href="../index.html">skymodelr</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -50,7 +50,10 @@ directions without writing an image, returning radiance-only samples.</p>
 <span>  azimuth <span class="op">=</span> <span class="fl">90</span>,</span>
 <span>  number_cores <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  wide_spectrum <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  render_mode <span class="op">=</span> <span class="st">"all"</span></span>
+<span>  render_mode <span class="op">=</span> <span class="st">"all"</span>,</span>
+<span>  prague_rgb_correction <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  prague_rgb_correction_strength <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  prague_rgb_correction_gain <span class="op">=</span> <span class="st">"auto"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -98,6 +101,24 @@ directions without writing an image, returning radiance-only samples.</p>
 <dd><p>Default <code>"all"</code>. One of <code>"all"</code>, <code>"atmosphere"</code>, or <code>"sun"</code>.
 Use <code>"all"</code> for atmosphere + solar disk, <code>"atmosphere"</code> for atmospheric radiance only, or <code>"sun"</code> for the solar disk only.</p></dd>
 
+
+<dt id="arg-prague-rgb-correction">prague_rgb_correction<a class="anchor" aria-label="anchor" href="#arg-prague-rgb-correction"></a></dt>
+<dd><p>Default <code>TRUE</code>. Whether to apply the Prague RGB
+tint correction to returned RGB values. This correction is only applied to
+Prague RGB output.</p></dd>
+
+
+<dt id="arg-prague-rgb-correction-strength">prague_rgb_correction_strength<a class="anchor" aria-label="anchor" href="#arg-prague-rgb-correction-strength"></a></dt>
+<dd><p>Default <code>1</code>. Strength of the Prague RGB
+tint correction. Use <code>0</code> for no correction and <code>1</code> for the calibrated
+correction.</p></dd>
+
+
+<dt id="arg-prague-rgb-correction-gain">prague_rgb_correction_gain<a class="anchor" aria-label="anchor" href="#arg-prague-rgb-correction-gain"></a></dt>
+<dd><p>Default <code>"auto"</code>. Multiplicative linear RGB
+gain used by the Prague RGB tint correction. <code>"auto"</code> uses the calibrated
+default <code>c(R = 0.94438727, G = 1.02157200, B = 0.95012063)</code>.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -134,7 +155,7 @@ Use <code>"all"</code> for atmosphere + solar disk, <code>"atmosphere"</code> fo
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

@@ -11,7 +11,7 @@ configuration. An image file is written only when filename is supplied."></head>
 
     <a class="navbar-brand me-2" href="../index.html">skymodelr</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -57,7 +57,12 @@ configuration. An image file is written only when <code>filename</code> is suppl
 <span>  visibility <span class="op">=</span> <span class="fl">50</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  render_mode <span class="op">=</span> <span class="st">"all"</span>,</span>
-<span>  below_horizon <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  below_horizon <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  prague_rgb_correction <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  prague_rgb_correction_strength <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  prague_rgb_correction_gain <span class="op">=</span> <span class="st">"auto"</span>,</span>
+<span>  exr_adopted_white <span class="op">=</span> <span class="st">"D60"</span>,</span>
+<span>  exr_metadata <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -122,11 +127,57 @@ Use <code>"all"</code> for atmosphere + solar disk, <code>"atmosphere"</code> fo
 <dt id="arg-below-horizon">below_horizon<a class="anchor" aria-label="anchor" href="#arg-below-horizon"></a></dt>
 <dd><p>Default <code>TRUE</code>. Whether to sample atmospheric scattering below the horizon, which is non-zero when altitude &gt; 0.</p></dd>
 
+
+<dt id="arg-prague-rgb-correction">prague_rgb_correction<a class="anchor" aria-label="anchor" href="#arg-prague-rgb-correction"></a></dt>
+<dd><p>Default <code>TRUE</code>. Whether to apply the Prague RGB
+tint correction. This correction is only applied when <code>hosek = FALSE</code>. Use
+<code>FALSE</code> for raw Prague RGB output.</p></dd>
+
+
+<dt id="arg-prague-rgb-correction-strength">prague_rgb_correction_strength<a class="anchor" aria-label="anchor" href="#arg-prague-rgb-correction-strength"></a></dt>
+<dd><p>Default <code>1</code>. Strength of the Prague RGB
+tint correction. Use <code>0</code> for no correction and <code>1</code> for the calibrated
+correction.</p></dd>
+
+
+<dt id="arg-prague-rgb-correction-gain">prague_rgb_correction_gain<a class="anchor" aria-label="anchor" href="#arg-prague-rgb-correction-gain"></a></dt>
+<dd><p>Default <code>"auto"</code>. Multiplicative linear RGB
+gain used by the Prague RGB tint correction. <code>"auto"</code> uses the calibrated
+default <code>c(R = 0.94438727, G = 1.02157200, B = 0.95012063)</code>.</p></dd>
+
+
+<dt id="arg-exr-adopted-white">exr_adopted_white<a class="anchor" aria-label="anchor" href="#arg-exr-adopted-white"></a></dt>
+<dd><p>Default <code>"D60"</code>. Adopted neutral white to write to
+EXR metadata for generated sky maps. Currently supports <code>"D60"</code>, <code>"D65"</code>,
+or a numeric XYZ white with Y = 1. This tags the EXR <code>adoptedNeutral</code>
+metadata and does not change pixel values.</p></dd>
+
+
+<dt id="arg-exr-metadata">exr_metadata<a class="anchor" aria-label="anchor" href="#arg-exr-metadata"></a></dt>
+<dd><p>Default <code>TRUE</code>. Whether to attach skymodelr EXR metadata
+before writing EXR output. Metadata includes sRGB/Rec.709 chromaticities and
+the selected adopted neutral white.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>Either the image array, or the array is invisibly returned if a file
 is written. The array has dimensions <code>(resolution, 2 * resolution, 4)</code>.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>For Prague RGB output, <code>prague_rgb_correction = TRUE</code> applies a fixed linear
+RGB gain to reduce the small magenta / negative-green tint observed in the
+RGB projection of Prague sky maps. Set <code>prague_rgb_correction = FALSE</code> to
+recover raw Prague RGB output. The correction is not a white balance and is
+not applied to wavelength-specific spectral radiance.</p>
+<p>EXR metadata: Generated sky maps are linear RGB. When <code>exr_metadata = TRUE</code>,
+skymodelr tags the image with sRGB/Rec.709 chromaticities and an EXR
+<code>adoptedNeutral</code> white. The default adopted neutral is D60. This metadata
+does not convert pixel values; it informs downstream readers how to treat the
+scene neutral. Use <code>exr_adopted_white = "D65"</code> for D65 adopted neutral, or
+<code>exr_metadata = FALSE</code> to omit skymodelr EXR metadata. The RGB encoding
+remains linear sRGB / Rec.709 even when the adopted neutral is D60.</p>
     </div>
     <div class="section level2">
     <h2 id="note">Note<a class="anchor" aria-label="anchor" href="#note"></a></h2>
@@ -181,6 +232,14 @@ and JPEG files will not represent the true luminosity values encoded in the arra
 <span class="r-in"><span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
 <span class="r-in"><span>  <span class="fu">rayimage</span><span class="fu">::</span><span class="fu"><a href="https://www.rayimage.dev/reference/plot_image.html" class="external-link">plot_image</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="generate_sky-3.png" alt="" width="700" height="350"></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="fu">generate_sky</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="st">"raw_prague.exr"</span>,</span></span>
+<span class="r-in"><span>  elevation <span class="op">=</span> <span class="fl">60</span>,</span></span>
+<span class="r-in"><span>  azimuth <span class="op">=</span> <span class="fl">315</span>,</span></span>
+<span class="r-in"><span>  hosek <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
+<span class="r-in"><span>  prague_rgb_correction <span class="op">=</span> <span class="cn">FALSE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
@@ -192,7 +251,7 @@ and JPEG files will not represent the true luminosity values encoded in the arra
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>
