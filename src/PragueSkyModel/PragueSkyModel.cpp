@@ -14,6 +14,7 @@ preserved for attribution and compliance with upstream notice requirements.
 #include <cstring>
 #include <tuple>
 #include <memory>
+#include <stdexcept>
 #include <atomic>
 
 #include "PragueSkyModel.h"
@@ -723,7 +724,8 @@ void PragueSkyModel::initialize(const std::string& filename, const double single
         throw std::invalid_argument("Prague transmission table limit must be nonnegative MiB or infinity.");
     if (FILE* handle = fopen(filename.c_str(), "rb")) {
         // skymodelr: close the file if a truncated dataset throws while loading.
-        std::unique_ptr<FILE, decltype(&fclose)> file(handle, fclose);
+        auto closeFile = [](FILE* stream) noexcept { fclose(stream); };
+        std::unique_ptr<FILE, decltype(closeFile)> file(handle, closeFile);
         initialized = false;
         static std::atomic<unsigned long long> nextGeneration{1};
         cacheGeneration = nextGeneration.fetch_add(1, std::memory_order_relaxed);
