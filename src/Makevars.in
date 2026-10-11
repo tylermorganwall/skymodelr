@@ -16,3 +16,8 @@ OBJECTS= $(SRC_OBJECTS) $(AR_OBJECTS) $(HOSEK_OBJECTS) $(PRAGUE_OBJECTS)
 # Static libraries we need to link against
 # Note that we're using the version suffix pattern that OpenEXR actually creates
 PKG_LIBS = -L@OPENEXR_LIB_ARCH@  -lOpenEXRUtil-4_0 -lOpenEXR-4_0 -lOpenEXRCore-4_0 -lopenjph -lIlmThread-4_0 -lIex-4_0 -L@IMATH_LIB_ARCH@  -lImath-3_2 @ATOMIC_LIBS@
+
+all: $(SHLIB)
+
+prague_api.o: ../inst/include/skymodelr/prague_api.h ../inst/include/skymodelr/prague_metal.h ../inst/include/skymodelr/prague_metal.inc PragueSkyModel/PragueSkyModel.h
+PragueSkyModel/PragueSkyModel.o: PragueSkyModel/PragueSkyModel.h ../inst/include/skymodelr/prague_metal.h

@@ -883,6 +883,7 @@ PragueSkyModel::Parameters PragueSkyModel::computeParameters(const Vector3& view
 
 /// Evaluates piecewise linear approximation
 double evalPL(const std::vector<float>::const_iterator coefs, const double factor) {
+    if (factor == 0) return double(coefs[0]); // No successor at the final knot.
     return (double(coefs[1]) - double(coefs[0])) * factor + double(coefs[0]);
 }
 
@@ -1245,7 +1246,9 @@ std::tuple<double, double> isectToAltitudeDistance(const double isectX, const do
     // Compute normalized and non-linearly scaled position in the atmosphere
     double altitude = std::clamp(isectDist - PLANET_RADIUS, 0.0, ATMOSPHERE_WIDTH);
     altitude        = std::pow(altitude / ATMOSPHERE_WIDTH, 1.0 / 3.0);
-    double distance = std::acos(isectY / isectDist) * PLANET_RADIUS;
+    // atan2 preserves sub-metre angular distances. acos(y / length) loses
+    // them to rounding (and can jump between zero and a ~0.1 m distance).
+    double distance = std::atan2(std::abs(isectX), isectY) * PLANET_RADIUS;
     distance        = std::sqrt(distance / DIST_TO_EDGE);
     distance        = std::sqrt(distance); // Calling twice sqrt, since it is faster than pow(...,0.25)
     distance        = std::min(1.0, distance);
@@ -1505,3 +1508,43 @@ void PragueSkyModel::transmittanceSpectrum(const Parameters& params, const doubl
 
 
 } // namespace skymodelr_prague
+
+// Export the loaded visibility slice, not a second full dataset. Geometry and
+// spectral reconstruction remain independent of renderer-specific RGB weights.
+void skymodelr_prague::PragueSkyModel::exportMetal(skymodelr_prague_gpu_layout &out,
+                                                  std::vector<float> &packed) const {
+    if (!initialized) throw NotInitializedException();
+    out = {};
+    // The radiance slice can exceed a gigabyte. Reserve its exact packed size
+    // once rather than briefly holding two copies during vector growth.
+    size_t count = 0;
+    for (size_t size : {visibilitiesRad.size(), albedosRad.size(), altitudesRad.size(),
+                        elevationsRad.size(), metadataRad.sunBreaks.size(), metadataRad.zenithBreaks.size(),
+                        metadataRad.emphBreaks.size(), altitudesTrans.size(), visibilitiesTrans.size(),
+                        std::size(SUN_RAD_TABLE), dataRad.size(), dataTransU.size(), dataTransV.size()}) {
+        if (size > UINT32_MAX - count)
+            throw std::runtime_error("Prague Metal coefficient buffer exceeds 32-bit addressing.");
+        count += size;
+    }
+    packed.reserve(count);
+    auto append = [&](const auto &values) {
+        if (values.size() > UINT32_MAX - packed.size())
+            throw std::runtime_error("Prague Metal coefficient buffer exceeds 32-bit addressing.");
+        skymodelr_prague_gpu_axis axis{uint32_t(packed.size()), uint32_t(values.size())};
+        packed.insert(packed.end(), values.begin(), values.end());
+        return axis;
+    };
+    out.visibility=append(visibilitiesRad); out.albedo=append(albedosRad);
+    out.altitude=append(altitudesRad); out.elevation=append(elevationsRad);
+    out.gamma=append(metadataRad.sunBreaks); out.alpha=append(metadataRad.zenithBreaks);
+    out.emphasis=append(metadataRad.emphBreaks);
+    out.trans_altitude=append(altitudesTrans); out.trans_visibility=append(visibilitiesTrans);
+    out.sun=append(std::vector<double>(std::begin(SUN_RAD_TABLE),std::end(SUN_RAD_TABLE)));
+    out.radiance=append(dataRad).offset; out.trans_u=append(dataTransU).offset;
+    out.trans_v=append(dataTransV).offset;
+    out.rank=metadataRad.rank; out.sun_offset=metadataRad.sunOffset; out.sun_stride=metadataRad.sunStride;
+    out.zenith_offset=metadataRad.zenithOffset; out.zenith_stride=metadataRad.zenithStride;
+    out.emphasis_offset=metadataRad.emphOffset; out.config_stride=metadataRad.totalCoefsSingleConfig;
+    out.trans_rank=rankTrans; out.a_dim=aDim; out.d_dim=dDim; out.channels=channels;
+    out.channel_start=channelStart; out.channel_width=channelWidth;
+}

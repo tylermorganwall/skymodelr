@@ -1,7 +1,7 @@
 #' Generate Sun and Moon Disk Radiance Images
 #'
 #' Generate a celestial disk directly at texture resolution, independently of
-#' an environment map. The Sun uses the Prague solar radiance profile. The Moon
+#' an environment map. The Sun supports Prague and Hosek radiance profiles. The Moon
 #' uses the existing lunar surface texture, topocentric phase orientation,
 #' earthshine, photometry, and atmospheric extinction.
 #'
@@ -29,6 +29,13 @@
 #'   earthshine.
 #' @param solar_irradiance_w_m2 Default `1300`. Positive solar irradiance in
 #'   watts per square meter used to illuminate the lunar surface.
+#' @param hosek Default `FALSE`. Use the Hosek solar radiance profile without
+#'   Prague data. Only supported for Sun disks with atmospheric attenuation.
+#' @param turbidity Default `3`. Hosek atmospheric turbidity, from 1.7 to 10.
+#' @param elevation Default `NULL`. Optional Sun elevation in degrees, from -90
+#'   to 90. Supply with `azimuth` to override ephemeris placement and attenuation.
+#' @param azimuth Default `NULL`. Optional Sun azimuth in degrees, from 0 to 360,
+#'   clockwise from north. Apparent diameter still comes from the ephemeris.
 #' @param atmospheric_attenuation Default `TRUE`. Include atmospheric extinction
 #'   and tint for the specified observer. Set `FALSE` to return radiance before
 #'   it enters Earth's atmosphere; the consuming renderer must apply atmospheric
@@ -49,7 +56,9 @@
 #' * `projection`: `"rectilinear"`, using the disk mapping described below.
 #'
 #' @details
-#' Prague data must be installed with [download_sky_data()]. The atmosphere is
+#' Prague disks require data installed with [download_sky_data()]. Hosek Sun
+#' disks (`hosek = TRUE`) need no external data. They include fixed-observer
+#' atmospheric attenuation and support finite values at zenith. The atmosphere is
 #' evaluated for one observer altitude and time when `atmospheric_attenuation`
 #' is `TRUE`. With `FALSE`, solar radiance comes from the model's intrinsic
 #' solar spectrum and lunar radiance uses unattenuated photometry without the
@@ -106,9 +115,26 @@ generate_sun_disk = function(
   prague_rgb_correction = TRUE,
   prague_rgb_correction_strength = 1,
   prague_rgb_correction_gain = "auto",
-  atmospheric_attenuation = TRUE
+  atmospheric_attenuation = TRUE,
+  hosek = FALSE,
+  turbidity = 3,
+  elevation = NULL,
+  azimuth = NULL
 ) {
   validate_disk_logical(atmospheric_attenuation, "atmospheric_attenuation")
+  validate_disk_logical(hosek, "hosek")
+  validate_disk_scalar(turbidity, "turbidity", 1.7, 10)
+  if (hosek && !atmospheric_attenuation) {
+    stop(
+      "Hosek solar disks require atmospheric_attenuation = TRUE.",
+      call. = FALSE
+    )
+  }
+  manual = !is.null(elevation) || !is.null(azimuth)
+  if (manual) {
+    validate_disk_scalar(elevation, "elevation", -90, 90)
+    validate_disk_scalar(azimuth, "azimuth", 0, 360)
+  }
   settings = celestial_disk_settings(
     datetime,
     lat,
@@ -125,12 +151,34 @@ generate_sun_disk = function(
   )
   ephemeris = swe_dirs_topo_moon_sun(datetime, lat, lon, elev_m = altitude)
   d = ephemeris$sun_dir_topo
-  image = celestial_sun_pixels(
-    c(d[1], d[3], -d[2]),
-    resolution,
-    settings,
-    atmospheric_attenuation
+  if (manual) {
+    # Convert the editor's north-to-east azimuth to Swiss Ephemeris coordinates.
+    e = elevation * pi / 180
+    a = azimuth * pi / 180
+    d = c(-sin(a) * cos(e), -cos(a) * cos(e), sin(e))
+  }
+  position = celestial_disk_result(
+    array(0, c(1, 1, 3)),
+    d,
+    ephemeris$sun_diameter_degrees
   )
+  image = if (hosek) {
+    hosek_sun_disk_rcpp(
+      position$elevation_deg,
+      position$azimuth_deg,
+      albedo,
+      turbidity,
+      resolution,
+      number_cores
+    )
+  } else {
+    celestial_sun_pixels(
+      c(d[1], d[3], -d[2]),
+      resolution,
+      settings,
+      atmospheric_attenuation
+    )
+  }
   result = celestial_disk_result(image, d, ephemeris$sun_diameter_degrees)
   result$atmospheric_attenuation = atmospheric_attenuation
   result

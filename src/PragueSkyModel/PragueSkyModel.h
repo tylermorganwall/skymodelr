@@ -15,6 +15,7 @@ preserved for attribution and compliance with upstream notice requirements.
 #include <exception>
 #include <string>
 #include <vector>
+#include "../../inst/include/skymodelr/prague_metal.h"
 
 
 
@@ -320,6 +321,7 @@ private:
 /////////////////////////////////////////////////////////////////////////////////////
 public:
     PragueSkyModel() : initialized(false) {};
+    void exportMetal(skymodelr_prague_gpu_layout &, std::vector<float> &) const;
 
     /// Prepares the model and loads the given dataset file into memory.
     ///

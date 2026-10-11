@@ -385,3 +385,97 @@ test_that("native intrinsic Sun queries preserve defaults and remain bright belo
   expect_gt(min(intrinsic$image[8, 8, ]), 0)
   expect_lt(intrinsic$elevation_deg, 0)
 })
+
+test_that("Hosek Sun disks need no Prague data and survive rotation and zenith", {
+  local_mocked_bindings(resolve_prague_coef_file = function(...) {
+    stop("Unexpected Prague data")
+  })
+  time = as.POSIXct("2026-06-21 12:00:00", tz = "UTC")
+  for (elevation in c(0, 30, 89.9, 90)) {
+    disks = lapply(c(0, 135, 359.9), function(azimuth) {
+      disk = generate_sun_disk(
+        time,
+        0,
+        0,
+        hosek = TRUE,
+        resolution = 32,
+        elevation = elevation,
+        azimuth = azimuth
+      )
+      expect_true(all(is.finite(disk$image)))
+      expect_gt(sum(disk$image), 0)
+      expect_equal(disk$elevation_deg, elevation, tolerance = 1e-10)
+      expect_equal(disk$azimuth_deg, azimuth, tolerance = 1e-10)
+      expect_true(disk$atmospheric_attenuation)
+      disk
+    })
+    expect_equal(sum(disks[[1]]$image), sum(disks[[2]]$image), tolerance = 1e-8)
+  }
+  low = generate_sun_disk(
+    time,
+    0,
+    0,
+    hosek = TRUE,
+    resolution = 32,
+    elevation = 5,
+    azimuth = 135
+  )
+  high = generate_sun_disk(
+    time,
+    0,
+    0,
+    hosek = TRUE,
+    resolution = 32,
+    elevation = 60,
+    azimuth = 135
+  )
+  expect_gt(sum(high$image), sum(low$image))
+  expect_error(
+    generate_sun_disk(
+      time,
+      0,
+      0,
+      hosek = TRUE,
+      atmospheric_attenuation = FALSE
+    ),
+    "attenuation"
+  )
+  for (args in list(
+    list(turbidity = 0),
+    list(elevation = 91, azimuth = 0),
+    list(elevation = 30),
+    list(azimuth = 0)
+  )) {
+    expect_error(do.call(
+      generate_sun_disk,
+      c(list(datetime = time, lat = 0, lon = 0, hosek = TRUE), args)
+    ))
+  }
+})
+
+test_that("Hosek disk radiance matches its sky model rather than an exposure approximation", {
+  # Place the solar center exactly on a sky texel to obtain a directional
+  # reference. Disk texels nearest its center have negligible limb darkening.
+  time = as.POSIXct("2026-06-21 12:00:00", tz = "UTC")
+  sky = generate_sky(
+    resolution = 180,
+    elevation = 44.5,
+    azimuth = 135.5,
+    render_mode = "sun",
+    albedo = 0.5
+  )
+  disk = generate_sun_disk(
+    time,
+    0,
+    0,
+    hosek = TRUE,
+    resolution = 64,
+    elevation = 44.5,
+    azimuth = 135.5
+  )
+  expect_equal(
+    disk$image[32, 32, ] / as.numeric(sky[46, 136, 1:3]),
+    rep(1, 3),
+    tolerance = 0.001
+  )
+})

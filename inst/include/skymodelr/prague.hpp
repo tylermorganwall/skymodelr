@@ -4,12 +4,39 @@
 #ifndef SKYMODELR_PRAGUE_HPP
 #define SKYMODELR_PRAGUE_HPP
 #include "prague_api.h"
+#include "prague_metal.h"
 #include <R_ext/Rdynload.h>
 #include <limits>
 #include <stdexcept>
 #include <string>
+#include <memory>
+#include <mutex>
 
 namespace skymodelr {
+// Resolve on R's main thread. Snapshots own their coefficients, independently
+// of the source model; keep the provider namespace loaded until destruction.
+class PragueMetalSnapshot {
+public:
+    explicit PragueMetalSnapshot(const skymodelr_prague_handle *model) {
+        auto get = reinterpret_cast<skymodelr_prague_gpu_get_api_fn>(
+            R_GetCCallable("skymodelr", "prague_gpu_get_api"));
+        api = get();
+        if (!api || api->abi_version != SKYMODELR_PRAGUE_METAL_ABI_VERSION || api->struct_size < sizeof(*api))
+            throw std::runtime_error("Incompatible skymodelr Prague Metal API; update skymodelr.");
+        char error[512];
+        handle=api->create(model,error,sizeof(error));
+        if(!handle) throw std::runtime_error(error);
+    }
+    ~PragueMetalSnapshot() { api->destroy(handle); }
+    PragueMetalSnapshot(const PragueMetalSnapshot &) = delete;
+    PragueMetalSnapshot &operator=(const PragueMetalSnapshot &) = delete;
+    const skymodelr_prague_gpu_layout &layout() const { return *api->layout(handle); }
+    const float *data(size_t &count) const { return api->data(handle,&count); }
+    const char *source() const { return api->source(); }
+private:
+    const skymodelr_prague_gpu_api *api;
+    skymodelr_prague_gpu_handle *handle;
+};
 class PragueSkyModel {
 public:
     struct Vector3 {
@@ -46,6 +73,7 @@ public:
                                  transmission_table ? 1 : 0, transmission_table_max_mib,
                                  error, sizeof(error));
         if (!next) throw std::runtime_error(error);
+        gpu_snapshot.reset();
         if (handle) api->destroy(handle);
         handle = next;
     }
@@ -55,6 +83,11 @@ public:
         return result;
     }
     size_t memoryUsage() const { return sizeof(*this) + api->memory_usage(handle); }
+    std::shared_ptr<const PragueMetalSnapshot> metalSnapshot() const {
+        std::lock_guard<std::mutex> lock(gpu_mutex);
+        if (!gpu_snapshot) gpu_snapshot = std::make_shared<const PragueMetalSnapshot>(handle);
+        return gpu_snapshot;
+    }
     Parameters computeParameters(Vector3 p, Vector3 w, double elevation, double azimuth,
                                   double visibility, double albedo) const {
         const double position[3] = {p.x, p.y, p.z}, direction[3] = {w.x, w.y, w.z};
@@ -88,6 +121,8 @@ public:
 private:
     const skymodelr_prague_api *api;
     skymodelr_prague_handle *handle = nullptr;
+    mutable std::mutex gpu_mutex;
+    mutable std::shared_ptr<const PragueMetalSnapshot> gpu_snapshot;
     static const skymodelr_prague_api *resolve() {
         // No lazy symbol resolution in worker queries or destructors.
         auto get = reinterpret_cast<skymodelr_prague_get_api_fn>(

@@ -18,7 +18,11 @@ generate_sun_disk(
   prague_rgb_correction = TRUE,
   prague_rgb_correction_strength = 1,
   prague_rgb_correction_gain = "auto",
-  atmospheric_attenuation = TRUE
+  atmospheric_attenuation = TRUE,
+  hosek = FALSE,
+  turbidity = 3,
+  elevation = NULL,
+  azimuth = NULL
 )
 
 generate_moon_disk(
@@ -79,6 +83,17 @@ it enters Earth's atmosphere; the consuming renderer must apply atmospheric
 transport and horizon visibility. Lunar phase, surface detail, and earthshine
 are retained. \code{moon_extinction_kV} is ignored when this is \code{FALSE}.}
 
+\item{hosek}{Default \code{FALSE}. Use the Hosek solar radiance profile without
+Prague data. Only supported for Sun disks with atmospheric attenuation.}
+
+\item{turbidity}{Default \code{3}. Hosek atmospheric turbidity, from 1.7 to 10.}
+
+\item{elevation}{Default \code{NULL}. Optional Sun elevation in degrees, from -90
+to 90. Supply with \code{azimuth} to override ephemeris placement and attenuation.}
+
+\item{azimuth}{Default \code{NULL}. Optional Sun azimuth in degrees, from 0 to 360,
+clockwise from north. Apparent diameter still comes from the ephemeris.}
+
 \item{earthshine}{Default \code{TRUE}. Include Earth-reflected light on the Moon.}
 
 \item{earthshine_albedo}{Default \code{0.19}. Nonnegative Earth albedo used for
@@ -106,12 +121,14 @@ Out-of-gamut solar RGB values may be negative and should be preserved.
 }
 \description{
 Generate a celestial disk directly at texture resolution, independently of
-an environment map. The Sun uses the Prague solar radiance profile. The Moon
+an environment map. The Sun supports Prague and Hosek radiance profiles. The Moon
 uses the existing lunar surface texture, topocentric phase orientation,
 earthshine, photometry, and atmospheric extinction.
 }
 \details{
-Prague data must be installed with \code{\link[=download_sky_data]{download_sky_data()}}. The atmosphere is
+Prague disks require data installed with \code{\link[=download_sky_data]{download_sky_data()}}. Hosek Sun
+disks (\code{hosek = TRUE}) need no external data. They include fixed-observer
+atmospheric attenuation and support finite values at zenith. The atmosphere is
 evaluated for one observer altitude and time when \code{atmospheric_attenuation}
 is \code{TRUE}. With \code{FALSE}, solar radiance comes from the model's intrinsic
 solar spectrum and lunar radiance uses unattenuated photometry without the

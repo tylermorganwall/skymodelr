@@ -194,11 +194,95 @@ trapezoid_weights(const std::vector<double> &lambda_values) {
   return weights;
 }
 
+// Evaluate a Hosek solar disk in its own tangent plane. Its resolution is
+// independent of the environment map, so preview quality cannot erase the Sun.
+// [[Rcpp::export]]
+Rcpp::NumericVector hosek_sun_disk_rcpp(double elevation, double azimuth, double albedo,
+                                        double turbidity, unsigned int resolution,
+                                        unsigned int number_cores) {
+  if (!std::isfinite(elevation) || elevation < -90 || elevation > 90 ||
+      !std::isfinite(azimuth) || !std::isfinite(albedo) || albedo < 0 || albedo > 1 ||
+      !std::isfinite(turbidity) || turbidity < 1.7 || turbidity > 10 ||
+      resolution < 16 || number_cores < 1) {
+    Rcpp::stop("Invalid Hosek solar disk inputs.");
+  }
+  const size_t count = size_t(resolution) * resolution;
+  Rcpp::NumericVector image(count * 3);
+  image.attr("dim") = Rcpp::IntegerVector::create(resolution, resolution, 3);
+  // Below the model's daylight domain, retain the horizon profile until the
+  // upper limb sets. The renderer clips each direction against the horizon.
+  const double safe_elevation = clamp_sun_elevation_deg(std::max(0.0, elevation));
+  ArHosekSkyModelState* state =
+      arhosekskymodelstate_alloc_init(safe_elevation * M_PI / 180, turbidity, albedo);
+  if (!state) {
+    Rcpp::stop("Hosek-Wilkie initialisation failed.");
+  }
+  if (elevation < -state->solar_radius * 180 / M_PI) {
+    arhosekskymodelstate_free(state);
+    return image;
+  }
+  const double elev = elevation * M_PI / 180;
+  const double az = azimuth * M_PI / 180;
+  Vec3<double> forward(
+      -std::sin(az) * std::cos(elev), std::sin(elev), std::cos(az) * std::cos(elev));
+  // Match the renderer's frame, including its alternate up axis at the pole.
+  Vec3<double> vertical =
+      std::abs(forward.y) < 0.999999 ? Vec3<double>(0, 1, 0) : Vec3<double>(0, 0, 1);
+  Vec3<double> right = forward.cross(vertical).normalized();
+  Vec3<double> up = right.cross(forward);
+  const double radius = std::tan(state->solar_radius);
+  const std::vector<double> wavelengths = {
+      360, 400, 440, 480, 520, 560, 600, 640, 680, 720};
+  const auto weights = trapezoid_weights(wavelengths);
+  std::vector<CIETristimulus> cie;
+  for (double wavelength : wavelengths) {
+    cie.push_back(interpolate_cie_xyz(wavelength));
+  }
+  RcppThread::parallelFor(
+      0u,
+      size_t(resolution),
+      [&](size_t row) {
+        const double y = 1 - 2 * (row + 0.5) / resolution;
+        for (size_t column = 0; column < resolution; ++column) {
+          const double x = 2 * (column + 0.5) / resolution - 1;
+          if (x * x + y * y > 1) {
+            continue;
+          }
+          const Vec3<double> direction =
+              (forward + radius * (x * right + y * up)).normalized();
+          // Horizon samples use finite horizon radiance; visibility is not baked
+          // into the texture. Clamp zenith numerically without shifting disk geometry.
+          const double theta = std::acos(clamp_double(direction.y, 0.0, 1.0 - 1e-12));
+          const double gamma = std::atan(radius * std::sqrt(x * x + y * y));
+          double X = 0, Y = 0, Z = 0;
+          for (size_t c = 0; c < wavelengths.size(); ++c) {
+            const double total =
+                arhosekskymodel_solar_radiance(state, theta, gamma, wavelengths[c]);
+            const double sky =
+                arhosekskymodel_radiance(state, theta, gamma, wavelengths[c]);
+            const double value = std::max(0.0, total - sky) * weights[c];
+            X += value * cie[c].x;
+            Y += value * cie[c].y;
+            Z += value * cie[c].z;
+          }
+          double R, G, B;
+          xyz_to_srgb(X, Y, Z, R, G, B);
+          const size_t pixel = row + resolution * column;
+          image[pixel] = R;
+          image[pixel + count] = G;
+          image[pixel + 2 * count] = B;
+        }
+      },
+      number_cores);
+  arhosekskymodelstate_free(state);
+  return image;
+}
+
 // [[Rcpp::export]]
 Rcpp::NumericVector
-makesky_rcpp(double albedo = 0.5, double turbidity = 3.0,
-             double elevation = 10.0, double azimuth_deg = 90,
-             unsigned int resolution = 2048, unsigned int number_cores = 1,
+makesky_rcpp(double albedo = 0.5, double turbidity = 3.0, double elevation = 10.0,
+             double azimuth_deg = 90, unsigned int resolution = 2048,
+             unsigned int number_cores = 1,
              std::string model = "hosek", // hosek | prague
              std::string prg_dataset = "", double altitude = 0.0,
              double visibility = 50.0, // Prague only (km)

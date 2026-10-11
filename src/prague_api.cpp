@@ -140,3 +140,42 @@ void skymodelr_register_prague_api(DllInfo *dll) {
     (void)dll;
     R_RegisterCCallable("skymodelr", "prague_get_api", reinterpret_cast<DL_FUNC>(&get_api));
 }
+
+struct skymodelr_prague_gpu_handle {
+    skymodelr_prague_gpu_layout layout;
+    std::vector<float> data;
+};
+namespace {
+skymodelr_prague_gpu_handle *gpu_create(const skymodelr_prague_handle *handle,
+                                        char *error, size_t capacity) noexcept {
+    std::unique_ptr<skymodelr_prague_gpu_handle> result;
+    if (!guarded([&] {
+        result.reset(new skymodelr_prague_gpu_handle);
+        model(handle).exportMetal(result->layout,result->data);
+    }, error, capacity)) return nullptr;
+    return result.release();
+}
+void gpu_destroy(skymodelr_prague_gpu_handle *handle) noexcept { delete handle; }
+const skymodelr_prague_gpu_layout *gpu_layout(const skymodelr_prague_gpu_handle *handle) noexcept {
+    return handle ? &handle->layout : nullptr;
+}
+const float *gpu_data(const skymodelr_prague_gpu_handle *handle,size_t *count) noexcept {
+    if(count) *count=handle ? handle->data.size() : 0;
+    return handle ? handle->data.data() : nullptr;
+}
+const char *gpu_source() noexcept {
+    return
+#include "../inst/include/skymodelr/prague_metal.inc"
+    ;
+}
+const skymodelr_prague_gpu_api *gpu_get_api() noexcept {
+    static const skymodelr_prague_gpu_api api={SKYMODELR_PRAGUE_METAL_ABI_VERSION,
+        sizeof(skymodelr_prague_gpu_api),gpu_create,gpu_destroy,gpu_layout,gpu_data,gpu_source};
+    return &api;
+}
+}
+// [[Rcpp::init]]
+void skymodelr_register_prague_gpu_api(DllInfo *dll) {
+    (void)dll;
+    R_RegisterCCallable("skymodelr","prague_gpu_get_api",reinterpret_cast<DL_FUNC>(&gpu_get_api));
+}

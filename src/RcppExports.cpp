@@ -12,6 +12,22 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// hosek_sun_disk_rcpp
+Rcpp::NumericVector hosek_sun_disk_rcpp(double elevation, double azimuth, double albedo, double turbidity, unsigned int resolution, unsigned int number_cores);
+RcppExport SEXP _skymodelr_hosek_sun_disk_rcpp(SEXP elevationSEXP, SEXP azimuthSEXP, SEXP albedoSEXP, SEXP turbiditySEXP, SEXP resolutionSEXP, SEXP number_coresSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< double >::type elevation(elevationSEXP);
+    Rcpp::traits::input_parameter< double >::type azimuth(azimuthSEXP);
+    Rcpp::traits::input_parameter< double >::type albedo(albedoSEXP);
+    Rcpp::traits::input_parameter< double >::type turbidity(turbiditySEXP);
+    Rcpp::traits::input_parameter< unsigned int >::type resolution(resolutionSEXP);
+    Rcpp::traits::input_parameter< unsigned int >::type number_cores(number_coresSEXP);
+    rcpp_result_gen = Rcpp::wrap(hosek_sun_disk_rcpp(elevation, azimuth, albedo, turbidity, resolution, number_cores));
+    return rcpp_result_gen;
+END_RCPP
+}
 // makesky_rcpp
 Rcpp::NumericVector makesky_rcpp(double albedo, double turbidity, double elevation, double azimuth_deg, unsigned int resolution, unsigned int number_cores, std::string model, std::string prg_dataset, double altitude, double visibility, std::string render_mode, Rcpp::Nullable<Rcpp::NumericVector> lambda_nm, bool below_horizon);
 RcppExport SEXP _skymodelr_makesky_rcpp(SEXP albedoSEXP, SEXP turbiditySEXP, SEXP elevationSEXP, SEXP azimuth_degSEXP, SEXP resolutionSEXP, SEXP number_coresSEXP, SEXP modelSEXP, SEXP prg_datasetSEXP, SEXP altitudeSEXP, SEXP visibilitySEXP, SEXP render_modeSEXP, SEXP lambda_nmSEXP, SEXP below_horizonSEXP) {
@@ -163,6 +179,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_skymodelr_hosek_sun_disk_rcpp", (DL_FUNC) &_skymodelr_hosek_sun_disk_rcpp, 6},
     {"_skymodelr_makesky_rcpp", (DL_FUNC) &_skymodelr_makesky_rcpp, 13},
     {"_skymodelr_calculate_sun_brightness_rcpp", (DL_FUNC) &_skymodelr_calculate_sun_brightness_rcpp, 9},
     {"_skymodelr_calculate_sun_radiance_band_rcpp", (DL_FUNC) &_skymodelr_calculate_sun_radiance_band_rcpp, 9},
@@ -175,8 +192,10 @@ static const R_CallMethodDef CallEntries[] = {
 };
 
 void skymodelr_register_prague_api(DllInfo *dll);
+void skymodelr_register_prague_gpu_api(DllInfo *dll);
 RcppExport void R_init_skymodelr(DllInfo *dll) {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
     skymodelr_register_prague_api(dll);
+    skymodelr_register_prague_gpu_api(dll);
 }

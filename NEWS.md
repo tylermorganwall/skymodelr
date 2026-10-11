@@ -1,4 +1,18 @@
+# skymodelr 0.7.0
+
+## New features
+
+- Overall: Provides a versioned native Metal interface for GPU spectral sky, sun, and transmittance queries, with reusable shader functions and independently owned coefficient snapshots.
+
+## Bugfixes
+
+- Overall: Preserves small angular distances in Prague transmittance queries, removing rounding jumps on sub-metre paths. Avoids reading beyond the final piecewise-linear coefficient knot.
+
 # skymodelr (development version)
+
+* Add Hosek support to `generate_sun_disk(hosek = TRUE)`, including turbidity
+  and optional manual elevation/azimuth. The independently sampled solar disk
+  remains finite at zenith and requires no Prague dataset.
 
 * Return nighttime Sun positions from `get_prague_sky_metadata()` below
   -4.2 degrees so native renderers can suppress solar radiance while retaining
