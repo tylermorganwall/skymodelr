@@ -6,6 +6,7 @@ extern "C" {
 }
 
 #include "PragueSkyModel.h"
+#include "prague_metal_backend.h"
 
 #include "CIE1931Data.h"
 #include <Imath/ImathBox.h>
@@ -824,19 +825,49 @@ double calculate_sun_radiance_band_rcpp(
 }
 
 // [[Rcpp::export]]
+bool prague_gpu_available() {
+  return prague_metal_available();
+}
+
+// [[Rcpp::export]]
 Rcpp::NumericVector calculate_raw_prague_radiance(
     Rcpp::NumericVector phi, Rcpp::NumericVector theta,
     Rcpp::NumericVector lambda_nm, Rcpp::NumericVector elevation,
     Rcpp::NumericVector albedo, Rcpp::NumericVector altitude,
     Rcpp::NumericVector visibility, Rcpp::NumericVector azimuth,
     unsigned int number_cores = 1, std::string prg_dataset = "",
-    std::string render_mode = "all") {
+    std::string render_mode = "all", std::string backend = "cpu") {
   bool render_atmosphere = true;
   bool render_sun = true;
   resolve_render_mode(render_mode, render_atmosphere, render_sun);
 
+  if (backend != "cpu" && backend != "gpu") {
+    Rcpp::stop("backend must be one of \"cpu\" or \"gpu\"");
+  }
+  if (backend == "gpu" && !prague_metal_available()) {
+    Rcpp::stop("backend = \"gpu\" requires macOS with an available Metal device. "
+               "Use backend = \"cpu\" on this system.");
+  }
+  // The native entry point also checks lengths before indexing borrowed columns.
+  for (const auto &column : {theta, lambda_nm, elevation, albedo, altitude,
+                             visibility, azimuth}) {
+    if (column.size() != phi.size()) {
+      Rcpp::stop("Radiance input columns must have equal lengths.");
+    }
+  }
   const auto avail = initialize_prague_model(prg_dataset);
   validate_prague_lambda_nm(lambda_nm, avail);
+
+  if (backend == "gpu") {
+    Rcpp::NumericVector radiance(phi.size());
+    const PragueRadianceColumns columns = {
+        phi.begin(), theta.begin(), lambda_nm.begin(), elevation.begin(),
+        albedo.begin(), altitude.begin(), visibility.begin(), azimuth.begin()};
+    prague_metal_radiance(prague_model, prg_dataset, columns, phi.size(),
+                          render_atmosphere, render_sun, radiance.begin(),
+                          &Rcpp::checkUserInterrupt);
+    return radiance;
+  }
 
   std::vector<double> radiance(phi.size(), 0.0);
 

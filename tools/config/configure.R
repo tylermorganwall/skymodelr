@@ -80,6 +80,14 @@ check_atomic_libs = function() {
 }
 
 define(ATOMIC_LIBS = check_atomic_libs())
+define(
+  METAL_OBJECT = if (is_macos) {
+    "prague_metal_backend.o"
+  } else {
+    "prague_metal_stub.o"
+  },
+  METAL_LIBS = if (is_macos) "-framework Metal -framework Foundation" else ""
+)
 
 TARGET_ARCH = Sys.info()[["machine"]]
 PACKAGE_BASE_DIR = normalizePath(getwd(), winslash = "/")

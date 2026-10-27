@@ -2,7 +2,7 @@
 % Please edit documentation in R/generate_sky.R
 \name{calculate_sky_radiance}
 \alias{calculate_sky_radiance}
-\title{Sample Prague sky radiance at a chosen wavelength.}
+\title{Sample Prague sky radiance over directions and wavelengths}
 \usage{
 calculate_sky_radiance(
   phi,
@@ -15,7 +15,8 @@ calculate_sky_radiance(
   azimuth = 90,
   number_cores = 1,
   wide_spectrum = FALSE,
-  render_mode = "all"
+  render_mode = "all",
+  backend = "cpu"
 )
 }
 \arguments{
@@ -25,34 +26,54 @@ calculate_sky_radiance(
 
 \item{lambda_nm}{Wavelength in nanometers. Vectorized. Must lie within the loaded Prague dataset range.}
 
-\item{altitude}{Default \code{0}, vectorized. Altitude of the viewer in meters. Range 0 to 15000.}
+\item{altitude}{Default \code{0}. Vectorized altitude of the viewer in meters. Range 0 to 15000.}
 
-\item{elevation}{Default \code{10}, vectorized. Solar elevation angle above/below the horizon (degrees). Range -4.2 to 90.}
+\item{elevation}{Default \code{10}. Vectorized solar elevation angle above/below the horizon (degrees). Range -4.2 to 90.}
 
-\item{visibility}{Default \code{50}, vectorized. Range 20 to 131.8. Meteorological range in kilometers for Prague model.}
+\item{visibility}{Default \code{50}. Vectorized meteorological range in kilometers. Range 20 to 131.8.}
 
-\item{albedo}{Default \code{0.5}, vectorized. Range 0 to 1. Ground albedo.}
+\item{albedo}{Default \code{0.5}. Vectorized ground albedo. Range 0 to 1.}
 
-\item{azimuth}{Default \code{90}, single value. Solar azimuth (degrees). Defaults South.}
+\item{azimuth}{Default \code{90}. Vectorized solar azimuth (degrees). Defaults South.}
 
-\item{number_cores}{Default \code{1}. Number of threads to use in computation.}
+\item{number_cores}{Default \code{1}. Number of CPU threads. Ignored with \code{backend = "gpu"}.}
 
 \item{wide_spectrum}{Default \code{FALSE}. Whether to use the wide-spectrum (55-channel, polarised) coefficients.}
 
 \item{render_mode}{Default \code{"all"}. One of \code{"all"}, \code{"atmosphere"}, or \code{"sun"}.
 Use \code{"all"} for atmosphere + solar disk, \code{"atmosphere"} for atmospheric radiance only, or \code{"sun"} for the solar disk only.}
+
+\item{backend}{Default \code{"cpu"}. Use \code{"cpu"} for CPU evaluation or \code{"gpu"}
+for batch evaluation on a macOS Metal device.}
 }
 \value{
-Numeric vector of radiance values at the requested wavelength(s).
+Numeric vector of spectral radiance values in W m^-2 sr^-1 nm^-1,
+in input row order.
 }
 \description{
 Evaluate the Prague spectral sky model at arbitrary spherical
-directions and return radiance at a user-specified wavelength. Use
+directions and wavelengths, including grids of atmospheric conditions. Use
 \code{render_mode = "all"} for atmosphere + solar disk, \code{"atmosphere"} for
 atmospheric radiance only, or \code{"sun"} for the solar disk only.
 }
+\details{
+Inputs are paired element by element, with shorter vectors recycled
+by \code{\link[=data.frame]{data.frame()}}. Use \code{\link[=expand.grid]{expand.grid()}} to form all combinations, then pass
+its columns as the corresponding arguments. The function does not create a
+Cartesian product automatically.
+
+The GPU backend evaluates geometry, atmospheric radiance, and solar radiance
+using the same Prague coefficients as the CPU backend. It uses single
+precision, so results can differ slightly, especially near the solar limb.
+Coefficients and compiled shaders are cached across calls; changing datasets
+replaces the cached GPU coefficients. Large inputs are processed in bounded
+batches. The initial upload and shader compilation can outweigh the benefit
+for small inputs. An unavailable Metal device or a GPU failure raises an
+error; use \code{backend = "cpu"} to evaluate on the CPU.
+}
 \examples{
 \dontshow{if (interactive() || identical(Sys.getenv("IN_PKGDOWN"), "true")) withAutoprint(\{ # examplesIf}
+# Compare the same direction and wavelength at two observer altitudes.
 lambda_vals = calculate_sky_radiance(
   phi = c(90, 90),
   theta = c(45, 45),
@@ -63,5 +84,19 @@ lambda_vals = calculate_sky_radiance(
   albedo = 0.1
 )
 cbind(altitude = c(0, 10000), radiance = lambda_vals)
+
+# Form a direction-by-wavelength grid and preserve its row ordering.
+# On a Mac with Metal, add backend = "gpu" to evaluate the grid on the GPU.
+grid = expand.grid(
+  phi = seq(0, 350, by = 10),
+  theta = seq(0, 90, by = 10),
+  lambda_nm = seq(380, 740, by = 20)
+)
+grid$radiance = calculate_sky_radiance(
+  phi = grid$phi,
+  theta = grid$theta,
+  lambda_nm = grid$lambda_nm,
+  render_mode = "atmosphere"
+)
 \dontshow{\}) # examplesIf}
 }

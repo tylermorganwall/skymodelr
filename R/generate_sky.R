@@ -669,29 +669,46 @@ calculate_sky_values = function(
   return(vals)
 }
 
-#' Sample Prague sky radiance at a chosen wavelength.
+#' Sample Prague sky radiance over directions and wavelengths
 #'
 #' @description Evaluate the Prague spectral sky model at arbitrary spherical
-#'   directions and return radiance at a user-specified wavelength. Use
+#'   directions and wavelengths, including grids of atmospheric conditions. Use
 #'   `render_mode = "all"` for atmosphere + solar disk, `"atmosphere"` for
 #'   atmospheric radiance only, or `"sun"` for the solar disk only.
 #'
 #' @param phi                Azimuthal angle of the sample, degrees. Vectorized. Range 0 to 360.
 #' @param theta              Vertical angle of the sample, degrees. Vectorized. Range -90 to 90.
 #' @param lambda_nm          Wavelength in nanometers. Vectorized. Must lie within the loaded Prague dataset range.
-#' @param altitude           Default `0`, vectorized. Altitude of the viewer in meters. Range 0 to 15000.
-#' @param elevation          Default `10`, vectorized. Solar elevation angle above/below the horizon (degrees). Range -4.2 to 90.
-#' @param visibility         Default `50`, vectorized. Range 20 to 131.8. Meteorological range in kilometers for Prague model.
-#' @param albedo             Default `0.5`, vectorized. Range 0 to 1. Ground albedo.
-#' @param azimuth            Default `90`, single value. Solar azimuth (degrees). Defaults South.
-#' @param number_cores       Default `1`. Number of threads to use in computation.
+#' @param altitude           Default `0`. Vectorized altitude of the viewer in meters. Range 0 to 15000.
+#' @param elevation          Default `10`. Vectorized solar elevation angle above/below the horizon (degrees). Range -4.2 to 90.
+#' @param visibility         Default `50`. Vectorized meteorological range in kilometers. Range 20 to 131.8.
+#' @param albedo             Default `0.5`. Vectorized ground albedo. Range 0 to 1.
+#' @param azimuth            Default `90`. Vectorized solar azimuth (degrees). Defaults South.
+#' @param number_cores       Default `1`. Number of CPU threads. Ignored with `backend = "gpu"`.
 #' @param wide_spectrum      Default `FALSE`. Whether to use the wide-spectrum (55-channel, polarised) coefficients.
 #' @param render_mode        Default `"all"`. One of `"all"`, `"atmosphere"`, or `"sun"`.
 #'   Use `"all"` for atmosphere + solar disk, `"atmosphere"` for atmospheric radiance only, or `"sun"` for the solar disk only.
+#' @param backend Default `"cpu"`. Use `"cpu"` for CPU evaluation or `"gpu"`
+#'   for batch evaluation on a macOS Metal device.
 #'
-#' @return Numeric vector of radiance values at the requested wavelength(s).
+#' @return Numeric vector of spectral radiance values in W m^-2 sr^-1 nm^-1,
+#'   in input row order.
 #' @export
+#' @details Inputs are paired element by element, with shorter vectors recycled
+#'   by [data.frame()]. Use [expand.grid()] to form all combinations, then pass
+#'   its columns as the corresponding arguments. The function does not create a
+#'   Cartesian product automatically.
+#'
+#'   The GPU backend evaluates geometry, atmospheric radiance, and solar radiance
+#'   using the same Prague coefficients as the CPU backend. It uses single
+#'   precision, so results can differ slightly, especially near the solar limb.
+#'   Coefficients and compiled shaders are cached across calls; changing datasets
+#'   replaces the cached GPU coefficients. Large inputs are processed in bounded
+#'   batches. The initial upload and shader compilation can outweigh the benefit
+#'   for small inputs. An unavailable Metal device or a GPU failure raises an
+#'   error; use `backend = "cpu"` to evaluate on the CPU.
 #' @examplesIf interactive() || identical(Sys.getenv("IN_PKGDOWN"), "true")
+#' # Compare the same direction and wavelength at two observer altitudes.
 #' lambda_vals = calculate_sky_radiance(
 #'   phi = c(90, 90),
 #'   theta = c(45, 45),
@@ -702,6 +719,20 @@ calculate_sky_values = function(
 #'   albedo = 0.1
 #' )
 #' cbind(altitude = c(0, 10000), radiance = lambda_vals)
+#'
+#' # Form a direction-by-wavelength grid and preserve its row ordering.
+#' # On a Mac with Metal, add backend = "gpu" to evaluate the grid on the GPU.
+#' grid = expand.grid(
+#'   phi = seq(0, 350, by = 10),
+#'   theta = seq(0, 90, by = 10),
+#'   lambda_nm = seq(380, 740, by = 20)
+#' )
+#' grid$radiance = calculate_sky_radiance(
+#'   phi = grid$phi,
+#'   theta = grid$theta,
+#'   lambda_nm = grid$lambda_nm,
+#'   render_mode = "atmosphere"
+#' )
 calculate_sky_radiance = function(
   phi,
   theta,
@@ -713,9 +744,29 @@ calculate_sky_radiance = function(
   azimuth = 90,
   number_cores = 1,
   wide_spectrum = FALSE,
-  render_mode = "all"
+  render_mode = "all",
+  backend = "cpu"
 ) {
+  backend = match.arg(backend, c("cpu", "gpu"))
   render_mode = normalize_render_mode(render_mode)
+  inputs = list(
+    phi = phi,
+    theta = theta,
+    lambda_nm = lambda_nm,
+    altitude = altitude,
+    elevation = elevation,
+    visibility = visibility,
+    albedo = albedo,
+    azimuth = azimuth
+  )
+  for (name in names(inputs)) {
+    if (!is.numeric(inputs[[name]]) || any(!is.finite(inputs[[name]]))) {
+      stop(
+        sprintf("`%s` must contain finite numeric values.", name),
+        call. = FALSE
+      )
+    }
+  }
   stopifnot(all(phi <= 360 & phi >= 0))
   stopifnot(all(theta <= 90 & theta >= -90))
   stopifnot(all(altitude <= 15000 & altitude >= 0))
@@ -746,7 +797,8 @@ calculate_sky_radiance = function(
     df_values$azimuth,
     number_cores,
     coef_file,
-    render_mode
+    render_mode,
+    backend
   )
 }
 

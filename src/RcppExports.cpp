@@ -89,9 +89,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// prague_gpu_available
+bool prague_gpu_available();
+RcppExport SEXP _skymodelr_prague_gpu_available() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(prague_gpu_available());
+    return rcpp_result_gen;
+END_RCPP
+}
 // calculate_raw_prague_radiance
-Rcpp::NumericVector calculate_raw_prague_radiance(Rcpp::NumericVector phi, Rcpp::NumericVector theta, Rcpp::NumericVector lambda_nm, Rcpp::NumericVector elevation, Rcpp::NumericVector albedo, Rcpp::NumericVector altitude, Rcpp::NumericVector visibility, Rcpp::NumericVector azimuth, unsigned int number_cores, std::string prg_dataset, std::string render_mode);
-RcppExport SEXP _skymodelr_calculate_raw_prague_radiance(SEXP phiSEXP, SEXP thetaSEXP, SEXP lambda_nmSEXP, SEXP elevationSEXP, SEXP albedoSEXP, SEXP altitudeSEXP, SEXP visibilitySEXP, SEXP azimuthSEXP, SEXP number_coresSEXP, SEXP prg_datasetSEXP, SEXP render_modeSEXP) {
+Rcpp::NumericVector calculate_raw_prague_radiance(Rcpp::NumericVector phi, Rcpp::NumericVector theta, Rcpp::NumericVector lambda_nm, Rcpp::NumericVector elevation, Rcpp::NumericVector albedo, Rcpp::NumericVector altitude, Rcpp::NumericVector visibility, Rcpp::NumericVector azimuth, unsigned int number_cores, std::string prg_dataset, std::string render_mode, std::string backend);
+RcppExport SEXP _skymodelr_calculate_raw_prague_radiance(SEXP phiSEXP, SEXP thetaSEXP, SEXP lambda_nmSEXP, SEXP elevationSEXP, SEXP albedoSEXP, SEXP altitudeSEXP, SEXP visibilitySEXP, SEXP azimuthSEXP, SEXP number_coresSEXP, SEXP prg_datasetSEXP, SEXP render_modeSEXP, SEXP backendSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -106,7 +116,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< unsigned int >::type number_cores(number_coresSEXP);
     Rcpp::traits::input_parameter< std::string >::type prg_dataset(prg_datasetSEXP);
     Rcpp::traits::input_parameter< std::string >::type render_mode(render_modeSEXP);
-    rcpp_result_gen = Rcpp::wrap(calculate_raw_prague_radiance(phi, theta, lambda_nm, elevation, albedo, altitude, visibility, azimuth, number_cores, prg_dataset, render_mode));
+    Rcpp::traits::input_parameter< std::string >::type backend(backendSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_raw_prague_radiance(phi, theta, lambda_nm, elevation, albedo, altitude, visibility, azimuth, number_cores, prg_dataset, render_mode, backend));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -183,7 +194,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_skymodelr_makesky_rcpp", (DL_FUNC) &_skymodelr_makesky_rcpp, 13},
     {"_skymodelr_calculate_sun_brightness_rcpp", (DL_FUNC) &_skymodelr_calculate_sun_brightness_rcpp, 9},
     {"_skymodelr_calculate_sun_radiance_band_rcpp", (DL_FUNC) &_skymodelr_calculate_sun_radiance_band_rcpp, 9},
-    {"_skymodelr_calculate_raw_prague_radiance", (DL_FUNC) &_skymodelr_calculate_raw_prague_radiance, 11},
+    {"_skymodelr_prague_gpu_available", (DL_FUNC) &_skymodelr_prague_gpu_available, 0},
+    {"_skymodelr_calculate_raw_prague_radiance", (DL_FUNC) &_skymodelr_calculate_raw_prague_radiance, 12},
     {"_skymodelr_calculate_raw_prague", (DL_FUNC) &_skymodelr_calculate_raw_prague, 11},
     {"_skymodelr_cie_1931_2deg_rcpp", (DL_FUNC) &_skymodelr_cie_1931_2deg_rcpp, 0},
     {"_skymodelr_spd_values_rcpp", (DL_FUNC) &_skymodelr_spd_values_rcpp, 2},

@@ -1,5 +1,15 @@
 # Native Prague evaluation in Metal
 
+R callers can use `calculate_sky_radiance(..., backend = "gpu")` on macOS.
+Pass columns from `expand.grid()` to evaluate all requested combinations; each
+input row produces one spectral radiance value in the same order. This path
+calls the device functions below for geometry, sky, and attenuated sunlight,
+caches the compiled pipeline and one dataset's GPU coefficients, and processes
+large inputs in bounded batches. All three `render_mode` values are supported.
+The default `backend = "cpu"` retains CPU evaluation. Explicit GPU requests
+fail if Metal is unavailable; results use single precision and may differ
+slightly from CPU values, particularly at the solar limb.
+
 A renderer can evaluate the Prague spectral model inside its GPU work queues,
 without a CPU callback for every sky or transmittance query. This API exports
 compressed model coefficients and reusable Metal Shading Language functions;
