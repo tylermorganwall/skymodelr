@@ -20,7 +20,7 @@ PKG_LIBS = -L@OPENEXR_LIB_ARCH@  -lOpenEXRUtil-4_0 -lOpenEXR-4_0 -lOpenEXRCore-4
 all: $(SHLIB)
 
 makesky.o prague_metal_stub.o: prague_metal_backend.h
-prague_metal_backend.o: prague_metal_backend.mm prague_metal_backend.h ../inst/include/skymodelr/prague_metal.inc
+prague_metal_backend.o: metal/prague_metal_backend.mm prague_metal_backend.h ../inst/include/skymodelr/prague_metal.inc
 	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) -fobjc-arc -c $< -o $@
 
 prague_api.o: ../inst/include/skymodelr/prague_api.h ../inst/include/skymodelr/prague_metal.h ../inst/include/skymodelr/prague_metal.inc PragueSkyModel/PragueSkyModel.h

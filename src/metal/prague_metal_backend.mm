@@ -1,6 +1,6 @@
 #import <Foundation/Foundation.h>
 #import <Metal/Metal.h>
-#include "prague_metal_backend.h"
+#include "../prague_metal_backend.h"
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
@@ -16,7 +16,7 @@ static_assert(sizeof(RadianceRow) == 8 * sizeof(float), "Metal row layout");
 
 const char *radiance_source =
     "#include <metal_stdlib>\nusing namespace metal;\n"
-#include "../inst/include/skymodelr/prague_metal.inc"
+#include "../../inst/include/skymodelr/prague_metal.inc"
     R"MSL(
 struct RadianceRow {
   float phi, theta, wavelength, elevation, albedo, altitude, visibility, azimuth;

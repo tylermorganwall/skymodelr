@@ -1,3 +1,16 @@
+# skymodelr 0.7.2
+
+## Bugfixes
+
+- Overall: Keeps the macOS Metal source out of automatic source discovery so
+  Windows and Linux builds use the CPU stub without requiring an Objective-C runtime.
+
+# skymodelr 0.7.1
+
+## New features
+
+- `calculate_sky_radiance()` Supports `backend = "gpu"` for batched Metal evaluation of direction, wavelength, and atmospheric-condition grids on macOS, with reusable GPU coefficients. The default remains CPU evaluation.
+
 # skymodelr 0.7.0
 
 ## New features
