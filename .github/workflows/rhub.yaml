@@ -7,25 +7,14 @@
 # It is unlikely that you need to modify this file manually.
 
 name: R-hub
-run-name: >-
-  ${{ github.event.inputs.id || format('Manual run by @{0}', github.triggering_actor) }}:
-  ${{ github.event.inputs.name || github.event.inputs.config }}
+run-name: 'R-hub: native diagnostics (clang23, rchk baseline)'
 
 on:
-  workflow_dispatch:
-    inputs:
-      config:
-        description: >-
-          Comma-separated list of R-hub platforms to use.
-          Full list: https://r-hub.github.io/containers/
-        type: string
-        default: 'linux,windows,macos'
-      name:
-        description: 'Run name. You can leave this empty.'
-        type: string
-      id:
-        description: 'Unique ID. You can leave this empty.'
-        type: string
+  push:
+    branches: [codex/rhub-native-diagnostics]
+
+permissions:
+  contents: read
 
 jobs:
 
@@ -39,7 +28,7 @@ jobs:
     # NO NEED TO CHECKOUT HERE
     - uses: r-hub/actions/setup@v1
       with:
-        config: ${{ github.event.inputs.config }}
+        config: 'clang23,rchk'
       id: rhub-setup
 
   linux-containers:
@@ -56,6 +45,8 @@ jobs:
 
     steps:
       - uses: r-hub/actions/checkout@v1
+        with:
+          ref: ${{ matrix.config.name == 'rchk' && 'e4a86af39853c8ced3050766d841361fed74456b' || '205ee765923cbf19a92ab46aacde7aaf1c0dbc4e' }}
       - uses: r-hub/actions/platform-info@v1
         with:
           token: ${{ secrets.RHUB_TOKEN }}
@@ -66,6 +57,7 @@ jobs:
         with:
           extra-packages: >-
             any::rcmdcheck,
+            ${{ matrix.config.name == 'clang23' && 'cran::Rcpp?source&nocache' || '' }},
             ${{ contains(fromJSON('["c23","clang16","clang17","clang18","clang19","clang20","gcc15","noremap"]'), matrix.config.name) && 'vctrs@0.7.1' || '' }}
           token: ${{ secrets.RHUB_TOKEN }}
           job-config: ${{ matrix.config.job-config }}
