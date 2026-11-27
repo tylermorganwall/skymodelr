@@ -86,7 +86,11 @@ void prepare_metal(const PragueSkyModel &model, const std::string &dataset) {
     } else
 #endif
     {
+      // Older macOS releases still require the legacy property.
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
       options.fastMathEnabled = NO;
+#pragma clang diagnostic pop
     }
     NSError *error = nil;
     id<MTLLibrary> library = [state.device
