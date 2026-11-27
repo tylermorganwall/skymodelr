@@ -540,6 +540,27 @@ generate_ground(depth = -0.4, material=diffuse(color="grey20", checkercolor = "g
   altitude).
 - Star positions from the Yale Bright Star Catalog.
 
+## Development source builds
+
+The [Build R source package
+workflow](https://github.com/tylermorganwall/skymodelr/actions/workflows/source-build.yaml)
+builds and verifies an R source tarball for each branch. Branch and
+pull-request builds provide a downloadable Actions artifact, retained
+for 30 days.
+
+After this workflow is merged, successful `main` builds also publish a
+durable [latest successful source
+download](https://github.com/tylermorganwall/skymodelr/releases/tag/source-main).
+Use the linked `.tar.gz` release asset, not GitHub’s automatically
+generated Source code archives. The filename identifies the package
+version, branch, full commit SHA, run ID, and build attempt. Download
+verification must pass before the latest-successful link changes; older
+assets remain available.
+
+These are development source packages, not CRAN releases or compiled
+binaries. They still require the package’s R dependencies and native
+build tools to install.
+
 # Package index
 
 ## Generate Sky EXRs
@@ -592,7 +613,7 @@ Prepare location, time, and model settings for native Prague sky queries
 Functions to sample specific values from the atmospheric model
 
 - [`calculate_sky_radiance()`](https://tylermorganwall.github.io/skymodelr/reference/calculate_sky_radiance.md)
-  : Sample Prague sky radiance at a chosen wavelength.
+  : Sample Prague sky radiance over directions and wavelengths
 - [`calculate_sky_values()`](https://tylermorganwall.github.io/skymodelr/reference/calculate_sky_values.md)
   : Sample a direction from the Prague model.
 - [`calculate_sun_brightness()`](https://tylermorganwall.github.io/skymodelr/reference/calculate_sun_brightness.md)

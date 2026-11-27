@@ -50,7 +50,7 @@ Prepare location, time, and model settings for native Prague sky queries
 Functions to sample specific values from the atmospheric model
 
 - [`calculate_sky_radiance()`](https://tylermorganwall.github.io/skymodelr/reference/calculate_sky_radiance.md)
-  : Sample Prague sky radiance at a chosen wavelength.
+  : Sample Prague sky radiance over directions and wavelengths
 - [`calculate_sky_values()`](https://tylermorganwall.github.io/skymodelr/reference/calculate_sky_values.md)
   : Sample a direction from the Prague model.
 - [`calculate_sun_brightness()`](https://tylermorganwall.github.io/skymodelr/reference/calculate_sun_brightness.md)

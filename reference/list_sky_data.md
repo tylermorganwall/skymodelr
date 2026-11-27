@@ -27,7 +27,7 @@ list_sky_data()
 #> 2                  /home/runner/.local/share/R/skymodelr/SkyModelDataset.dat
 #> 3            /home/runner/.local/share/R/skymodelr/SkyModelDatasetGround.dat
 #>         size            modified
-#> 1  573546092 2026-09-14 03:46:18
-#> 2 2397370196 2026-09-14 03:47:29
-#> 3  107632816 2026-09-14 03:46:00
+#> 1  573546092 2026-11-27 03:18:33
+#> 2 2397370196 2026-11-27 03:18:47
+#> 3  107632816 2026-11-27 03:18:28
 ```

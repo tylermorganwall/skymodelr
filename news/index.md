@@ -1,6 +1,46 @@
 # Changelog
 
+## skymodelr 0.7.2
+
+### Bugfixes
+
+- Celestial positions use UT1 for Swiss Ephemeris calculations instead
+  of treating Terrestrial Time as UT1. This corrects Sun, Moon, and
+  planet positions, including visible alignment errors during eclipses.
+
+- Overall: Keeps the macOS Metal source out of automatic source
+  discovery so Windows and Linux builds use the CPU stub without
+  requiring an Objective-C runtime.
+
+## skymodelr 0.7.1
+
+### New features
+
+- [`calculate_sky_radiance()`](https://tylermorganwall.github.io/skymodelr/reference/calculate_sky_radiance.md)
+  Supports `backend = "gpu"` for batched Metal evaluation of direction,
+  wavelength, and atmospheric-condition grids on macOS, with reusable
+  GPU coefficients. The default remains CPU evaluation.
+
+## skymodelr 0.7.0
+
+### New features
+
+- Overall: Provides a versioned native Metal interface for GPU spectral
+  sky, sun, and transmittance queries, with reusable shader functions
+  and independently owned coefficient snapshots.
+
+### Bugfixes
+
+- Overall: Preserves small angular distances in Prague transmittance
+  queries, removing rounding jumps on sub-metre paths. Avoids reading
+  beyond the final piecewise-linear coefficient knot.
+
 ## skymodelr (development version)
+
+- Add Hosek support to `generate_sun_disk(hosek = TRUE)`, including
+  turbidity and optional manual elevation/azimuth. The independently
+  sampled solar disk remains finite at zenith and requires no Prague
+  dataset.
 
 - Return nighttime Sun positions from
   [`get_prague_sky_metadata()`](https://tylermorganwall.github.io/skymodelr/reference/get_prague_sky_metadata.md)

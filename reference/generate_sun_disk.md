@@ -1,9 +1,9 @@
 # Generate Sun and Moon Disk Radiance Images
 
 Generate a celestial disk directly at texture resolution, independently
-of an environment map. The Sun uses the Prague solar radiance profile.
-The Moon uses the existing lunar surface texture, topocentric phase
-orientation, earthshine, photometry, and atmospheric extinction.
+of an environment map. The Sun supports Prague and Hosek radiance
+profiles. The Moon uses the existing lunar surface texture, topocentric
+phase orientation, earthshine, photometry, and atmospheric extinction.
 
 ## Usage
 
@@ -21,7 +21,11 @@ generate_sun_disk(
   prague_rgb_correction = TRUE,
   prague_rgb_correction_strength = 1,
   prague_rgb_correction_gain = "auto",
-  atmospheric_attenuation = TRUE
+  atmospheric_attenuation = TRUE,
+  hosek = FALSE,
+  turbidity = 3,
+  elevation = NULL,
+  azimuth = NULL
 )
 
 generate_moon_disk(
@@ -111,6 +115,26 @@ generate_moon_disk(
   earthshine are retained. `moon_extinction_kV` is ignored when this is
   `FALSE`.
 
+- hosek:
+
+  Default `FALSE`. Use the Hosek solar radiance profile without Prague
+  data. Only supported for Sun disks with atmospheric attenuation.
+
+- turbidity:
+
+  Default `3`. Hosek atmospheric turbidity, from 1.7 to 10.
+
+- elevation:
+
+  Default `NULL`. Optional Sun elevation in degrees, from -90 to 90.
+  Supply with `azimuth` to override ephemeris placement and attenuation.
+
+- azimuth:
+
+  Default `NULL`. Optional Sun azimuth in degrees, from 0 to 360,
+  clockwise from north. Apparent diameter still comes from the
+  ephemeris.
+
 - earthshine:
 
   Default `TRUE`. Include Earth-reflected light on the Moon.
@@ -154,11 +178,13 @@ A list containing:
 
 ## Details
 
-Prague data must be installed with
+Prague disks require data installed with
 [`download_sky_data()`](https://tylermorganwall.github.io/skymodelr/reference/download_sky_data.md).
-The atmosphere is evaluated for one observer altitude and time when
-`atmospheric_attenuation` is `TRUE`. With `FALSE`, solar radiance comes
-from the model's intrinsic solar spectrum and lunar radiance uses
+Hosek Sun disks (`hosek = TRUE`) need no external data. They include
+fixed-observer atmospheric attenuation and support finite values at
+zenith. The atmosphere is evaluated for one observer altitude and time
+when `atmospheric_attenuation` is `TRUE`. With `FALSE`, solar radiance
+comes from the model's intrinsic solar spectrum and lunar radiance uses
 unattenuated photometry without the atmospheric tint. Solar texture
 values are then independent of altitude and solar elevation; ephemeris
 placement and lunar phase still use the requested location and time.

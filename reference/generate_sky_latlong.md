@@ -261,5 +261,5 @@ generate_sky_latlong(
 ) |>
   rayimage::render_exposure(exposure = 2) |>
   rayimage::plot_image()
-#> Sun: 8.9 elevation, 263.5 azimuth
+#> Sun: 9.1 elevation, 263.3 azimuth
 ```
