@@ -60,8 +60,13 @@ jobs:
         with:
           token: ${{ secrets.RHUB_TOKEN }}
           job-config: ${{ matrix.config.job-config }}
+      # Frozen prerelease R images cannot load vctrs 0.7.2's binding API.
+      # Keep current vctrs on all other platforms.
       - uses: r-hub/actions/setup-deps@v1
         with:
+          extra-packages: >-
+            any::rcmdcheck,
+            ${{ contains(fromJSON('["c23","clang16","clang17","clang18","clang19","clang20","gcc15","noremap"]'), matrix.config.name) && 'vctrs@0.7.1' || '' }}
           token: ${{ secrets.RHUB_TOKEN }}
           job-config: ${{ matrix.config.job-config }}
       - uses: r-hub/actions/run-check@v1

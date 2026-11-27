@@ -49,10 +49,14 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck
+          extra-packages: any::rcmdcheck, any::rayrender
           needs: check
 
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
           build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf")'
+
+      - name: Check Rayrender integration
+        shell: Rscript {0}
+        run: testthat::test_file(".github/scripts/test-rayrender-integration.R", stop_on_failure = TRUE)

@@ -62,8 +62,7 @@ Roxygen: list(markdown = TRUE)
 Config/build/compilation-database: true
 Suggests: 
     testthat (>= 3.0.0),
-    libopenexr (>= 3.4.12-6),
-    rayrender (>= 0.40.1)
+    libopenexr (>= 3.4.12-6)
 Config/testthat/edition: 3
 URL: https://www.skymodelr.com
 BugReports: https://github.com/tylermorganwall/skymodelr/issues
