@@ -47,6 +47,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libx11-dev
 
+      # The published macOS rayrender binary links to /opt/X11.
+      - name: Install XQuartz for Rayrender
+        if: runner.os == 'macOS'
+        run: |
+          if [ ! -r /opt/X11/lib/libX11.6.dylib ]; then
+            brew install --cask xquartz
+          fi
+          test -r /opt/X11/lib/libX11.6.dylib
+
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::rcmdcheck, any::rayrender
