@@ -17,6 +17,7 @@ jobs:
     timeout-minutes: 20
     outputs:
       artifact-id: ${{ steps.artifact.outputs.artifact-id }}
+      metadata-sha256: ${{ steps.source.outputs.metadata-sha256 }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -38,6 +39,7 @@ jobs:
           cd "$RUNNER_TEMP/source-build"
           R CMD build "$GITHUB_WORKSPACE"
       - name: Verify and label the source package
+        id: source
         shell: bash
         run: |
           set -euo pipefail
@@ -63,6 +65,8 @@ jobs:
             '{package: $package, version: $version, branch: $branch, sha: $sha, run_id: $run_id, run_number: $run_number, run_attempt: $run_attempt, filename: $filename, sha256: $sha256}' \
             > "$RUNNER_TEMP/source-output/source-build.json"
           printf '%s  %s\n' "$digest" "$filename" > "$RUNNER_TEMP/source-output/$filename.sha256"
+          metadata_sha256=$(sha256sum -- "$RUNNER_TEMP/source-output/source-build.json" | cut -d ' ' -f1)
+          printf 'metadata-sha256=%s\n' "$metadata_sha256" >> "$GITHUB_OUTPUT"
           cat "$RUNNER_TEMP/source-output/source-build.json"
       - name: Save verified source package
         id: artifact
@@ -72,35 +76,63 @@ jobs:
           path: ${{ runner.temp }}/source-output/*
           if-no-files-found: error
           retention-days: 30
-      - name: Download the saved package for verification
-        uses: actions/download-artifact@v4
-        with:
-          name: r-source-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/source-download
-      - name: Verify the downloaded tarball and metadata
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd "$RUNNER_TEMP/source-download"
-          cmp "$RUNNER_TEMP/source-output/source-build.json" source-build.json
-          filename=$(jq -er '.filename' source-build.json)
-          shopt -s nullglob dotglob
-          archives=(*.tar.gz)
-          checksums=(*.sha256)
-          [[ ${#archives[@]} == 1 && ${#checksums[@]} == 1 ]] || { echo 'Expected exactly one tarball and checksum' >&2; exit 1; }
-          [[ ${archives[0]} == "$filename" && ${checksums[0]} == "$filename.sha256" ]] || { echo 'Downloaded filenames do not match metadata' >&2; exit 1; }
-          cmp "$RUNNER_TEMP/source-output/$filename.sha256" "$filename.sha256"
-          sha256sum --check --strict -- "$filename.sha256"
       - name: Link the build artifact
         env:
           ARTIFACT_URL: ${{ steps.artifact.outputs.artifact-url }}
         run: |
-          printf '### Verified R source package\n\n[Download this build artifact](%s) (retained for 30 days).\n\nMain-branch builds also publish a durable download in the publication job.\n' \
+          printf '### R source package\n\n[Download this build artifact](%s) (retained for 30 days).\n\nThe verification job checks the uploaded artifact on every branch. Main-branch builds also publish a durable download in the publication job.\n' \
             "$ARTIFACT_URL" >> "$GITHUB_STEP_SUMMARY"
+
+  verify:
+    name: Verify uploaded source artifact
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Download the exact source artifact
+        id: download
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ needs.build.outputs.artifact-id }}
+          merge-multiple: true
+          path: source-output
+      - name: Wait for artifact visibility
+        if: steps.download.outcome == 'failure'
+        run: sleep 20
+      - name: Retry the source artifact download
+        if: steps.download.outcome == 'failure'
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ needs.build.outputs.artifact-id }}
+          merge-multiple: true
+          path: source-output
+      - name: Verify the downloaded tarball and metadata
+        env:
+          EXPECTED_METADATA_SHA256: ${{ needs.build.outputs.metadata-sha256 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd source-output
+          # Anchor metadata to the build job before trusting filenames or checksums.
+          [[ $EXPECTED_METADATA_SHA256 =~ ^[0-9a-f]{64}$ ]]
+          printf '%s  %s\n' "$EXPECTED_METADATA_SHA256" source-build.json | sha256sum --check --strict
+          filename=$(jq -er '.filename' source-build.json)
+          digest=$(jq -er '.sha256' source-build.json)
+          [[ $filename =~ ^[A-Za-z0-9._+-]+\.tar\.gz$ && $digest =~ ^[0-9a-f]{64}$ ]]
+          shopt -s nullglob dotglob
+          files=(*)
+          archives=(*.tar.gz)
+          checksums=(*.sha256)
+          [[ ${#files[@]} == 3 ]] || { echo 'Expected exactly three artifact files' >&2; exit 1; }
+          [[ ${#archives[@]} == 1 && ${#checksums[@]} == 1 ]] || { echo 'Expected exactly one tarball and checksum' >&2; exit 1; }
+          [[ ${archives[0]} == "$filename" && ${checksums[0]} == "$filename.sha256" ]] || { echo 'Downloaded filenames do not match metadata' >&2; exit 1; }
+          printf '%s  %s\n' "$digest" "$filename" | cmp - "$filename.sha256"
+          sha256sum --check --strict -- "$filename.sha256"
 
   publish:
     name: Publish latest successful main source
-    needs: build
+    needs: [build, verify]
     if: >-
       github.ref == 'refs/heads/main' &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
@@ -118,12 +150,33 @@ jobs:
           ref: ${{ github.sha }}
           persist-credentials: false
           sparse-checkout: .github/scripts
-      - uses: actions/download-artifact@v4
+      - name: Download the exact source artifact
+        id: download
+        continue-on-error: true
+        uses: actions/download-artifact@v4
         with:
           # Reuse the successful build artifact when only publication is retried.
           artifact-ids: ${{ needs.build.outputs.artifact-id }}
           merge-multiple: true
           path: source-output
+      - name: Wait for artifact visibility
+        if: steps.download.outcome == 'failure'
+        run: sleep 20
+      - name: Retry the source artifact download
+        if: steps.download.outcome == 'failure'
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ needs.build.outputs.artifact-id }}
+          merge-multiple: true
+          path: source-output
+      - name: Verify downloaded metadata against the build job
+        env:
+          EXPECTED_METADATA_SHA256: ${{ needs.build.outputs.metadata-sha256 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ $EXPECTED_METADATA_SHA256 =~ ^[0-9a-f]{64}$ ]]
+          printf '%s  %s\n' "$EXPECTED_METADATA_SHA256" source-output/source-build.json | sha256sum --check --strict
       - uses: actions/github-script@v7
         with:
           script: |
