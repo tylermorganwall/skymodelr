@@ -118,7 +118,7 @@ swe_dirs_topo_moon_sun = function(
     ts$min,
     ts$sec,
     swephR::SE$GREG_CAL
-  )$dret[1]
+  )$dret[2] # Swiss Ephemeris returns TT first, then UT1.
 
   flg_eq_topo = swephR::SE$FLG_SWIEPH +
     swephR::SE$FLG_EQUATORIAL +
@@ -258,7 +258,7 @@ swe_dirs_topo_sunmoon_df = function(datetime, lat, lon, elev_m = 0) {
     ts$min,
     ts$sec,
     swephR::SE$GREG_CAL
-  )$dret[1]
+  )$dret[2] # Swiss Ephemeris returns TT first, then UT1.
 
   flg_eq_topo = swephR::SE$FLG_SWIEPH +
     swephR::SE$FLG_EQUATORIAL +
@@ -299,7 +299,7 @@ swe_dirs_topo_planets_df = function(datetime, lat, lon, elev_m = 0) {
     ts$min,
     ts$sec,
     swephR::SE$GREG_CAL
-  )$dret[1]
+  )$dret[2] # Swiss Ephemeris returns TT first, then UT1.
 
   flg_eq_topo = swephR::SE$FLG_SWIEPH +
     swephR::SE$FLG_EQUATORIAL +
