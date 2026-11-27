@@ -2,6 +2,10 @@
 
 ## Bugfixes
 
+- Celestial positions use UT1 for Swiss Ephemeris calculations instead of
+  treating Terrestrial Time as UT1. This corrects Sun, Moon, and planet
+  positions, including visible alignment errors during eclipses.
+
 - Overall: Keeps the macOS Metal source out of automatic source discovery so
   Windows and Linux builds use the CPU stub without requiring an Objective-C runtime.
 

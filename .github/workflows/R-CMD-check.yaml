@@ -40,12 +40,32 @@ jobs:
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
+      # Released rayrender 0.42.0 does not compile in its no-X11 configuration.
+      - name: Install X11 headers for rayrender
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libx11-dev
+
+      # The published macOS rayrender binary links to /opt/X11.
+      - name: Install XQuartz for Rayrender
+        if: runner.os == 'macOS'
+        run: |
+          if [ ! -r /opt/X11/lib/libX11.6.dylib ]; then
+            brew install --cask xquartz
+          fi
+          test -r /opt/X11/lib/libX11.6.dylib
+
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck
+          extra-packages: any::rcmdcheck, any::rayrender
           needs: check
 
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
           build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf")'
+
+      - name: Check Rayrender integration
+        shell: Rscript {0}
+        run: testthat::test_file(".github/scripts/test-rayrender-integration.R", stop_on_failure = TRUE)
