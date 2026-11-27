@@ -7,25 +7,14 @@
 # It is unlikely that you need to modify this file manually.
 
 name: R-hub
-run-name: >-
-  ${{ github.event.inputs.id || format('Manual run by @{0}', github.triggering_actor) }}:
-  ${{ github.event.inputs.name || github.event.inputs.config }}
+run-name: 'R-hub: all 36 platforms (0a336a0)'
 
 on:
-  workflow_dispatch:
-    inputs:
-      config:
-        description: >-
-          Comma-separated list of R-hub platforms to use.
-          Full list: https://r-hub.github.io/containers/
-        type: string
-        default: 'linux,windows,macos'
-      name:
-        description: 'Run name. You can leave this empty.'
-        type: string
-      id:
-        description: 'Unique ID. You can leave this empty.'
-        type: string
+  push:
+    branches: [codex/rhub-all-0a336a0]
+
+permissions:
+  contents: read
 
 jobs:
 
@@ -39,7 +28,7 @@ jobs:
     # NO NEED TO CHECKOUT HERE
     - uses: r-hub/actions/setup@v1
       with:
-        config: ${{ github.event.inputs.config }}
+        config: 'ubuntu-clang,ubuntu-gcc12,ubuntu-next,ubuntu-release,atlas,c23,clang-asan,clang-ubsan,clang16,clang17,clang18,clang19,clang20,clang21,clang22,clang23,gcc13,gcc14,gcc15,gcc16,gcc-asan,lto,nold,noremap,valgrind,mkl,intel,donttest,nosuggests,rchk,vnu,windows,macos,macos-arm64,linux,m1-san'
       id: rhub-setup
 
   linux-containers:
@@ -56,6 +45,8 @@ jobs:
 
     steps:
       - uses: r-hub/actions/checkout@v1
+        with:
+          ref: 0a336a00abc607f1a94742455baae4a6ff1f00a8
       - uses: r-hub/actions/platform-info@v1
         with:
           token: ${{ secrets.RHUB_TOKEN }}
@@ -86,6 +77,8 @@ jobs:
 
     steps:
       - uses: r-hub/actions/checkout@v1
+        with:
+          ref: 0a336a00abc607f1a94742455baae4a6ff1f00a8
       - uses: r-hub/actions/setup-r@v1
         with:
           job-config: ${{ matrix.config.job-config }}
